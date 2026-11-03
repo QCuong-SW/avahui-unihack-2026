@@ -1,0 +1,20 @@
+{
+  "name": "@avahui/api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AvaHui NestJS Backend API & Blockchain Event Indexer",
+  "scripts": {
+    "build": "nest build",
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "start:prod": "node dist/main",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
+    "test": "jest",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev"
+  },
+  "dependencies": {
+    "@avahui/shared": "workspace:*",
+    "@avahui/blockchain": "workspace:*"
+  }
+}

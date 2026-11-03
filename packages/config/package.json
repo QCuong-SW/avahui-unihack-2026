@@ -1,0 +1,6 @@
+{
+  "name": "@avahui/config",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared TypeScript and ESLint configurations for AvaHui monorepo"
+}

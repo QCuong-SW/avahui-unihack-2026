@@ -1,0 +1,52 @@
+# ============================================================================
+# AVAHUI MONOREPO — .dockerignore
+# ============================================================================
+
+# Git & Version Control
+.git
+.gitignore
+.github
+
+# Dependencies & Build Artifacts (rebuilt inside container)
+**/node_modules
+**/.next
+**/dist
+**/build
+**/out
+**/cache
+**/broadcast
+**/coverage
+**/.turbo
+*.tsbuildinfo
+
+# Environment & Secret Files (injected at runtime via docker-compose / orchestrator)
+.env
+.env.*
+!**/.env.example
+*.pem
+*.key
+*.secret
+
+# Local Database Volumes & Backups
+postgres_data
+pgdata
+infrastructure/database/backups/*
+
+# Documentation, Tests & IDE Configs
+docs
+README.md
+**/*.md
+**/test
+**/tests
+**/__tests__
+**/*.spec.ts
+**/*.test.ts
+playwright-report
+test-results
+.vscode
+.idea
+
+# OS Files
+.DS_Store
+Thumbs.db
+*.log

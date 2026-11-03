@@ -1,0 +1,23 @@
+{
+  "name": "avahui-unihack-2026",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AvaHui — Trustless On-Chain ROSCA Platform on Avalanche (Avalanche UniHack 2026)",
+  "packageManager": "pnpm@9.12.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev:web": "pnpm --filter @avahui/web dev",
+    "dev:api": "pnpm --filter @avahui/api start:dev",
+    "build": "pnpm -r build",
+    "build:web": "pnpm --filter @avahui/web build",
+    "build:api": "pnpm --filter @avahui/api build",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose stop postgres",
+    "docker:deploy": "docker compose --profile deploy up -d --build",
+    "docker:down": "docker compose --profile deploy down"
+  }
+}

@@ -1,0 +1,107 @@
+name: avahui-platform
+
+services:
+  # ==========================================================================
+  # 1. DATABASE SERVICE (PostgreSQL 17)
+  # Run standalone for local dev: `docker compose up -d postgres`
+  # ==========================================================================
+  postgres:
+    image: postgres:17-alpine
+    container_name: avahui-postgres
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-avahui_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-avahui_secret_password_change_me}
+      POSTGRES_DB: ${POSTGRES_DB:-avahui_db}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - avahui_postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/database/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-avahui_user} -d $${POSTGRES_DB:-avahui_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - avahui-network
+
+  # ==========================================================================
+  # 2. BACKEND API & BLOCKCHAIN INDEXER (NestJS)
+  # Run full stack deployment: `docker compose --profile deploy up -d --build`
+  # ==========================================================================
+  api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/api/Dockerfile
+    container_name: avahui-api
+    restart: unless-stopped
+    profiles:
+      - deploy
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: ${API_PORT:-3001}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-avahui_user}:${POSTGRES_PASSWORD:-avahui_secret_password_change_me}@postgres:5432/${POSTGRES_DB:-avahui_db}?schema=public
+      PRIVY_APP_ID: ${PRIVY_APP_ID:-}
+      PRIVY_APP_SECRET: ${PRIVY_APP_SECRET:-}
+      CHAIN_ID: ${CHAIN_ID:-43113}
+      AVALANCHE_RPC_URL: ${AVALANCHE_RPC_URL:-https://api.avax-test.network/ext/bc/C/rpc}
+      ROSCA_FACTORY_ADDRESS: ${ROSCA_FACTORY_ADDRESS:-}
+      USDC_TOKEN_ADDRESS: ${USDC_TOKEN_ADDRESS:-}
+      AI_ENABLED: ${AI_ENABLED:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "${API_PORT:-3001}:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - avahui-network
+
+  # ==========================================================================
+  # 3. FRONTEND APPLICATION (Next.js)
+  # ==========================================================================
+  web:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/web/Dockerfile
+    container_name: avahui-web
+    restart: unless-stopped
+    profiles:
+      - deploy
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: ${NODE_ENV:-production}
+      PORT: 3000
+      NEXT_PUBLIC_USE_MOCK: ${NEXT_PUBLIC_USE_MOCK:-false}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001/api/v1}
+      NEXT_PUBLIC_PRIVY_APP_ID: ${NEXT_PUBLIC_PRIVY_APP_ID:-}
+      NEXT_PUBLIC_CHAIN_ID: ${NEXT_PUBLIC_CHAIN_ID:-43113}
+      NEXT_PUBLIC_AVALANCHE_RPC_URL: ${NEXT_PUBLIC_AVALANCHE_RPC_URL:-https://api.avax-test.network/ext/bc/C/rpc}
+      NEXT_PUBLIC_ROSCA_FACTORY_ADDRESS: ${NEXT_PUBLIC_ROSCA_FACTORY_ADDRESS:-}
+      NEXT_PUBLIC_USDC_TOKEN_ADDRESS: ${NEXT_PUBLIC_USDC_TOKEN_ADDRESS:-}
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      - api
+    networks:
+      - avahui-network
+
+volumes:
+  avahui_postgres_data:
+    name: avahui_postgres_data
+
+networks:
+  avahui-network:
+    name: avahui-network
+    driver: bridge
