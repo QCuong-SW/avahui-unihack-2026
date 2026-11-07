@@ -51,7 +51,10 @@ export function CircleDetailView({ circleId }: CircleDetailViewProps) {
   const circleTxs = state.transactions.filter(
     (t) =>
       t.circleId === circle.id ||
-      t.contractAddress.toLowerCase() === circle.contractAddress.toLowerCase()
+      (Boolean(circle.contractAddress) &&
+        Boolean(t.contractAddress) &&
+        t.contractAddress?.toLowerCase() ===
+          circle.contractAddress?.toLowerCase())
   );
 
   return (

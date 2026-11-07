@@ -1,0 +1,61 @@
+export const AvaHuiFactoryABI = [
+  {
+    type: 'function',
+    name: 'createCircle',
+    inputs: [
+      {
+        name: 'params',
+        type: 'tuple',
+        internalType: 'struct IAvaHuiFactory.CreateCircleParams',
+        components: [
+          { name: 'metadataId', type: 'string', internalType: 'string' },
+          { name: 'name', type: 'string', internalType: 'string' },
+          { name: 'token', type: 'address', internalType: 'address' },
+          { name: 'allocationMode', type: 'uint8', internalType: 'uint8' },
+          { name: 'maxMembers', type: 'uint8', internalType: 'uint8' },
+          { name: 'contributionAmount', type: 'uint256', internalType: 'uint256' },
+          { name: 'collateralAmount', type: 'uint256', internalType: 'uint256' },
+          { name: 'roundDuration', type: 'uint256', internalType: 'uint256' },
+          { name: 'biddingDuration', type: 'uint256', internalType: 'uint256' },
+          { name: 'gracePeriod', type: 'uint256', internalType: 'uint256' },
+          { name: 'startDeadline', type: 'uint256', internalType: 'uint256' },
+          { name: 'minBid', type: 'uint256', internalType: 'uint256' },
+          { name: 'maxBid', type: 'uint256', internalType: 'uint256' },
+        ],
+      },
+    ],
+    outputs: [{ name: 'circleAddress', type: 'address', internalType: 'address' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'getAllCircles',
+    inputs: [],
+    outputs: [{ name: '', type: 'address[]', internalType: 'address[]' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'isCircle',
+    inputs: [{ name: 'circle', type: 'address', internalType: 'address' }],
+    outputs: [{ name: '', type: 'bool', internalType: 'bool' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'event',
+    name: 'CircleCreated',
+    inputs: [
+      { name: 'circleAddress', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'creator', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'metadataId', type: 'string', indexed: false, internalType: 'string' },
+      { name: 'name', type: 'string', indexed: false, internalType: 'string' },
+      { name: 'token', type: 'address', indexed: false, internalType: 'address' },
+      { name: 'allocationMode', type: 'uint8', indexed: false, internalType: 'uint8' },
+      { name: 'maxMembers', type: 'uint8', indexed: false, internalType: 'uint8' },
+      { name: 'contributionAmount', type: 'uint256', indexed: false, internalType: 'uint256' },
+      { name: 'collateralAmount', type: 'uint256', indexed: false, internalType: 'uint256' },
+    ],
+    anonymous: false,
+  },
+] as const;
+

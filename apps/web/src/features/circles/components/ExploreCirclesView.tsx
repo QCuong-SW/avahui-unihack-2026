@@ -28,7 +28,7 @@ export function ExploreCirclesView() {
   const filteredCircles = state.circles.filter((circle) => {
     const matchesSearch =
       circle.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      circle.contractAddress.toLowerCase().includes(searchQuery.toLowerCase());
+      Boolean(circle.contractAddress?.toLowerCase().includes(searchQuery.toLowerCase()));
 
     const matchesStatus =
       statusFilter === 'ALL' || circle.status === statusFilter;

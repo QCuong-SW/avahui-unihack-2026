@@ -108,7 +108,13 @@ export function CircleCard({ circle, currentUserAddress }: CircleCardProps) {
             </HoverHint>
           </div>
 
-          <HoverHint hint={`Contract: ${circle.contractAddress}`}>
+          <HoverHint
+            hint={
+              circle.contractAddress
+                ? `Contract: ${circle.contractAddress}`
+                : 'Chưa triển khai hợp đồng'
+            }
+          >
             <span className="font-mono text-[11px] text-zinc-500">
               {shortenAddress(circle.contractAddress)}
             </span>

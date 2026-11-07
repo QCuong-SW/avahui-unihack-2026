@@ -1,8 +1,4 @@
-// ============================================================================
-// @avahui/blockchain — Avalanche Fuji Testnet Chain Configuration
-// ============================================================================
-
-export const avalancheFujiConfig = {
+export const AVALANCHE_FUJI_CHAIN = {
   id: 43113,
   name: 'Avalanche Fuji',
   nativeCurrency: {
@@ -23,3 +19,5 @@ export const avalancheFujiConfig = {
   },
   testnet: true,
 } as const;
+
+export const avalancheFujiConfig = AVALANCHE_FUJI_CHAIN;

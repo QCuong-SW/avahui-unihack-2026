@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "description": "Smart Contract ABIs, deployed addresses, and Avalanche chain config",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts"
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "pnpm --filter @avahui/api exec tsc -p ../../packages/blockchain/tsconfig.json"
+  }
 }

@@ -140,10 +140,10 @@ export function MembersCollateralTab({
                 </td>
 
                 <td className="px-3.5 py-3 font-mono">
-                  {parseFloat(member.slashedCollateralFormatted) > 0 ? (
+                  {parseFloat(member.slashedCollateralFormatted || '0') > 0 ? (
                     <span className="inline-flex items-center gap-1 font-semibold text-rose-400">
                       <ShieldAlert className="h-3 w-3" />
-                      <span>-{formatUsdc(member.slashedCollateralFormatted)}</span>
+                      <span>-{formatUsdc(member.slashedCollateralFormatted || '0')}</span>
                     </span>
                   ) : (
                     <span className="text-zinc-500">0.00</span>

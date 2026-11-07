@@ -209,7 +209,7 @@ export function mockCreateCircle(input: CreateCircleFormInput): {
     txHash,
     senderAddress: user.walletAddress,
     senderName: user.displayName,
-    contractAddress: newCircle.contractAddress,
+    contractAddress: newCircle.contractAddress || '',
     circleId: newCircle.id,
     circleName: newCircle.name,
     txType: TransactionType.CREATE_CIRCLE,
@@ -578,7 +578,7 @@ export function mockSettleRound(
         currentLocked - slashAmount
       ).toFixed(2);
       member.slashedCollateralFormatted = (
-        parseFloat(member.slashedCollateralFormatted) + slashAmount
+        parseFloat(member.slashedCollateralFormatted || '0') + slashAmount
       ).toFixed(2);
       member.defaultCount += 1;
       member.status = MemberStatus.Defaulted;
@@ -748,7 +748,7 @@ export function mockSettleRound(
   return {
     state: saveMockState(state),
     txHash,
-    winnerName: winnerMember.displayName,
+    winnerName: winnerMember.displayName || 'Thành viên',
     netPayoutFormatted: netPayoutUsdc.toFixed(2),
     slashedMembersCount,
   };
