@@ -5,7 +5,7 @@ import React from 'react';
 export type HintPlacement = 'top' | 'bottom' | 'left' | 'right';
 
 interface HoverHintProps {
-  hint: string;
+  hint?: string | null;
   children: React.ReactNode;
   position?: HintPlacement;
   side?: HintPlacement;
@@ -19,6 +19,10 @@ export function HoverHint({
   side,
   className = '',
 }: HoverHintProps) {
+  if (!hint) {
+    return <div className={className}>{children}</div>;
+  }
+
   const activeSide: HintPlacement = side || position || 'top';
 
   const placementClass =

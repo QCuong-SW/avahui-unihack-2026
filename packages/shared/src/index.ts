@@ -1,4 +1,4 @@
 export * from './enums';
 export * from './constants';
 export * from './types';
-export * from './mocks/avahuiMockData';
+export * from './mocks';

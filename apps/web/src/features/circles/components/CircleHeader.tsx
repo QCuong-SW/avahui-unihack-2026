@@ -43,17 +43,19 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
           <span>Circles</span>
         </Link>
 
-        <HoverHint hint="Mở hợp đồng thông minh trên Snowtrace Fuji Explorer">
-          <a
-            href={`${frontendEnv.explorerUrl}/address/${circle.contractAddress}`}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-none border border-zinc-800 bg-zinc-900 px-2.5 py-1 font-mono text-xs text-zinc-300 transition hover:border-avalanche-red hover:text-white"
-          >
-            <span>{shortenAddress(circle.contractAddress, 6)}</span>
-            <ExternalLink className="h-3.5 w-3.5 text-avalanche-red" />
-          </a>
-        </HoverHint>
+        {circle.contractAddress && (
+          <HoverHint hint="Mở hợp đồng thông minh trên Snowtrace Fuji Explorer">
+            <a
+              href={`${frontendEnv.explorerUrl}/address/${circle.contractAddress}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-none border border-zinc-800 bg-zinc-900 px-2.5 py-1 font-mono text-xs text-zinc-300 transition hover:border-avalanche-red hover:text-white"
+            >
+              <span>{shortenAddress(circle.contractAddress, 6)}</span>
+              <ExternalLink className="h-3.5 w-3.5 text-avalanche-red" />
+            </a>
+          </HoverHint>
+        )}
       </div>
 
       {/* Title & Status Badges */}

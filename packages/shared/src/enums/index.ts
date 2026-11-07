@@ -1,30 +1,26 @@
-// ============================================================================
-// @avahui/shared — Shared Enums (Single Source of Truth)
-// ============================================================================
-
 export enum AllocationMode {
-  FIXED = 'FIXED',       // 0 on Smart Contract
-  BIDDING = 'BIDDING',   // 1 on Smart Contract
+  FIXED = 'FIXED',       // 0 trên Smart Contract
+  BIDDING = 'BIDDING',   // 1 trên Smart Contract
 }
 
 export enum CircleStatus {
-  Draft = 'DRAFT',           // Off-chain draft before tx confirmation
-  Recruiting = 'RECRUITING', // 0 on SC: Recruiting members & locking collateral
-  Active = 'ACTIVE',         // 1 on SC: Full members, rounds running
-  Completed = 'COMPLETED',   // 2 on SC: All rounds settled
-  Cancelled = 'CANCELLED',   // 3 on SC: Cancelled due to start deadline expiry
+  Draft = 'DRAFT',           // Chỉ tồn tại off-chain khi đang tạo
+  Recruiting = 'RECRUITING', // 0 trên SC: Đang gom thành viên
+  Active = 'ACTIVE',         // 1 trên SC: Đủ người, đang chạy các vòng
+  Completed = 'COMPLETED',   // 2 trên SC: Đã hoàn tất toàn bộ các vòng
+  Cancelled = 'CANCELLED',   // 3 trên SC: Hủy do không đủ người đúng hạn
 }
 
 export enum RoundStatus {
-  Pending = 'PENDING',       // 0 on SC: Future round not opened yet
-  Open = 'OPEN',             // 1 on SC: Open for contributions (& bidding if BIDDING)
-  Settled = 'SETTLED',       // 2 on SC: Round settled and payout distributed
+  Pending = 'PENDING',       // 0 trên SC: Vòng tương lai chưa mở
+  Open = 'OPEN',             // 1 trên SC: Đang mở đóng tiền (& đấu giá nếu BIDDING)
+  Settled = 'SETTLED',       // 2 trên SC: Đã kết toán và trả Payout xong
 }
 
 export enum MemberStatus {
   Active = 'ACTIVE',
-  Defaulted = 'DEFAULTED',   // Has missed deadline and had collateral slashed
-  Withdrawn = 'WITHDRAWN',   // Has withdrawn remaining collateral after circle completion
+  Defaulted = 'DEFAULTED',   // Đã từng vi phạm bị trừ thế chấp
+  Withdrawn = 'WITHDRAWN',   // Đã rút thế chấp sau khi kết thúc
 }
 
 export enum TransactionType {

@@ -1,21 +1,39 @@
-// ============================================================================
-// @avahui/shared — Shared TypeScript Interfaces & DTO Contracts
-// ============================================================================
-
 import {
   AllocationMode,
   CircleStatus,
-  MemberStatus,
   RoundStatus,
-  TransactionStatus,
+  MemberStatus,
   TransactionType,
+  TransactionStatus,
 } from '../enums';
 
-export interface UserStats {
+export interface UserStatsDto {
   activeCirclesCount: number;
   totalContributed: string;
   totalCollateralLocked: string;
   totalPayoutReceived: string;
+}
+export type UserStats = UserStatsDto;
+
+export interface WalletDto {
+  id: string;
+  address: string;
+  walletClientType: string;
+  isPrimary: boolean;
+}
+
+export interface UserProfileDto {
+  id: string;
+  privyDid?: string;
+  email: string | null;
+  displayName: string | null;
+  avatarUrl?: string | null;
+  walletAddress: string | null;
+  wallets?: WalletDto[];
+  avaxBalance?: string;
+  usdcBalance?: string;
+  usdcAllowance?: string;
+  stats: UserStatsDto;
 }
 
 export interface UserProfile {
@@ -30,69 +48,104 @@ export interface UserProfile {
   stats: UserStats;
 }
 
-export interface CircleMemberItem {
+export interface CircleMemberDto {
+  id?: string;
   slotIndex: number;
-  userId: string;
-  displayName: string;
+  userId: string | null;
+  displayName: string | null;
   walletAddress: string;
-  initialCollateralFormatted: string;
+  lockedCollateral?: string;
   lockedCollateralFormatted: string;
-  slashedCollateralFormatted: string;
+  initialLockedAmountFormatted?: string;
+  initialCollateralFormatted?: string;
+  totalSlashedAmountFormatted?: string;
+  slashedCollateralFormatted?: string;
   hasReceivedPayout: boolean;
   wonRoundNumber: number | null;
   defaultCount: number;
   status: MemberStatus;
-  joinedAt: string;
-  joinTxHash: string;
+  joinTxHash?: string;
+  joinedAt?: string;
 }
+export type CircleMemberItem = CircleMemberDto;
 
-export interface RoundContributionItem {
+export interface ContributionDto {
+  id?: string;
+  roundNumber?: number;
   memberAddress: string;
-  memberName: string;
+  memberName: string | null;
+  amount?: string;
   amountFormatted: string;
-  isFromCollateralSlash: boolean;
+  isFromCollateralSlash?: boolean;
   paidAt: string;
   txHash: string;
 }
+export type RoundContributionItem = ContributionDto;
 
-export interface RoundBidItem {
+export interface BidDto {
+  id?: string;
+  roundNumber?: number;
   bidderAddress: string;
-  bidderName: string;
+  bidderName: string | null;
+  bidAmount?: string;
   bidAmountFormatted: string;
   isWinningBid?: boolean;
   createdAt: string;
   txHash: string;
 }
+export type RoundBidItem = BidDto;
 
-export interface CircleRoundItem {
+export interface PayoutDto {
+  id?: string;
+  roundNumber: number;
+  recipientAddress: string;
+  recipientName?: string | null;
+  grossAmount: string;
+  grossAmountFormatted: string;
+  discountAmount: string;
+  discountAmountFormatted: string;
+  netAmount: string;
+  netAmountFormatted: string;
+  txHash: string;
+  paidAt: string;
+}
+
+export interface RoundDetailDto {
+  id?: string;
   roundNumber: number;
   status: RoundStatus;
-  startTime: string;
-  contributionDeadline: string;
-  biddingDeadline: string;
-  graceDeadline: string;
+  startTime: string | null;
+  contributionDeadline: string | null;
+  biddingDeadline: string | null;
+  graceDeadline: string | null;
   winnerAddress: string | null;
   winnerName: string | null;
+  grossPot?: string;
   grossPotFormatted: string;
+  winningBid?: string;
   winningBidFormatted: string;
+  netPayout?: string;
   netPayoutFormatted: string;
   settlementTxHash: string | null;
   settledAt?: string | null;
   contributionsCount: number;
-  contributions: RoundContributionItem[];
-  bids: RoundBidItem[];
+  contributions: ContributionDto[];
+  bids: BidDto[];
+  payout?: PayoutDto | null;
 }
+export type CircleRoundItem = RoundDetailDto;
 
-export interface CircleItem {
+export interface CircleDetailDto {
   id: string;
   metadataId: string;
-  contractAddress: string;
+  contractAddress: string | null;
+  chainId?: number;
   name: string;
-  description: string;
+  description: string | null;
   creatorAddress: string;
   tokenAddress: string;
   tokenSymbol: string;
-  tokenDecimals: number;
+  tokenDecimals?: number;
   allocationMode: AllocationMode;
   status: CircleStatus;
   maxMembers: number;
@@ -103,20 +156,23 @@ export interface CircleItem {
   contributionAmountFormatted: string;
   collateralAmount: string;
   collateralAmountFormatted: string;
+  collateralMultiplier?: number;
   roundDurationSeconds: number;
   biddingDurationSeconds: number;
   gracePeriodSeconds: number;
-  startDeadline: string;
+  startDeadline?: string;
   minBid: string;
   minBidFormatted: string;
   maxBid: string;
   maxBidFormatted: string;
   totalDiscountPool: string;
   totalDiscountPoolFormatted: string;
+  creationTxHash?: string | null;
   createdAt: string;
-  members: CircleMemberItem[];
-  rounds: CircleRoundItem[];
+  members: CircleMemberDto[];
+  rounds: RoundDetailDto[];
 }
+export type CircleItem = CircleDetailDto;
 
 export interface CreateCircleFormInput {
   name: string;
@@ -124,7 +180,7 @@ export interface CreateCircleFormInput {
   allocationMode: AllocationMode;
   maxMembers: number;
   contributionAmountUsdc: number;
-  collateralMultiplier: number; // 1x, 2x, 3x
+  collateralMultiplier: number;
   isDemoFastMode: boolean;
   roundDurationSeconds: number;
   biddingDurationSeconds: number;
@@ -133,28 +189,32 @@ export interface CreateCircleFormInput {
   maxBidUsdc: number;
 }
 
-export interface BlockchainTransactionItem {
+export interface TransactionRecordDto {
   id: string;
   chainId: number;
   txHash: string;
   senderAddress: string;
-  senderName: string;
-  contractAddress: string;
-  circleId?: string;
-  circleName?: string;
+  senderName?: string;
+  contractAddress?: string | null;
+  circleId?: string | null;
+  circleName?: string | null;
   txType: TransactionType;
   status: TransactionStatus;
-  blockNumber: number;
+  blockNumber: string | number | null;
   amountFormatted?: string;
+  errorMessage?: string | null;
   createdAt: string;
+  confirmedAt?: string | null;
 }
+export type BlockchainTransactionItem = TransactionRecordDto;
 
-export interface NotificationItem {
+export interface NotificationItemDto {
   id: string;
   userId: string;
-  circleId?: string;
+  circleId: string | null;
   title: string;
   body: string;
   isRead: boolean;
   createdAt: string;
 }
+export type NotificationItem = NotificationItemDto;
