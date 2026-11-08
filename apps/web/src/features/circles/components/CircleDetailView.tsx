@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAvaHuiState } from '@/hooks/useAvaHuiMockQuery';
+import { useCircleDetailQuery } from '@/hooks/useCircleQueries';
 import { CircleHeader } from './CircleHeader';
 import { SmartActionBox } from './SmartActionBox';
 import { CurrentRoundTab } from '@/features/contributions/components/CurrentRoundTab';
@@ -19,42 +20,54 @@ interface CircleDetailViewProps {
 type DetailTabKey = 'CURRENT_ROUND' | 'MEMBERS' | 'ROUNDS_HISTORY' | 'TX_LOGS';
 
 export function CircleDetailView({ circleId }: CircleDetailViewProps) {
-  const { data: state, isLoading } = useAvaHuiState();
+  const { data: liveCircle, isLoading: isLoadingLive } = useCircleDetailQuery(circleId);
+  const { data: state, isLoading: isLoadingState } = useAvaHuiState();
   const [activeTab, setActiveTab] = useState<DetailTabKey>('CURRENT_ROUND');
 
-  if (isLoading || !state) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center text-zinc-400">
-        Đang tải...
-      </div>
+  const circle =
+    liveCircle ||
+    state?.circles.find(
+      (c) =>
+        c.id === circleId ||
+        c.metadataId === circleId ||
+        (Boolean(c.contractAddress) &&
+          Boolean(circleId) &&
+          c.contractAddress?.toLowerCase() === circleId.toLowerCase()),
     );
-  }
 
-  const circle = state.circles.find((c) => c.id === circleId);
   const currentUser =
-    state.users.find((u) => u.id === state.currentUserId) || state.users[0];
+    state?.users.find((u) => u.id === state.currentUserId) || state?.users[0];
 
-  if (!circle) {
+  if (!circle || !currentUser) {
+    if (!isLoadingLive && !isLoadingState) {
+      return (
+        <div className="rounded-none border border-zinc-800 bg-surface-card p-10 text-center space-y-4">
+          <h2 className="font-mono text-lg font-bold uppercase text-white">Không tìm thấy Dây hụi</h2>
+          <p className="text-sm text-zinc-400 font-mono">Dây hụi với mã &ldquo;{circleId}&rdquo; không tồn tại hoặc đã bị hủy.</p>
+          <Link
+            href="/circles"
+            className="inline-block rounded-none border border-avalanche-red bg-avalanche-red px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-white"
+          >
+            Quay lại danh sách
+          </Link>
+        </div>
+      );
+    }
+
     return (
-      <div className="rounded-none border border-zinc-800 bg-surface-card p-10 text-center space-y-4">
-        <h2 className="font-mono text-lg font-bold uppercase text-white">Không tìm thấy Dây hụi</h2>
-        <Link
-          href="/circles"
-          className="inline-block rounded-none border border-avalanche-red bg-avalanche-red px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-white"
-        >
-          Quay lại
-        </Link>
+      <div className="flex min-h-[50vh] items-center justify-center font-mono text-zinc-400">
+        Đang tải dữ liệu Dây hụi...
       </div>
     );
   }
 
-  const circleTxs = state.transactions.filter(
+  const circleTxs = (state?.transactions || []).filter(
     (t) =>
       t.circleId === circle.id ||
       (Boolean(circle.contractAddress) &&
         Boolean(t.contractAddress) &&
         t.contractAddress?.toLowerCase() ===
-          circle.contractAddress?.toLowerCase())
+          circle.contractAddress?.toLowerCase()),
   );
 
   return (

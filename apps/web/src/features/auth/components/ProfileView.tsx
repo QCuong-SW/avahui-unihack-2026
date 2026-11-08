@@ -3,10 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import {
   useAvaHuiState,
-  useFaucetMint,
   useResetDemoData,
   useUpdateProfileMutation,
 } from '@/hooks/useAvaHuiMockQuery';
+import { useTokenOperations } from '@/hooks/useTokenOperations';
 import { useTxLifecycle } from '@/features/transactions/hooks/useTxLifecycle';
 import { formatUsdc, shortenAddress } from '@/lib/utils';
 import { frontendEnv } from '@/config/env';
@@ -29,9 +29,8 @@ import Link from 'next/link';
 export function ProfileView() {
   const { data: state, isLoading } = useAvaHuiState();
   const updateProfileMutation = useUpdateProfileMutation();
-  const faucetMutation = useFaucetMint();
+  const { requestFaucet, isOperating: isFaucetOperating } = useTokenOperations();
   const resetMutation = useResetDemoData();
-  const { runTransaction } = useTxLifecycle();
 
   const [displayName, setDisplayName] = useState('');
   const [savedNotice, setSavedNotice] = useState(false);
@@ -74,13 +73,7 @@ export function ProfileView() {
   };
 
   const handleFaucet = async () => {
-    await runTransaction({
-      title: 'Faucet Mint +1,000.00 mUSDC',
-      description: `Cấp 1,000.00 mUSDC Testnet vào ví của ${currentUser.displayName}`,
-      action: async () => {
-        return await faucetMutation.mutateAsync(1000);
-      },
-    });
+    await requestFaucet(1000);
   };
 
   return (
@@ -176,7 +169,8 @@ export function ProfileView() {
             >
               <button
                 onClick={handleFaucet}
-                className="inline-flex items-center gap-1.5 rounded-none bg-avalanche-red px-3.5 py-2 font-mono text-xs font-bold uppercase tracking-wider text-white transition hover:bg-avalanche-darkRed"
+                disabled={isFaucetOperating}
+                className="inline-flex items-center gap-1.5 rounded-none bg-avalanche-red px-3.5 py-2 font-mono text-xs font-bold uppercase tracking-wider text-white transition hover:bg-avalanche-darkRed disabled:opacity-60"
               >
                 <Coins className="h-3.5 w-3.5" />
                 <span>+1,000 mUSDC</span>

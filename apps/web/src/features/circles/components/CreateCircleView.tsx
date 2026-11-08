@@ -15,8 +15,8 @@ import {
 import {
   useAvaHuiState,
   useCreateCircleMutation,
-  useFaucetMint,
 } from '@/hooks/useAvaHuiMockQuery';
+import { useTokenOperations } from '@/hooks/useTokenOperations';
 import { useTxLifecycle } from '@/features/transactions/hooks/useTxLifecycle';
 import { formatUsdc } from '@/lib/utils';
 import { HoverHint } from '@/components/ui/HoverHint';
@@ -39,7 +39,7 @@ export function CreateCircleView() {
   const router = useRouter();
   const { data: state } = useAvaHuiState();
   const createCircleMutation = useCreateCircleMutation();
-  const faucetMutation = useFaucetMint();
+  const { requestFaucet, isOperating: isFaucetOperating } = useTokenOperations();
   const { runTransaction } = useTxLifecycle();
 
   const {
@@ -483,8 +483,9 @@ export function CreateCircleView() {
               </span>
               <button
                 type="button"
-                onClick={() => faucetMutation.mutate(1000)}
-                className="rounded-none bg-avalanche-red px-2.5 py-1 font-mono text-xs font-bold uppercase tracking-wider text-white transition hover:bg-avalanche-darkRed"
+                disabled={isFaucetOperating}
+                onClick={() => requestFaucet(1000)}
+                className="rounded-none bg-avalanche-red px-2.5 py-1 font-mono text-xs font-bold uppercase tracking-wider text-white transition hover:bg-avalanche-darkRed disabled:opacity-60"
               >
                 +1,000 Faucet
               </button>

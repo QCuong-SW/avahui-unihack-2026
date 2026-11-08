@@ -1,12 +1,9 @@
 'use client';
 
 import React from 'react';
-import {
-  useAvaHuiState,
-  useFaucetMint,
-} from '@/hooks/useAvaHuiMockQuery';
+import { useAvaHuiState } from '@/hooks/useAvaHuiMockQuery';
 import { useAuthSession } from '@/lib/auth/useAuthSession';
-import { useTxLifecycle } from '@/features/transactions/hooks/useTxLifecycle';
+import { useTokenOperations } from '@/hooks/useTokenOperations';
 import { formatUsdc } from '@/lib/utils';
 import { HoverHint } from '@/components/ui/HoverHint';
 import { NetworkStatus } from '@/components/wallet/NetworkStatus';
@@ -16,13 +13,13 @@ import {
   AlertTriangle,
   Coins,
   Fuel,
+  Loader2,
 } from 'lucide-react';
 
 export function EmbeddedWalletBar() {
   const { data: state } = useAvaHuiState();
   const { data: session } = useAuthSession();
-  const faucetMutation = useFaucetMint();
-  const { runTransaction } = useTxLifecycle();
+  const { requestFaucet, isOperating } = useTokenOperations();
 
   if (!state) return null;
 
@@ -32,13 +29,7 @@ export function EmbeddedWalletBar() {
   const walletStatus = session?.walletStatus || 'WALLET_CONNECTED_READY';
 
   const handleFaucet = async () => {
-    await runTransaction({
-      title: 'Faucet +1,000 mUSDC',
-      description: `${currentUser.displayName} • Avalanche Fuji`,
-      action: async () => {
-        return await faucetMutation.mutateAsync(1000);
-      },
-    });
+    await requestFaucet(1000);
   };
 
   return (
@@ -88,10 +79,15 @@ export function EmbeddedWalletBar() {
         >
           <button
             type="button"
+            disabled={isOperating}
             onClick={handleFaucet}
-            className="inline-flex items-center gap-1 rounded-none border border-avalanche-red bg-avalanche-red px-2 sm:px-2.5 py-1 font-mono text-xs font-bold uppercase text-white transition hover:bg-avalanche-darkRed active:scale-95"
+            className="inline-flex items-center gap-1 rounded-none border border-avalanche-red bg-avalanche-red px-2 sm:px-2.5 py-1 font-mono text-xs font-bold uppercase text-white transition hover:bg-avalanche-darkRed active:scale-95 disabled:opacity-60"
           >
-            <Coins className="h-3.5 w-3.5" />
+            {isOperating ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Coins className="h-3.5 w-3.5" />
+            )}
             <span className="hidden xs:inline">+1,000</span>
             <span className="xs:hidden">+1k</span>
           </button>

@@ -14,6 +14,9 @@ import {
 } from './authSession';
 import { switchMockUser } from '@/stores/avahuiMockEngine';
 import { AVAHUI_QUERY_KEYS } from '@/hooks/useAvaHuiMockQuery';
+import { authApi } from '@/lib/api';
+
+const isMockMode = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
 
 export const AUTH_QUERY_KEY = ['avahui', 'auth-session'] as const;
 
@@ -43,6 +46,24 @@ export function useProviderLoginMutation() {
         params.email,
         params.forceWalletOnboarding
       );
+
+      // In live mode, sync user to PostgreSQL backend
+      const targetUser = newMockState.users.find((u) => u.id === params.userId);
+      if (!isMockMode && targetUser && targetUser.walletAddress) {
+        try {
+          await authApi.syncUser(
+            {
+              walletAddress: targetUser.walletAddress,
+              email: params.email,
+              displayName: targetUser.displayName || undefined,
+            },
+            targetUser.walletAddress,
+          );
+        } catch (err) {
+          console.warn('[AvaHui] authApi.syncUser on provider login error:', err);
+        }
+      }
+
       return {
         ...authResult,
         mockState: newMockState,
@@ -51,6 +72,7 @@ export function useProviderLoginMutation() {
     onSuccess: ({ session, mockState }) => {
       queryClient.setQueryData(AUTH_QUERY_KEY, session);
       queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, mockState);
+      queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
     },
   });
 }
@@ -78,6 +100,24 @@ export function useVerifyEmailOtpMutation() {
       await new Promise((r) => setTimeout(r, 650));
       const result = verifyEmailOtpCode(code);
       const mockState = switchMockUser(result.session.userId);
+
+      // In live mode, sync user to PostgreSQL backend
+      const targetUser = mockState.users.find((u) => u.id === result.session.userId);
+      if (!isMockMode && targetUser && targetUser.walletAddress) {
+        try {
+          await authApi.syncUser(
+            {
+              walletAddress: targetUser.walletAddress,
+              email: targetUser.email || undefined,
+              displayName: targetUser.displayName || undefined,
+            },
+            targetUser.walletAddress,
+          );
+        } catch (err) {
+          console.warn('[AvaHui] authApi.syncUser on OTP verify error:', err);
+        }
+      }
+
       return {
         ...result,
         mockState,
@@ -86,6 +126,7 @@ export function useVerifyEmailOtpMutation() {
     onSuccess: ({ session, mockState }) => {
       queryClient.setQueryData(AUTH_QUERY_KEY, session);
       queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, mockState);
+      queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
     },
   });
 }
@@ -126,7 +167,6 @@ export function useLogoutMutation() {
       return logoutAuthSession();
     },
     onSuccess: (loggedOutSession) => {
-      // Clear private React Query cache while preserving embedded wallet persistence
       queryClient.removeQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
       queryClient.setQueryData(AUTH_QUERY_KEY, loggedOutSession);
     },
