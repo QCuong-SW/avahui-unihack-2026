@@ -14,8 +14,8 @@ import {
 } from '../types/createCircleSchema';
 import {
   useAvaHuiState,
-  useCreateCircleMutation,
 } from '@/hooks/useAvaHuiMockQuery';
+import { useCircleActions } from '@/hooks/useCircleActions';
 import { useTokenOperations } from '@/hooks/useTokenOperations';
 import { useTxLifecycle } from '@/features/transactions/hooks/useTxLifecycle';
 import { formatUsdc } from '@/lib/utils';
@@ -38,7 +38,7 @@ import Link from 'next/link';
 export function CreateCircleView() {
   const router = useRouter();
   const { data: state } = useAvaHuiState();
-  const createCircleMutation = useCreateCircleMutation();
+  const { executeCreateCircle, isCreating } = useCircleActions();
   const { requestFaucet, isOperating: isFaucetOperating } = useTokenOperations();
   const { runTransaction } = useTxLifecycle();
 
@@ -123,7 +123,7 @@ export function CreateCircleView() {
       title: `Deploy Circle "${values.name}"`,
       description: `Slot #1 Collateral: ${formatUsdc(requiredCollateralUsdc)} mUSDC`,
       action: async () => {
-        return await createCircleMutation.mutateAsync({
+        return await executeCreateCircle({
           ...values,
           minBidUsdc:
             values.allocationMode === AllocationMode.BIDDING
@@ -135,7 +135,7 @@ export function CreateCircleView() {
               : 0,
         });
       },
-      onSuccess: (res) => {
+      onSuccess: (res: any) => {
         if (res && 'newCircle' in res && res.newCircle?.id) {
           router.push(`/circles/${res.newCircle.id}`);
         } else {
@@ -498,7 +498,7 @@ export function CreateCircleView() {
           >
             <button
               type="submit"
-              disabled={isSubmitting || !hasEnoughCollateral}
+              disabled={isSubmitting || isCreating || !hasEnoughCollateral}
               className="flex w-full items-center justify-center gap-2 rounded-none bg-avalanche-red px-5 py-3.5 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-xl shadow-avalanche-red/25 transition hover:bg-avalanche-darkRed disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Rocket className="h-4 w-4" />

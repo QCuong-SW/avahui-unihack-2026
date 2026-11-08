@@ -9,13 +9,7 @@ import {
   RoundStatus,
   UserProfile,
 } from '@avahui/shared';
-import {
-  useContributeRoundMutation,
-  useJoinCircleMutation,
-  useSettleRoundMutation,
-  useSubmitBidMutation,
-  useWithdrawCollateralMutation,
-} from '@/hooks/useAvaHuiMockQuery';
+import { useCircleActions } from '@/hooks/useCircleActions';
 import { useTxLifecycle } from '@/features/transactions/hooks/useTxLifecycle';
 import {
   useAuthSession,
@@ -43,11 +37,18 @@ interface SmartActionBoxProps {
 }
 
 export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
-  const joinMutation = useJoinCircleMutation();
-  const contributeMutation = useContributeRoundMutation();
-  const bidMutation = useSubmitBidMutation();
-  const settleMutation = useSettleRoundMutation();
-  const withdrawMutation = useWithdrawCollateralMutation();
+  const {
+    executeJoinCircle,
+    executeContribute,
+    executeSubmitBid,
+    executeSettleRound,
+    executeWithdrawCollateral,
+    isJoining,
+    isContributing,
+    isBidding,
+    isSettling,
+    isWithdrawing,
+  } = useCircleActions();
   const { runTransaction } = useTxLifecycle();
   const { data: session } = useAuthSession();
   const walletStatusMutation = useWalletStatusMutation();
@@ -97,7 +98,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
       title: `Join Circle & Lock Collateral`,
       description: `Slot #${circle.currentMemberCount + 1} • ${formatUsdc(circle.collateralAmountFormatted)} mUSDC`,
       action: async () => {
-        return await joinMutation.mutateAsync(circle.id);
+        return await executeJoinCircle(circle);
       },
     });
   };
@@ -108,10 +109,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
       title: `Contribute Round #${currentRoundObj.roundNumber}`,
       description: `${formatUsdc(circle.contributionAmountFormatted)} mUSDC • ${circle.name}`,
       action: async () => {
-        return await contributeMutation.mutateAsync({
-          circleId: circle.id,
-          roundNumber: currentRoundObj.roundNumber,
-        });
+        return await executeContribute(circle, currentRoundObj.roundNumber);
       },
     });
   };
@@ -124,11 +122,11 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
       title: `Submit Bid • Round #${currentRoundObj.roundNumber}`,
       description: `Discount Bid: ${formatUsdc(numericBid)} mUSDC`,
       action: async () => {
-        return await bidMutation.mutateAsync({
-          circleId: circle.id,
-          roundNumber: currentRoundObj.roundNumber,
-          bidAmountUsdc: numericBid,
-        });
+        return await executeSubmitBid(
+          circle,
+          currentRoundObj.roundNumber,
+          numericBid
+        );
       },
       onSuccess: () => {
         setBidInput(String(numericBid + 2));
@@ -147,10 +145,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
         ? `Slashing ${unpaidMembersCount} unpaid member(s)`
         : `Distributing ${formatUsdc(currentRoundObj.netPayoutFormatted)} mUSDC`,
       action: async () => {
-        return await settleMutation.mutateAsync({
-          circleId: circle.id,
-          roundNumber: currentRoundObj.roundNumber,
-        });
+        return await executeSettleRound(circle, currentRoundObj.roundNumber);
       },
     });
   };
@@ -166,7 +161,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
       title: `Withdraw Collateral & Bonus`,
       description: `+${formatUsdc(totalClaim)} mUSDC`,
       action: async () => {
-        return await withdrawMutation.mutateAsync(circle.id);
+        return await executeWithdrawCollateral(circle);
       },
     });
   };
@@ -220,7 +215,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
             >
               <button
                 onClick={handleJoinCircle}
-                disabled={joinMutation.isPending}
+                disabled={isJoining}
                 className="flex w-full items-center justify-center gap-2 rounded-none border border-avalanche-red bg-avalanche-red px-4 py-3 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-avalanche-red/25 transition hover:bg-avalanche-darkRed disabled:opacity-50"
               >
                 <UserPlus className="h-4 w-4" />
@@ -277,7 +272,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                 >
                   <button
                     onClick={handleContribute}
-                    disabled={contributeMutation.isPending}
+                    disabled={isContributing}
                     className="flex w-full items-center justify-center gap-2 rounded-none border border-avalanche-red bg-avalanche-red px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-avalanche-red/20 transition hover:bg-avalanche-darkRed disabled:opacity-50"
                   >
                     <Coins className="h-4 w-4" />
@@ -338,7 +333,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                     <HoverHint hint="Gửi mức chiết khấu để dẫn đầu vòng đấu giá">
                       <button
                         type="submit"
-                        disabled={bidMutation.isPending}
+                        disabled={isBidding}
                         className="shrink-0 rounded-none border border-avalanche-red bg-avalanche-red/15 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-avalanche-red transition hover:bg-avalanche-red hover:text-white"
                       >
                         Bid
@@ -390,7 +385,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
               >
                 <button
                   onClick={handleSettleRound}
-                  disabled={settleMutation.isPending}
+                  disabled={isSettling}
                   className="flex w-full items-center justify-center gap-2 rounded-none border border-emerald-500 bg-emerald-500 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-zinc-950 shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400"
                 >
                   <Sparkles className="h-4 w-4" />
@@ -407,7 +402,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
               >
                 <button
                   onClick={handleSettleRound}
-                  disabled={settleMutation.isPending}
+                  disabled={isSettling}
                   className="flex w-full items-center justify-center gap-2 rounded-none border border-amber-500/60 bg-amber-500/15 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-amber-200 transition hover:bg-amber-500 hover:text-zinc-950"
                 >
                   <ShieldAlert className="h-4 w-4" />
@@ -461,7 +456,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                 >
                   <button
                     onClick={handleWithdrawCollateral}
-                    disabled={withdrawMutation.isPending}
+                    disabled={isWithdrawing}
                     className="flex w-full items-center justify-center gap-2 rounded-none border border-emerald-500 bg-emerald-500 px-4 py-3 font-mono text-xs font-bold uppercase tracking-wider text-zinc-950 shadow-xl shadow-emerald-500/20 transition hover:bg-emerald-400"
                   >
                     <Unlock className="h-4 w-4" />
