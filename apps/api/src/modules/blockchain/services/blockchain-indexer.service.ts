@@ -331,6 +331,7 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
         totalRounds: maxMembers,
         contributionAmount,
         collateralAmount,
+        totalDiscountPool: '0',
         roundDurationSeconds: 300,
         biddingDurationSeconds: allocationMode === AllocationMode.BIDDING ? 180 : 0,
         gracePeriodSeconds: 60,
@@ -780,8 +781,11 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
       },
     });
 
+    const currentDiscountPool = circle.totalDiscountPool
+      ? circle.totalDiscountPool.toString()
+      : '0';
     const newDiscountPool = (
-      BigInt(circle.totalDiscountPool.toString()) + BigInt(winningBidAmount)
+      BigInt(currentDiscountPool) + BigInt(winningBidAmount)
     ).toString();
 
     await tx.circle.update({

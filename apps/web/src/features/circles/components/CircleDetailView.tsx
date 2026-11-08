@@ -3,7 +3,10 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAvaHuiState } from '@/hooks/useAvaHuiMockQuery';
-import { useCircleDetailQuery } from '@/hooks/useCircleQueries';
+import {
+  useCircleDetailQuery,
+  useMyTransactionsQuery,
+} from '@/hooks/useCircleQueries';
 import { CircleHeader } from './CircleHeader';
 import { SmartActionBox } from './SmartActionBox';
 import { CurrentRoundTab } from '@/features/contributions/components/CurrentRoundTab';
@@ -61,7 +64,9 @@ export function CircleDetailView({ circleId }: CircleDetailViewProps) {
     );
   }
 
-  const circleTxs = (state?.transactions || []).filter(
+  const { data: liveTxs } = useMyTransactionsQuery(circle?.id);
+
+  const mockCircleTxs = (state?.transactions || []).filter(
     (t) =>
       t.circleId === circle.id ||
       (Boolean(circle.contractAddress) &&
@@ -69,6 +74,8 @@ export function CircleDetailView({ circleId }: CircleDetailViewProps) {
         t.contractAddress?.toLowerCase() ===
           circle.contractAddress?.toLowerCase()),
   );
+
+  const circleTxs = liveTxs && liveTxs.length > 0 ? liveTxs : mockCircleTxs;
 
   return (
     <div className="space-y-5 animate-fade-in">
