@@ -8,6 +8,16 @@ export const AvaHuiCircleABI = [
   },
   {
     type: 'function',
+    name: 'joinCircleProtected',
+    inputs: [
+      { name: 'inviteCode', type: 'string', internalType: 'string' },
+      { name: 'identityNullifier', type: 'bytes32', internalType: 'bytes32' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
     name: 'contribute',
     inputs: [{ name: 'roundNumber', type: 'uint8', internalType: 'uint8' }],
     outputs: [],
@@ -22,6 +32,64 @@ export const AvaHuiCircleABI = [
     ],
     outputs: [],
     stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'commitBid',
+    inputs: [
+      { name: 'roundNumber', type: 'uint8', internalType: 'uint8' },
+      { name: 'commitment', type: 'bytes32', internalType: 'bytes32' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'revealBid',
+    inputs: [
+      { name: 'roundNumber', type: 'uint8', internalType: 'uint8' },
+      { name: 'bidAmount', type: 'uint256', internalType: 'uint256' },
+      { name: 'salt', type: 'bytes32', internalType: 'bytes32' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'computeBidCommitment',
+    inputs: [
+      { name: 'roundNumber', type: 'uint8', internalType: 'uint8' },
+      { name: 'bidder', type: 'address', internalType: 'address' },
+      { name: 'bidAmount', type: 'uint256', internalType: 'uint256' },
+      { name: 'salt', type: 'bytes32', internalType: 'bytes32' },
+    ],
+    outputs: [{ name: '', type: 'bytes32', internalType: 'bytes32' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'setYieldVault',
+    inputs: [{ name: '_vault', type: 'address', internalType: 'address' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'configureSecurity',
+    inputs: [
+      { name: '_inviteCodeHash', type: 'bytes32', internalType: 'bytes32' },
+      { name: '_requireAttestation', type: 'bool', internalType: 'bool' },
+      { name: '_attestationVerifier', type: 'address', internalType: 'address' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'getEstimatedPoolYield',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
   },
   {
     type: 'function',
@@ -144,6 +212,30 @@ export const AvaHuiCircleABI = [
   },
   {
     type: 'event',
+    name: 'BidCommitted',
+    inputs: [
+      { name: 'circleAddress', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'roundNumber', type: 'uint8', indexed: true, internalType: 'uint8' },
+      { name: 'bidder', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'commitment', type: 'bytes32', indexed: false, internalType: 'bytes32' },
+      { name: 'timestamp', type: 'uint256', indexed: false, internalType: 'uint256' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'BidRevealed',
+    inputs: [
+      { name: 'circleAddress', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'roundNumber', type: 'uint8', indexed: true, internalType: 'uint8' },
+      { name: 'bidder', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'bidAmount', type: 'uint256', indexed: false, internalType: 'uint256' },
+      { name: 'timestamp', type: 'uint256', indexed: false, internalType: 'uint256' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
     name: 'CollateralSlashed',
     inputs: [
       { name: 'circleAddress', type: 'address', indexed: true, internalType: 'address' },
@@ -180,6 +272,26 @@ export const AvaHuiCircleABI = [
   },
   {
     type: 'event',
+    name: 'YieldHarvested',
+    inputs: [
+      { name: 'circleAddress', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'yieldEarned', type: 'uint256', indexed: false, internalType: 'uint256' },
+      { name: 'timestamp', type: 'uint256', indexed: false, internalType: 'uint256' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'SybilAttestationVerified',
+    inputs: [
+      { name: 'circleAddress', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'member', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'identityNullifier', type: 'bytes32', indexed: true, internalType: 'bytes32' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
     name: 'CollateralWithdrawn',
     inputs: [
       { name: 'circleAddress', type: 'address', indexed: true, internalType: 'address' },
@@ -199,4 +311,3 @@ export const AvaHuiCircleABI = [
     anonymous: false,
   },
 ] as const;
-

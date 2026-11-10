@@ -33,6 +33,10 @@ export interface UserProfileDto {
   avaxBalance?: string;
   usdcBalance?: string;
   usdcAllowance?: string;
+  team1Attested?: boolean;
+  isTeam1Verified?: boolean;
+  identityNullifier?: string;
+  trustTier?: number;
   stats: UserStatsDto;
 }
 
@@ -45,6 +49,10 @@ export interface UserProfile {
   avaxBalance: string;
   usdcBalance: string;
   usdcAllowance: string;
+  team1Attested?: boolean;
+  isTeam1Verified?: boolean;
+  identityNullifier?: string;
+  trustTier?: number;
   stats: UserStats;
 }
 
@@ -64,6 +72,8 @@ export interface CircleMemberDto {
   wonRoundNumber: number | null;
   defaultCount: number;
   status: MemberStatus;
+  identityNullifier?: string;
+  team1Verified?: boolean;
   joinTxHash?: string;
   joinedAt?: string;
 }
@@ -90,10 +100,24 @@ export interface BidDto {
   bidAmount?: string;
   bidAmountFormatted: string;
   isWinningBid?: boolean;
+  isSealedReveal?: boolean;
+  commitmentHash?: string;
   createdAt: string;
   txHash: string;
 }
 export type RoundBidItem = BidDto;
+
+export interface BidCommitmentDto {
+  bidderAddress: string;
+  bidderName: string | null;
+  commitmentHash?: string;
+  commitment?: string;
+  committedAt: string;
+  revealed?: boolean;
+  isRevealed?: boolean;
+  revealedAmountFormatted?: string;
+  txHash: string;
+}
 
 export interface PayoutDto {
   id?: string;
@@ -131,6 +155,7 @@ export interface RoundDetailDto {
   contributionsCount: number;
   contributions: ContributionDto[];
   bids: BidDto[];
+  commitments?: BidCommitmentDto[];
   payout?: PayoutDto | null;
 }
 export type CircleRoundItem = RoundDetailDto;
@@ -167,6 +192,14 @@ export interface CircleDetailDto {
   maxBidFormatted: string;
   totalDiscountPool: string;
   totalDiscountPoolFormatted: string;
+  // V2 Security & Yield Extensions
+  isSealedBid?: boolean;
+  enableYieldVault?: boolean;
+  yieldApyBps?: number;
+  accruedYieldFormatted?: string;
+  isPrivateInvite?: boolean;
+  inviteCode?: string;
+  requireTeam1Attestation?: boolean;
   creationTxHash?: string | null;
   createdAt: string;
   members: CircleMemberDto[];
@@ -187,6 +220,11 @@ export interface CreateCircleFormInput {
   gracePeriodSeconds: number;
   minBidUsdc: number;
   maxBidUsdc: number;
+  isSealedBid?: boolean;
+  enableYieldVault?: boolean;
+  isPrivateInvite?: boolean;
+  inviteCode?: string;
+  requireTeam1Attestation?: boolean;
 }
 
 export interface TransactionRecordDto {
