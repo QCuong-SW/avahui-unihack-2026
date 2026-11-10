@@ -39,6 +39,10 @@ export interface CreateCircleDraftInput {
   startDeadline?: string;
   minBid?: string;
   maxBid?: string;
+  isPrivateInvite?: boolean;
+  inviteCode?: string;
+  inviteCodeHash?: string;
+  requireTeam1Attestation?: boolean;
 }
 
 export interface CreateCircleDraftResponse {
@@ -66,9 +70,13 @@ export const circleApi = {
     });
   },
 
-  getCircleById: async (idOrAddress: string): Promise<CircleDetailDto> => {
+  getCircleById: async (
+    idOrAddress: string,
+    inviteCode?: string,
+  ): Promise<CircleDetailDto> => {
     return apiFetch<CircleDetailDto>(`/circles/${encodeURIComponent(idOrAddress)}`, {
       method: 'GET',
+      params: inviteCode ? { inviteCode } : undefined,
     });
   },
 

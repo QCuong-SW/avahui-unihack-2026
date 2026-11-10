@@ -6,13 +6,33 @@ const rpcUrl =
   process.env.NEXT_PUBLIC_AVALANCHE_RPC_URL ||
   'https://api.avax-test.network/ext/bc/C/rpc';
 
+const privyAppId =
+  process.env.NEXT_PUBLIC_PRIVY_APP_ID || 'mock_privy_app_id';
+
+const isLocalEvm =
+  rpcUrl.includes('127.0.0.1') || rpcUrl.includes('localhost');
+
+const hasRealPrivyAppId = Boolean(
+  privyAppId &&
+    !privyAppId.startsWith('mock_') &&
+    privyAppId !== 'your_privy_app_id_here',
+);
+
+const enableDevDemoTools =
+  process.env.NEXT_PUBLIC_ENABLE_DEMO_TOOLS === 'true' ||
+  (isLocalEvm && process.env.NEXT_PUBLIC_ENABLE_DEMO_TOOLS !== 'false');
+
 export const frontendEnv = {
   useMock: process.env.NEXT_PUBLIC_USE_MOCK === 'true',
   apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1',
-  privyAppId: process.env.NEXT_PUBLIC_PRIVY_APP_ID || 'mock_privy_app_id',
+  privyAppId,
+  hasRealPrivyAppId,
   chainId: Number(process.env.NEXT_PUBLIC_CHAIN_ID || 43113),
   rpcUrl,
-  isLocalEvm: rpcUrl.includes('127.0.0.1') || rpcUrl.includes('localhost'),
+  isLocalEvm,
+  enableDevDemoTools,
+  allowLocalAutoSigner:
+    isLocalEvm && process.env.NEXT_PUBLIC_DISABLE_LOCAL_SIGNER !== 'true',
   explorerUrl:
     process.env.NEXT_PUBLIC_BLOCK_EXPLORER_URL || 'https://testnet.snowtrace.io',
   factoryAddress: (process.env.NEXT_PUBLIC_ROSCA_FACTORY_ADDRESS ||

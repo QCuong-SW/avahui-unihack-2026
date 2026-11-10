@@ -12,6 +12,7 @@ import {
   AvaHuiCircleABI,
   AvaHuiFactoryABI,
   MockUSDCABI,
+  Team1AttestationVerifierABI,
 } from '@avahui/blockchain';
 import { formatUsdcUnits, normalizeAddress } from '../src/common/utils/format.util';
 import { BlockchainIndexerService } from '../src/modules/blockchain/services/blockchain-indexer.service';
@@ -79,10 +80,15 @@ describe('Track B — Smart Contracts Compilation, ABI Parity, REST API & Indexe
     const compiledUsdc = output.contracts['mocks/MockUSDC.sol']['MockUSDC'];
     const compiledCircle = output.contracts['AvaHuiCircle.sol']['AvaHuiCircle'];
     const compiledFactory = output.contracts['AvaHuiFactory.sol']['AvaHuiFactory'];
+    const compiledVerifier =
+      output.contracts['verifiers/Team1AttestationVerifier.sol'][
+        'Team1AttestationVerifier'
+      ];
 
     expect(compiledUsdc.evm.bytecode.object.length).toBeGreaterThan(100);
     expect(compiledCircle.evm.bytecode.object.length).toBeGreaterThan(100);
     expect(compiledFactory.evm.bytecode.object.length).toBeGreaterThan(100);
+    expect(compiledVerifier.evm.bytecode.object.length).toBeGreaterThan(100);
 
     const circleEventNames = compiledCircle.abi
       .filter((x: any) => x.type === 'event')
@@ -92,11 +98,39 @@ describe('Track B — Smart Contracts Compilation, ABI Parity, REST API & Indexe
       expect(circleEventNames).toContain(item.name);
     }
 
+    const circleFnNames = compiledCircle.abi
+      .filter((x: any) => x.type === 'function')
+      .map((x: any) => x.name);
+    for (const item of AvaHuiCircleABI.filter((x) => x.type === 'function')) {
+      expect(circleFnNames).toContain(item.name);
+    }
+
     const factoryFnNames = compiledFactory.abi
       .filter((x: any) => x.type === 'function')
       .map((x: any) => x.name);
     for (const item of AvaHuiFactoryABI.filter((x) => x.type === 'function')) {
       expect(factoryFnNames).toContain(item.name);
+    }
+
+    const factoryEventNames = compiledFactory.abi
+      .filter((x: any) => x.type === 'event')
+      .map((x: any) => x.name);
+    for (const item of AvaHuiFactoryABI.filter((x) => x.type === 'event')) {
+      expect(factoryEventNames).toContain(item.name);
+    }
+
+    const verifierFnNames = compiledVerifier.abi
+      .filter((x: any) => x.type === 'function')
+      .map((x: any) => x.name);
+    for (const item of Team1AttestationVerifierABI.filter((x) => x.type === 'function')) {
+      expect(verifierFnNames).toContain(item.name);
+    }
+
+    const verifierEventNames = compiledVerifier.abi
+      .filter((x: any) => x.type === 'event')
+      .map((x: any) => x.name);
+    for (const item of Team1AttestationVerifierABI.filter((x) => x.type === 'event')) {
+      expect(verifierEventNames).toContain(item.name);
     }
 
     const usdcFnNames = compiledUsdc.abi

@@ -110,4 +110,120 @@ contract AvaHuiV2SecurityTest is TestBase {
 
         circle.settleRound(1);
     }
+
+    function testFactoryAccessControlOnlyOwner() public {
+        vm.prank(users[1]);
+        vm.expectRevert(AvaHuiFactory.Unauthorized.selector);
+        factory.setDefaultModules(address(vault), address(verifier));
+
+        vm.prank(users[1]);
+        vm.expectRevert(AvaHuiFactory.Unauthorized.selector);
+        factory.setGuardian(users[1]);
+
+        vm.prank(users[1]);
+        vm.expectRevert(AvaHuiFactory.Unauthorized.selector);
+        factory.transferOwnership(users[1]);
+    }
+
+    function testAttestationSelfIssuanceBlockedAndRevocable() public {
+        bytes32 fakeNullifier = keccak256("SELF_FAKE_ID");
+
+        // Attacker cannot self-issue attestation
+        vm.prank(users[1]);
+        vm.expectRevert(Team1AttestationVerifier.UnauthorizedIssuer.selector);
+        verifier.issueAttestation(users[1], fakeNullifier, 2);
+
+        // Issuer issues attestation to users[1]
+        verifier.issueAttestation(users[1], fakeNullifier, 2);
+        assertTrue(
+            verifier.verifyMemberAttestation(users[1], fakeNullifier),
+            "Issued attestation must verify"
+        );
+
+        // Same nullifier cannot be bound to another address
+        vm.expectRevert(Team1AttestationVerifier.NullifierAlreadyBound.selector);
+        verifier.issueAttestation(users[2], fakeNullifier, 2);
+
+        // Issuer can revoke compromised attestation
+        verifier.revokeAttestation(users[1]);
+        assertTrue(
+            !verifier.verifyMemberAttestation(users[1], fakeNullifier),
+            "Revoked attestation must fail verification"
+        );
+    }
+
+    function testCircleConfigLockedAfterFirstMemberAndSealedBidSingleCommit() public {
+        bytes32 nullifier0 = keccak256("TEAM1_LOCK_0");
+        verifier.issueAttestation(users[0], nullifier0, 2);
+        usdc.mint(users[0], 1_000 * 1e6);
+        vm.prank(users[0]);
+        usdc.approve(address(circle), type(uint256).max);
+        vm.prank(users[0]);
+        circle.joinCircleProtected(INVITE_CODE, nullifier0);
+
+        // Creator cannot swap vault or security gates after member joined
+        vm.prank(users[0]);
+        vm.expectRevert(AvaHuiCircle.ConfigLockedAfterJoin.selector);
+        circle.setYieldVault(address(0x9999));
+
+        vm.prank(users[0]);
+        vm.expectRevert(AvaHuiCircle.ConfigLockedAfterJoin.selector);
+        circle.configureSecurity(bytes32(0), false, address(0));
+
+        // Join remaining 4 members to activate circle
+        for (uint256 i = 1; i < 5; i++) {
+            bytes32 nullifier = keccak256(abi.encodePacked("TEAM1_LOCK_", i));
+            verifier.issueAttestation(users[i], nullifier, 2);
+            usdc.mint(users[i], 1_000 * 1e6);
+            vm.prank(users[i]);
+            usdc.approve(address(circle), type(uint256).max);
+            vm.prank(users[i]);
+            circle.joinCircleProtected(INVITE_CODE, nullifier);
+        }
+
+        // Single-shot commitment: cannot overwrite commitBid in the same round
+        bytes32 commit1 = circle.computeBidCommitment(1, users[1], 10 * 1e6, keccak256("salt_a"));
+        bytes32 commit2 = circle.computeBidCommitment(1, users[1], 20 * 1e6, keccak256("salt_b"));
+        vm.prank(users[1]);
+        circle.commitBid(1, commit1);
+
+        vm.prank(users[1]);
+        vm.expectRevert(AvaHuiCircle.BidAlreadyCommitted.selector);
+        circle.commitBid(1, commit2);
+    }
+
+    function testGuardianPauseAndEmergencyCancelAllowsWithdrawal() public {
+        bytes32 nullifier0 = keccak256("TEAM1_GUARD_0");
+        verifier.issueAttestation(users[0], nullifier0, 2);
+        usdc.mint(users[0], 1_000 * 1e6);
+        vm.prank(users[0]);
+        usdc.approve(address(circle), type(uint256).max);
+        vm.prank(users[0]);
+        circle.joinCircleProtected(INVITE_CODE, nullifier0);
+
+        // Non-guardian cannot pause
+        vm.prank(users[1]);
+        vm.expectRevert(AvaHuiCircle.UnauthorizedGuardian.selector);
+        circle.pause();
+
+        // Guardian pauses circle
+        circle.pause();
+        assertTrue(circle.paused(), "Circle must be paused");
+
+        // Joining while paused reverts
+        bytes32 nullifier1 = keccak256("TEAM1_GUARD_1");
+        verifier.issueAttestation(users[1], nullifier1, 2);
+        usdc.mint(users[1], 1_000 * 1e6);
+        vm.prank(users[1]);
+        usdc.approve(address(circle), type(uint256).max);
+        vm.prank(users[1]);
+        vm.expectRevert(AvaHuiCircle.ContractPaused.selector);
+        circle.joinCircleProtected(INVITE_CODE, nullifier1);
+
+        // Guardian triggers emergencyCancel during recruiting and member can still withdraw even while paused
+        circle.emergencyCancel();
+        vm.prank(users[0]);
+        circle.withdrawCollateral();
+        assertEq(usdc.balanceOf(users[0]), 1_000 * 1e6, "Member must recover full collateral while paused");
+    }
 }

@@ -98,6 +98,18 @@ interface IAvaHuiCircle {
         uint256 timestamp
     );
 
+    event CirclePaused(
+        address indexed circleAddress,
+        address indexed guardian,
+        uint256 timestamp
+    );
+
+    event CircleUnpaused(
+        address indexed circleAddress,
+        address indexed guardian,
+        uint256 timestamp
+    );
+
     // --- WRITE FUNCTIONS CHO FRONTEND ---
     function joinCircle() external;
     function joinCircleProtected(string calldata inviteCode, bytes32 identityNullifier) external;
@@ -108,8 +120,12 @@ interface IAvaHuiCircle {
     function settleRound(uint8 roundNumber) external;
     function withdrawCollateral() external;
     function cancelExpiredCircle() external;
+    function pause() external;
+    function unpause() external;
+    function emergencyCancel() external;
 
     // --- READ FUNCTIONS CHO FRONTEND ---
+    function paused() external view returns (bool);
     function getCircleSummary() external view returns (
         uint8 status,
         uint8 allocationMode,

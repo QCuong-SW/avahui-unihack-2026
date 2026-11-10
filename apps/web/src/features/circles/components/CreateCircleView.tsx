@@ -68,6 +68,7 @@ export function CreateCircleView() {
       isSealedBid: true,
       enableYieldVault: true,
       isPrivateInvite: false,
+      inviteCode: 'AVAHUI-VIP-2026',
       requireTeam1Attestation: true,
     },
   });
@@ -462,6 +463,23 @@ export function CreateCircleView() {
                 <span>Invite-Only Link Gate</span>
               </label>
             </div>
+
+            {watchedValues.isPrivateInvite && (
+              <div className="mt-2 space-y-1 rounded-none border border-sky-500/30 bg-sky-500/5 p-3">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-sky-300">
+                  Mã mời riêng tư (Invite Code)
+                </label>
+                <input
+                  type="text"
+                  {...register('inviteCode')}
+                  placeholder="Ví dụ: AVAHUI-VIP-2026"
+                  className="w-full rounded-none border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-xs font-bold text-white focus:border-sky-400 focus:outline-none"
+                />
+                <p className="text-[11px] text-zinc-400">
+                  Mã này được băm <code className="text-sky-300">keccak256</code> lên Smart Contract &amp; Backend để ẩn dây khỏi danh sách công khai.
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

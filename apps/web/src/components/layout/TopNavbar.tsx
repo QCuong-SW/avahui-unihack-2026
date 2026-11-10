@@ -15,9 +15,12 @@ import {
   LayoutDashboard,
   LogIn,
   PlusCircle,
+  Shield,
   UserCircle,
   Zap,
 } from 'lucide-react';
+import { UserRole } from '@avahui/shared';
+import { useAvaHuiState } from '@/hooks/useAvaHuiMockQuery';
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -35,6 +38,12 @@ const LANDING_NAV_ITEMS = [
 export function TopNavbar() {
   const pathname = usePathname() || '/';
   const activeLandingSection = useActiveLandingSection('hero');
+  const { data: state } = useAvaHuiState();
+  const currentUser =
+    state?.users.find((u) => u.id === state.currentUserId) || state?.users[0];
+  const isStaff =
+    currentUser?.role === UserRole.ADMIN ||
+    currentUser?.role === UserRole.VERIFIER;
 
   // Dedicated Marketing/Product Navbar for the public Landing Page (`/`)
   if (pathname === '/') {
@@ -154,7 +163,12 @@ export function TopNavbar() {
           </Link>
 
           <nav className="hidden items-center gap-1 md:flex">
-            {NAV_ITEMS.map((item) => {
+            {[
+              ...NAV_ITEMS,
+              ...(isStaff
+                ? [{ href: '/admin', label: 'Admin', icon: Shield }]
+                : []),
+            ].map((item) => {
               const Icon = item.icon;
               const isActive =
                 pathname === item.href ||

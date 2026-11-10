@@ -29,6 +29,58 @@ export const AvaHuiFactoryABI = [
   },
   {
     type: 'function',
+    name: 'owner',
+    inputs: [],
+    outputs: [{ name: '', type: 'address', internalType: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'guardian',
+    inputs: [],
+    outputs: [{ name: '', type: 'address', internalType: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'defaultYieldVault',
+    inputs: [],
+    outputs: [{ name: '', type: 'address', internalType: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'defaultAttestationVerifier',
+    inputs: [],
+    outputs: [{ name: '', type: 'address', internalType: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'setDefaultModules',
+    inputs: [
+      { name: '_yieldVault', type: 'address', internalType: 'address' },
+      { name: '_attestationVerifier', type: 'address', internalType: 'address' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'setGuardian',
+    inputs: [{ name: '_newGuardian', type: 'address', internalType: 'address' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'transferOwnership',
+    inputs: [{ name: '_newOwner', type: 'address', internalType: 'address' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
     name: 'getAllCircles',
     inputs: [],
     outputs: [{ name: '', type: 'address[]', internalType: 'address[]' }],
@@ -40,6 +92,33 @@ export const AvaHuiFactoryABI = [
     inputs: [{ name: 'circle', type: 'address', internalType: 'address' }],
     outputs: [{ name: '', type: 'bool', internalType: 'bool' }],
     stateMutability: 'view',
+  },
+  {
+    type: 'event',
+    name: 'OwnershipTransferred',
+    inputs: [
+      { name: 'previousOwner', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'newOwner', type: 'address', indexed: true, internalType: 'address' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'GuardianUpdated',
+    inputs: [
+      { name: 'previousGuardian', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'newGuardian', type: 'address', indexed: true, internalType: 'address' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'DefaultModulesUpdated',
+    inputs: [
+      { name: 'yieldVault', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'attestationVerifier', type: 'address', indexed: true, internalType: 'address' },
+    ],
+    anonymous: false,
   },
   {
     type: 'event',

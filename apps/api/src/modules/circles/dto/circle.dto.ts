@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsBoolean,
   IsEnum,
   IsInt,
   IsOptional,
@@ -9,7 +10,7 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { AllocationMode, CircleStatus } from '@avahui/shared';
 
 export class CreateCircleDraftDto {
@@ -97,6 +98,33 @@ export class CreateCircleDraftDto {
   @IsOptional()
   @IsString()
   maxBid?: string;
+
+  @ApiPropertyOptional({ default: false })
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  isPrivateInvite?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Plaintext invite code (hashed via keccak256 before storing)',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  inviteCode?: string;
+
+  @ApiPropertyOptional({
+    description: 'Precomputed keccak256 inviteCodeHash (0x...)',
+  })
+  @IsOptional()
+  @IsString()
+  inviteCodeHash?: string;
+
+  @ApiPropertyOptional({ default: false })
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  requireTeam1Attestation?: boolean;
 }
 
 export class QueryCirclesDto {

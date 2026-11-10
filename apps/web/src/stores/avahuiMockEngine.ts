@@ -20,6 +20,7 @@ import {
   TransactionStatus,
   TransactionType,
   UserProfile,
+  UserRole,
 } from '@avahui/shared';
 import {
   generateMockAddress,
@@ -41,6 +42,13 @@ function getInitialState(): AvaHuiMockState {
   const users: UserProfile[] = (JSON.parse(JSON.stringify(MOCK_DEMO_USERS)) as UserProfile[]).map(
     (u, idx) => ({
       ...u,
+      role:
+        idx === 0
+          ? UserRole.ADMIN
+          : idx === 1
+            ? UserRole.VERIFIER
+            : UserRole.MEMBER,
+      isActive: true,
       isTeam1Verified: true,
       identityNullifier: `0x999900001111222233334444555566667777888899990000111122223333000${idx + 1}`,
     })
@@ -1048,5 +1056,40 @@ export function mockBindRealWallet(
   }
   return saveMockState(state);
 }
+
+export function mockCancelExpiredCircle(circleId: string): {
+  state: AvaHuiMockState;
+  txHash: string;
+} {
+  const state = loadMockState();
+  const user = state.users.find((u) => u.id === state.currentUserId) || state.users[0];
+  const circle = state.circles.find((c) => c.id === circleId);
+  if (!circle) throw new Error('Không tìm thấy dây hụi.');
+  if (circle.status !== CircleStatus.Recruiting) {
+    throw new Error('Chỉ có thể hủy dây hụi đang trong giai đoạn tuyển thành viên.');
+  }
+
+  circle.status = CircleStatus.Cancelled;
+  const txHash = generateMockTxHash();
+
+  state.transactions.unshift({
+    id: `tx_${Date.now()}`,
+    chainId: 43113,
+    txHash,
+    senderAddress: user.walletAddress,
+    senderName: user.displayName,
+    contractAddress: circle.contractAddress,
+    circleId: circle.id,
+    circleName: circle.name,
+    txType: TransactionType.CANCEL_CIRCLE,
+    status: TransactionStatus.CONFIRMED,
+    blockNumber: 38510000 + state.transactions.length,
+    amountFormatted: `Cancel Expired Circle (${circle.currentMemberCount}/${circle.maxMembers})`,
+    createdAt: new Date().toISOString(),
+  });
+
+  return { state: saveMockState(state), txHash };
+}
+
 
 

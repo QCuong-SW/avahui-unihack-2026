@@ -6,6 +6,7 @@ import {
   loadMockState,
   markAllNotificationsRead,
   mockBindRealWallet,
+  mockCancelExpiredCircle,
   mockCommitBid,
   mockContributeRound,
   mockCreateCircle,
@@ -25,6 +26,7 @@ import {
 import {
   CreateCircleFormInput,
   TransactionType,
+  UserRole,
 } from '@avahui/shared';
 import { MockUSDCABI } from '@avahui/blockchain';
 import { formatEther, formatUnits, parseUnits } from 'viem';
@@ -33,6 +35,7 @@ import {
   circleApi,
   transactionApi,
   notificationApi,
+  verifierApi,
 } from '@/lib/api';
 import { frontendEnv } from '@/config/env';
 import {
@@ -48,20 +51,6 @@ export const AVAHUI_QUERY_KEYS = {
 };
 
 const isMockMode = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
-
-const TEAM1_VERIFIER_ABI = [
-  {
-    type: 'function',
-    name: 'issueAttestation',
-    inputs: [
-      { name: 'account', type: 'address' },
-      { name: 'identityNullifier', type: 'bytes32' },
-      { name: 'trustTier', type: 'uint8' },
-    ],
-    outputs: [],
-    stateMutability: 'nonpayable',
-  },
-] as const;
 
 async function readOnChainBalances(walletAddress: string): Promise<{
   avaxBalance?: string;
@@ -132,6 +121,8 @@ async function fetchRealOrMockState(): Promise<AvaHuiMockState> {
           id: fallbackUser?.walletAddress?.toLowerCase() === resolvedWallet.toLowerCase()
             ? fallbackUser.id
             : userProfile.id,
+          role: userProfile.role ?? fallbackUser?.role ?? UserRole.MEMBER,
+          isActive: userProfile.isActive ?? true,
           email: userProfile.email || fallbackUser?.email || 'builder@avahui.io',
           displayName:
             userProfile.displayName || fallbackUser?.displayName || 'Avahui Member',
@@ -149,7 +140,11 @@ async function fetchRealOrMockState(): Promise<AvaHuiMockState> {
             '10000.00',
           usdcAllowance: userProfile.usdcAllowance || '1000.00',
           stats: userProfile.stats,
-          isTeam1Verified: true,
+          isTeam1Verified: Boolean(
+            userProfile.team1Attested ?? userProfile.isTeam1Verified ?? false,
+          ),
+          identityNullifier: userProfile.identityNullifier,
+          trustTier: userProfile.trustTier,
         }
       : {
           ...fallbackUser,
@@ -476,6 +471,25 @@ export function useWithdrawCollateralMutation() {
   });
 }
 
+export function useCancelCircleMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (arg: string | { circleId: string; skipMock?: boolean }) => {
+      const circleId = typeof arg === 'string' ? arg : arg.circleId;
+      const skipMock = typeof arg === 'object' ? Boolean(arg.skipMock) : false;
+      if (skipMock && !isMockMode) {
+        return { state: loadMockState(), txHash: '' };
+      }
+      await new Promise((r) => setTimeout(r, 350));
+      return mockCancelExpiredCircle(circleId);
+    },
+    onSuccess: ({ state }) => {
+      queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, state);
+      invalidateAllCircleQueries(queryClient);
+    },
+  });
+}
+
 export function useUpdateProfileMutation() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -559,35 +573,39 @@ export function useSwapAvaxToUsdcMutation() {
         state.users.find((u) => u.id === state.currentUserId) || state.users[0];
       const usdcReceived = Math.round(avaxAmount * 5000);
 
-      if (!isMockMode && user?.walletAddress) {
-        const signer = await resolveSignerClient(user.walletAddress);
-        if (signer) {
-          try {
-            const txHash = await signer.client.writeContract({
-              address: frontendEnv.usdcTokenAddress,
-              abi: MockUSDCABI,
-              functionName: 'faucet',
-              args: [parseUnits(String(usdcReceived), 6)],
-              account: signer.account,
-              chain: activeFujiChain,
-            });
-            await publicClient.waitForTransactionReceipt({ hash: txHash });
-            await transactionApi
-              .trackTransaction({
-                txHash,
-                txType: TransactionType.SWAP_TOKEN,
-                contractAddress: frontendEnv.usdcTokenAddress,
-                senderAddress: signer.account,
-              })
-              .catch(() => {});
-            const balances = await readOnChainBalances(signer.account);
-            if (balances.usdcBalance) user.usdcBalance = balances.usdcBalance;
-            if (balances.avaxBalance) user.avaxBalance = balances.avaxBalance;
-            return { state: saveMockState(state), txHash, usdcReceived };
-          } catch (e) {
-            console.warn('[AvaHui] On-chain swap mint fallback:', e);
-          }
+      if (!isMockMode) {
+        if (!frontendEnv.isLocalEvm) {
+          throw new Error(
+            'Swap DEX trực tiếp trên mạng thật đang chờ kết nối Trader Joe Router. Trên testnet vui lòng dùng nút Faucet mUSDC.',
+          );
         }
+        const signer = await resolveSignerClient(user?.walletAddress);
+        if (!signer) {
+          throw new Error(
+            'Chưa có ví ký giao dịch. Vui lòng kết nối Core Wallet / MetaMask hoặc đăng nhập lại.',
+          );
+        }
+        const txHash = await signer.client.writeContract({
+          address: frontendEnv.usdcTokenAddress,
+          abi: MockUSDCABI,
+          functionName: 'faucet',
+          args: [parseUnits(String(usdcReceived), 6)],
+          account: signer.account,
+          chain: activeFujiChain,
+        });
+        await publicClient.waitForTransactionReceipt({ hash: txHash });
+        await transactionApi
+          .trackTransaction({
+            txHash,
+            txType: TransactionType.SWAP_TOKEN,
+            contractAddress: frontendEnv.usdcTokenAddress,
+            senderAddress: signer.account,
+          })
+          .catch(() => {});
+        const balances = await readOnChainBalances(signer.account);
+        if (user && balances.usdcBalance) user.usdcBalance = balances.usdcBalance;
+        if (user && balances.avaxBalance) user.avaxBalance = balances.avaxBalance;
+        return { state: saveMockState(state), txHash, usdcReceived };
       }
 
       await new Promise((r) => setTimeout(r, 400));
@@ -607,37 +625,42 @@ export function useVerifyTeam1AttestationMutation() {
       const state = loadMockState();
       const user =
         state.users.find((u) => u.id === state.currentUserId) || state.users[0];
-      const nullifier = (user?.identityNullifier ||
-        `0x9999${(user?.walletAddress || '0'.repeat(42)).slice(2).toLowerCase().padEnd(60, 'a')}`) as `0x${string}`;
 
-      if (!isMockMode && user?.walletAddress) {
-        const signer = await resolveSignerClient(user.walletAddress);
-        if (signer) {
-          try {
-            const txHash = await signer.client.writeContract({
-              address: frontendEnv.sybilVerifierAddress,
-              abi: TEAM1_VERIFIER_ABI,
-              functionName: 'issueAttestation',
-              args: [signer.account, nullifier, 2],
-              account: signer.account,
-              chain: activeFujiChain,
-            });
-            await publicClient.waitForTransactionReceipt({ hash: txHash });
-            await transactionApi
-              .trackTransaction({
-                txHash,
-                txType: TransactionType.VERIFY_ATTESTATION,
-                contractAddress: frontendEnv.sybilVerifierAddress,
-                senderAddress: signer.account,
-              })
-              .catch(() => {});
+      if (!isMockMode) {
+        const status = await verifierApi.getMyStatus();
+        if (status.team1Verified || status.onChainVerified) {
+          if (user) {
             user.isTeam1Verified = true;
-            user.identityNullifier = nullifier;
-            return { state: saveMockState(state), txHash, nullifier };
-          } catch (e) {
-            console.warn('[AvaHui] On-chain issueAttestation fallback:', e);
+            user.identityNullifier = status.identityNullifier ?? undefined;
           }
+          return {
+            state: saveMockState(state),
+            txHash: '0x' + '0'.repeat(64),
+            nullifier: status.identityNullifier || '',
+          };
         }
+
+        if (
+          user?.walletAddress &&
+          (user.role === UserRole.ADMIN || user.role === UserRole.VERIFIER)
+        ) {
+          const issued = await verifierApi.issueAttestation({
+            walletAddress: user.walletAddress,
+            trustTier: 2,
+            dispatchOnChain: true,
+          });
+          user.isTeam1Verified = true;
+          user.identityNullifier = issued.identityNullifier;
+          return {
+            state: saveMockState(state),
+            txHash: issued.txHash || generateMockTxHash(),
+            nullifier: issued.identityNullifier,
+          };
+        }
+
+        throw new Error(
+          'Chứng nhận Team1 Anti-Sybil do Verifier/Admin cấp sau khi xác minh danh tính. Vui lòng liên hệ Verifier tại /admin.',
+        );
       }
 
       await new Promise((r) => setTimeout(r, 400));
@@ -678,10 +701,31 @@ export function useConnectBrowserWalletMutation() {
       );
 
       if (!isMockMode) {
-        try {
-          await authApi.syncUser({ walletAddress: address }, address);
-        } catch {
-          // ignore
+        const hasRealToken =
+          typeof window !== 'undefined' &&
+          (window.localStorage.getItem('avahui_auth_token') || '').split('.').length === 3;
+        if (hasRealToken) {
+          await authApi.syncUser({ walletAddress: address }, address).catch(() => {});
+        } else {
+          try {
+            const challenge = await authApi.requestSiweNonce(address);
+            const signature: string = await eth.request({
+              method: 'personal_sign',
+              params: [challenge.message, address],
+            });
+            const verified = await authApi.verifySiwe({
+              address,
+              message: challenge.message,
+              signature,
+              nonce: challenge.nonce,
+            });
+            if (typeof window !== 'undefined') {
+              window.localStorage.setItem('avahui_auth_token', verified.accessToken);
+              window.localStorage.setItem('avahui_active_wallet', address.toLowerCase());
+            }
+          } catch {
+            // User declined SIWE sign or backend offline; keep local wallet binding
+          }
         }
       }
 

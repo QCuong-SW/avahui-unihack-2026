@@ -14,10 +14,13 @@ function main() {
 
   const files = [
     'interfaces/IERC20Minimal.sol',
+    'interfaces/IYieldVault.sol',
     'interfaces/IAvaHuiFactory.sol',
     'interfaces/IAvaHuiCircle.sol',
     'libraries/SecurityLib.sol',
     'mocks/MockUSDC.sol',
+    'mocks/AvaHuiYieldVault.sol',
+    'verifiers/Team1AttestationVerifier.sol',
     'AvaHuiCircle.sol',
     'AvaHuiFactory.sol',
   ];
@@ -33,7 +36,9 @@ function main() {
     language: 'Solidity',
     sources,
     settings: {
+      evmVersion: 'paris',
       optimizer: { enabled: true, runs: 200 },
+      viaIR: true,
       outputSelection: {
         '*': {
           '*': ['abi', 'evm.bytecode.object', 'evm.deployedBytecode.object'],

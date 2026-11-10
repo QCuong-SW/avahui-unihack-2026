@@ -6,7 +6,9 @@ import { useAvaHuiState } from '@/hooks/useAvaHuiMockQuery';
 import {
   useProviderLoginMutation,
   useRequestEmailOtpMutation,
+  useSiweLoginMutation,
 } from '@/lib/auth/useAuthSession';
+import { frontendEnv } from '@/config/env';
 import { isValidEmail } from '@/lib/auth/authSession';
 import { GoogleLoginButton } from './GoogleLoginButton';
 import { EmailLoginForm } from './EmailLoginForm';
@@ -37,6 +39,7 @@ export function LoginForm() {
   const { data: state } = useAvaHuiState();
   const providerLoginMutation = useProviderLoginMutation();
   const requestOtpMutation = useRequestEmailOtpMutation();
+  const siweLoginMutation = useSiweLoginMutation();
 
   const [email, setEmail] = useState('minh.nguyen@avahui.io');
   const [selectedUserId, setSelectedUserId] = useState('usr_01');
@@ -68,13 +71,18 @@ export function LoginForm() {
         email: selectedUser.email,
         forceWalletOnboarding: simulateNewWalletSetup,
       });
+      if ('redirectedToOAuth' in result && result.redirectedToOAuth) {
+        return;
+      }
       setUiState('SUCCESS');
       router.push(
         result.requiresWalletOnboarding ? '/onboarding/wallet' : '/dashboard'
       );
-    } catch {
+    } catch (err: any) {
       setUiState('AUTH_FAILED');
-      setErrorText('Xác thực Google không thành công. Vui lòng thử lại.');
+      setErrorText(
+        err?.message || 'Xác thực Google không thành công. Vui lòng thử lại.',
+      );
     }
   };
 
@@ -106,9 +114,11 @@ export function LoginForm() {
       router.push(
         `/login/verify?email=${encodeURIComponent(email.trim())}${onboardingParam}`
       );
-    } catch {
+    } catch (err: any) {
       setUiState('NETWORK_ERROR');
-      setErrorText('Không thể gửi mã OTP lúc này. Vui lòng thử lại.');
+      setErrorText(
+        err?.message || 'Không thể gửi mã OTP lúc này. Vui lòng thử lại.',
+      );
     }
   };
 
@@ -118,19 +128,18 @@ export function LoginForm() {
     setUiState('LOADING_WALLET');
 
     try {
-      const result = await providerLoginMutation.mutateAsync({
-        method: 'EXTERNAL_WALLET',
-        userId: selectedUser.id,
-        email: selectedUser.email,
+      const result = await siweLoginMutation.mutateAsync({
         forceWalletOnboarding: simulateNewWalletSetup,
       });
       setUiState('SUCCESS');
       router.push(
         result.requiresWalletOnboarding ? '/onboarding/wallet' : '/dashboard'
       );
-    } catch {
+    } catch (err: any) {
       setUiState('AUTH_FAILED');
-      setErrorText('Kết nối ví ngoài thất bại.');
+      setErrorText(
+        err?.message || 'Xác thực chữ ký ví (SIWE) thất bại hoặc bị từ chối.',
+      );
     }
   };
 
@@ -260,7 +269,7 @@ export function LoginForm() {
             errorMessage={uiState === 'INVALID_EMAIL' ? errorText : null}
           />
 
-          {/* 3. Optional: Connect External Wallet */}
+          {/* 3. Connect External Wallet via Cryptographic SIWE Signature */}
           <button
             type="button"
             onClick={handleExternalWalletLogin}
@@ -272,76 +281,78 @@ export function LoginForm() {
             ) : (
               <Wallet className="h-3.5 w-3.5 text-zinc-400" />
             )}
-            <span>Connect External Wallet (Optional)</span>
+            <span>Connect Wallet (Core / MetaMask SIWE)</span>
           </button>
         </div>
 
-        {/* Collapsible Demo Profile Switcher for Testing */}
-        <div className="mt-5 border-t border-zinc-800/80 pt-4">
-          <button
-            type="button"
-            onClick={() => setShowDemoOptions((v) => !v)}
-            className="flex w-full items-center justify-between text-left font-mono text-xs text-zinc-400 hover:text-zinc-200"
-          >
-            <span className="inline-flex items-center gap-1.5 uppercase tracking-wider">
-              <ShieldCheck className="h-3.5 w-3.5 text-avalanche-red" />
-              <span>
-                Tài khoản thử nghiệm:{' '}
-                <strong className="text-white">{selectedUser.displayName.split(' (')[0]}</strong>
-              </span>
-            </span>
-            <ChevronDown
-              className={`h-3.5 w-3.5 transition ${
-                showDemoOptions ? 'rotate-180' : ''
-              }`}
-            />
-          </button>
-
-          {showDemoOptions && (
-            <div className="mt-3 space-y-2 rounded-none border border-zinc-800 bg-zinc-950/60 p-3">
-              <div className="grid gap-1.5">
-                {state.users.map((u) => {
-                  const active = u.id === selectedUserId;
-                  return (
-                    <button
-                      key={u.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedUserId(u.id);
-                        setEmail(u.email);
-                      }}
-                      className={`flex items-center justify-between rounded-none px-3 py-2 text-left font-mono text-xs transition ${
-                        active
-                          ? 'border border-avalanche-red/50 bg-avalanche-red/10 text-white'
-                          : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'
-                      }`}
-                    >
-                      <span className="font-bold">
-                        {u.displayName.split(' (')[0]}
-                      </span>
-                      <span className="font-mono text-[10px] text-zinc-500">
-                        {shortenAddress(u.walletAddress)}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <label className="flex cursor-pointer items-center gap-2 border-t border-zinc-800 pt-2.5 font-mono text-[11px] text-zinc-400">
-                <input
-                  type="checkbox"
-                  checked={simulateNewWalletSetup}
-                  onChange={(e) => setSimulateNewWalletSetup(e.target.checked)}
-                  className="rounded-none border-zinc-700 bg-zinc-900 text-avalanche-red focus:ring-0"
-                />
+        {/* Collapsible Demo Profile Switcher — ONLY visible in explicit local Dev mode */}
+        {frontendEnv.enableDevDemoTools && (
+          <div className="mt-5 border-t border-zinc-800/80 pt-4">
+            <button
+              type="button"
+              onClick={() => setShowDemoOptions((v) => !v)}
+              className="flex w-full items-center justify-between text-left font-mono text-xs text-zinc-400 hover:text-zinc-200"
+            >
+              <span className="inline-flex items-center gap-1.5 uppercase tracking-wider">
+                <ShieldCheck className="h-3.5 w-3.5 text-avalanche-red" />
                 <span>
-                  Mô phỏng tài khoản mới (Chuyển qua bước{' '}
-                  <code className="text-avalanche-red">/onboarding/wallet</code>)
+                  [DEV] Tài khoản thử nghiệm:{' '}
+                  <strong className="text-white">{selectedUser.displayName.split(' (')[0]}</strong>
                 </span>
-              </label>
-            </div>
-          )}
-        </div>
+              </span>
+              <ChevronDown
+                className={`h-3.5 w-3.5 transition ${
+                  showDemoOptions ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+
+            {showDemoOptions && (
+              <div className="mt-3 space-y-2 rounded-none border border-zinc-800 bg-zinc-950/60 p-3">
+                <div className="grid gap-1.5">
+                  {state.users.map((u) => {
+                    const active = u.id === selectedUserId;
+                    return (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedUserId(u.id);
+                          setEmail(u.email);
+                        }}
+                        className={`flex items-center justify-between rounded-none px-3 py-2 text-left font-mono text-xs transition ${
+                          active
+                            ? 'border border-avalanche-red/50 bg-avalanche-red/10 text-white'
+                            : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'
+                        }`}
+                      >
+                        <span className="font-bold">
+                          {u.displayName.split(' (')[0]}
+                        </span>
+                        <span className="font-mono text-[10px] text-zinc-500">
+                          {shortenAddress(u.walletAddress)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <label className="flex cursor-pointer items-center gap-2 border-t border-zinc-800 pt-2.5 font-mono text-[11px] text-zinc-400">
+                  <input
+                    type="checkbox"
+                    checked={simulateNewWalletSetup}
+                    onChange={(e) => setSimulateNewWalletSetup(e.target.checked)}
+                    className="rounded-none border-zinc-700 bg-zinc-900 text-avalanche-red focus:ring-0"
+                  />
+                  <span>
+                    Mô phỏng tài khoản mới (Chuyển qua bước{' '}
+                    <code className="text-avalanche-red">/onboarding/wallet</code>)
+                  </span>
+                </label>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Terms of Service & Privacy Policy */}
         <p className="mt-6 text-center font-mono text-[11px] leading-relaxed text-zinc-500">

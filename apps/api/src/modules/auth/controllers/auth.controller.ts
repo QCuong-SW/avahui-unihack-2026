@@ -1,7 +1,8 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { AuthService } from '../services/auth.service';
 import { SyncAuthDto } from '../dto/sync-auth.dto';
+import { VerifySiweDto } from '../dto/siwe.dto';
 import { PrivyAuthGuard } from '../../../guards/privy-auth.guard';
 import {
   AuthenticatedUser,
@@ -13,6 +14,23 @@ import {
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Get('siwe/nonce')
+  @ApiOperation({
+    summary: 'Cấp nonce challenge ký thông điệp SIWE cho ví Core / MetaMask',
+  })
+  @ApiQuery({ name: 'address', required: true })
+  async getSiweNonce(@Query('address') address: string) {
+    return this.authService.requestSiweNonce(address);
+  }
+
+  @Post('siwe/verify')
+  @ApiOperation({
+    summary: 'Xác thực chữ ký SIWE (EIP-191) và cấp JWT phiên làm việc',
+  })
+  async verifySiwe(@Body() dto: VerifySiweDto) {
+    return this.authService.verifySiweSignature(dto);
+  }
+
   @Post('sync')
   @UseGuards(PrivyAuthGuard)
   @ApiBearerAuth()
@@ -23,4 +41,3 @@ export class AuthController {
     return this.authService.syncUser(user, dto);
   }
 }
-

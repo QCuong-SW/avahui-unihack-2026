@@ -1,4 +1,5 @@
 import {
+  UserRole,
   AllocationMode,
   CircleStatus,
   RoundStatus,
@@ -25,6 +26,8 @@ export interface WalletDto {
 export interface UserProfileDto {
   id: string;
   privyDid?: string;
+  role?: UserRole;
+  isActive?: boolean;
   email: string | null;
   displayName: string | null;
   avatarUrl?: string | null;
@@ -42,6 +45,8 @@ export interface UserProfileDto {
 
 export interface UserProfile {
   id: string;
+  role?: UserRole;
+  isActive?: boolean;
   email: string;
   displayName: string;
   avatarUrl?: string;

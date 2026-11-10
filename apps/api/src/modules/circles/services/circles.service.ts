@@ -1,30 +1,80 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { keccak256, toBytes } from 'viem';
 import {
   AllocationMode as PrismaAllocationMode,
   CircleStatus as PrismaCircleStatus,
   Prisma,
 } from '@prisma/client';
 import { getContractAddresses } from '@avahui/blockchain';
-import { USDC_DECIMALS, USDC_SYMBOL } from '@avahui/shared';
+import { USDC_DECIMALS, USDC_SYMBOL, UserRole } from '@avahui/shared';
 import { PrismaService } from '../../../database/prisma.service';
 import { AuthenticatedUser } from '../../../common/decorators/current-user.decorator';
 import { formatUsdcUnits, normalizeAddress } from '../../../common/utils/format.util';
 import { CreateCircleDraftDto, QueryCirclesDto } from '../dto/circle.dto';
 
+const ZERO_BYTES32 =
+  '0x0000000000000000000000000000000000000000000000000000000000000000';
+
 @Injectable()
 export class CirclesService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private async getOwnedWalletAddresses(
+    authUser?: AuthenticatedUser,
+  ): Promise<string[]> {
+    const addresses = new Set<string>();
+    if (authUser?.walletAddress) {
+      addresses.add(normalizeAddress(authUser.walletAddress));
+    }
+    if (authUser?.id && typeof this.prisma.wallet?.findMany === 'function') {
+      const wallets = await this.prisma.wallet.findMany({
+        where: { userId: authUser.id },
+      });
+      for (const w of wallets) {
+        addresses.add(normalizeAddress(w.address));
+      }
+    }
+    return Array.from(addresses).filter(Boolean);
+  }
+
   async createDraft(authUser: AuthenticatedUser, dto: CreateCircleDraftDto) {
     const metadataId = `meta_${randomUUID().replace(/-/g, '').slice(0, 16)}`;
-    const creatorAddress = normalizeAddress(
-      dto.creatorAddress ||
-        authUser.walletAddress ||
-        '0x71c95911e9a5d330f4d621842ec243ee13432921',
-    );
+    const ownedWallets = await this.getOwnedWalletAddresses(authUser);
+
+    let creatorAddress = authUser.walletAddress
+      ? normalizeAddress(authUser.walletAddress)
+      : '';
+    if (dto.creatorAddress) {
+      const requestedCreator = normalizeAddress(dto.creatorAddress);
+      if (ownedWallets.length > 0 && !ownedWallets.includes(requestedCreator)) {
+        throw new ForbiddenException(
+          'Cannot create circle draft on behalf of another wallet address',
+        );
+      }
+      creatorAddress = requestedCreator;
+    }
+    if (!creatorAddress) {
+      throw new ForbiddenException('Authenticated user has no linked wallet');
+    }
+
     const defaultTokenAddress = normalizeAddress(
       dto.tokenAddress || getContractAddresses(43113).mockUSDC,
+    );
+
+    const trimmedInvite = dto.inviteCode?.trim();
+    const computedInviteHash = dto.inviteCodeHash
+      ? normalizeAddress(dto.inviteCodeHash)
+      : trimmedInvite
+        ? keccak256(toBytes(trimmedInvite)).toLowerCase()
+        : null;
+    const isPrivateInvite = Boolean(
+      dto.isPrivateInvite ||
+        (computedInviteHash && computedInviteHash !== ZERO_BYTES32),
     );
 
     let startDeadlineDate: Date;
@@ -60,6 +110,9 @@ export class CirclesService {
         minBid: dto.minBid ?? '0',
         maxBid: dto.maxBid ?? '0',
         totalDiscountPool: '0',
+        isPrivateInvite,
+        inviteCodeHash: computedInviteHash,
+        requireTeam1Attestation: Boolean(dto.requireTeam1Attestation),
       },
     });
 
@@ -69,35 +122,67 @@ export class CirclesService {
       status: circle.status,
       name: circle.name,
       startDeadlineUnix: Math.floor(circle.startDeadline.getTime() / 1000),
-      circle: await this.getCircleById(circle.id),
+      circle: await this.getCircleById(circle.id, authUser),
     };
   }
 
-  async listCircles(query: QueryCirclesDto) {
+  async listCircles(query: QueryCirclesDto, authUser?: AuthenticatedUser) {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.CircleWhereInput = {};
+    const isAdmin = authUser?.role === UserRole.ADMIN;
+    const ownedWallets = await this.getOwnedWalletAddresses(authUser);
+
+    const andConditions: Prisma.CircleWhereInput[] = [];
+
+    if (!isAdmin) {
+      andConditions.push({ isHiddenByAdmin: false });
+    }
 
     if (query.status) {
-      where.status = query.status as unknown as PrismaCircleStatus;
+      andConditions.push({
+        status: query.status as unknown as PrismaCircleStatus,
+      });
     } else {
       // By default exclude unsubmitted DRAFTs from public exploration unless explicitly queried
-      where.status = { not: PrismaCircleStatus.DRAFT };
+      andConditions.push({
+        status: { not: PrismaCircleStatus.DRAFT },
+      });
     }
 
     if (query.mode) {
-      where.allocationMode = query.mode as unknown as PrismaAllocationMode;
+      andConditions.push({
+        allocationMode: query.mode as unknown as PrismaAllocationMode,
+      });
     }
 
     if (query.memberAddress) {
       const addr = normalizeAddress(query.memberAddress);
-      where.OR = [
-        { creatorAddress: addr },
-        { members: { some: { memberAddress: addr } } },
-      ];
+      andConditions.push({
+        OR: [
+          { creatorAddress: addr },
+          { members: { some: { memberAddress: addr } } },
+        ],
+      });
     }
+
+    if (!isAdmin) {
+      if (ownedWallets.length > 0) {
+        andConditions.push({
+          OR: [
+            { isPrivateInvite: false },
+            { creatorAddress: { in: ownedWallets } },
+            { members: { some: { memberAddress: { in: ownedWallets } } } },
+          ],
+        });
+      } else {
+        andConditions.push({ isPrivateInvite: false });
+      }
+    }
+
+    const where: Prisma.CircleWhereInput =
+      andConditions.length > 0 ? { AND: andConditions } : {};
 
     const [items, total] = await Promise.all([
       this.prisma.circle.findMany({
@@ -136,7 +221,11 @@ export class CirclesService {
     };
   }
 
-  async getCircleById(idOrIdentifier: string) {
+  async getCircleById(
+    idOrIdentifier: string,
+    authUser?: AuthenticatedUser,
+    inviteCode?: string,
+  ) {
     const isUuid =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
         idOrIdentifier,
@@ -173,12 +262,50 @@ export class CirclesService {
       throw new NotFoundException(`Circle "${idOrIdentifier}" not found`);
     }
 
+    const isAdmin = authUser?.role === UserRole.ADMIN;
+    if (circle.isHiddenByAdmin && !isAdmin) {
+      throw new NotFoundException(`Circle "${idOrIdentifier}" not found`);
+    }
+
+    if (circle.isPrivateInvite && !isAdmin) {
+      const ownedWallets = await this.getOwnedWalletAddresses(authUser);
+      const isCreatorOrMember =
+        ownedWallets.includes(normalizeAddress(circle.creatorAddress)) ||
+        (circle.members || []).some((m: any) =>
+          ownedWallets.includes(normalizeAddress(m.memberAddress)),
+        );
+
+      let hasValidInvite = false;
+      if (inviteCode && circle.inviteCodeHash) {
+        const providedHash = keccak256(
+          toBytes(inviteCode.trim()),
+        ).toLowerCase();
+        hasValidInvite =
+          providedHash === normalizeAddress(circle.inviteCodeHash);
+      }
+
+      if (!isCreatorOrMember && !hasValidInvite) {
+        throw new ForbiddenException(
+          'Private circle requires membership or a valid invite code',
+        );
+      }
+    }
+
     const addressMap = await this.buildAddressDisplayNameMap([circle]);
     return this.mapCircleDetail(circle, addressMap);
   }
 
-  async getRoundDetail(idOrIdentifier: string, roundNumber: number) {
-    const circle = await this.getCircleById(idOrIdentifier);
+  async getRoundDetail(
+    idOrIdentifier: string,
+    roundNumber: number,
+    authUser?: AuthenticatedUser,
+    inviteCode?: string,
+  ) {
+    const circle = await this.getCircleById(
+      idOrIdentifier,
+      authUser,
+      inviteCode,
+    );
     const round = circle.rounds.find((r) => r.roundNumber === Number(roundNumber));
 
     if (!round) {
@@ -263,6 +390,9 @@ export class CirclesService {
       maxBidFormatted: formatUsdcUnits(circle.maxBid),
       totalDiscountPool: circle.totalDiscountPool.toString(),
       totalDiscountPoolFormatted: formatUsdcUnits(circle.totalDiscountPool),
+      isPrivateInvite: Boolean(circle.isPrivateInvite),
+      requireTeam1Attestation: Boolean(circle.requireTeam1Attestation),
+      isHiddenByAdmin: Boolean(circle.isHiddenByAdmin),
       creationTxHash: circle.creationTxHash,
       createdAt: circle.createdAt.toISOString(),
       members: (circle.members || []).map((m: any) => ({

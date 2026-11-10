@@ -7,6 +7,12 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 DO $$ BEGIN
+    CREATE TYPE user_role AS ENUM ('MEMBER', 'VERIFIER', 'ADMIN');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+DO $$ BEGIN
     CREATE TYPE allocation_mode AS ENUM ('FIXED', 'BIDDING');
 EXCEPTION
     WHEN duplicate_object THEN null;
@@ -63,9 +69,26 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) UNIQUE,
     display_name VARCHAR(100),
     avatar_url TEXT,
+    role user_role NOT NULL DEFAULT 'MEMBER',
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    team1_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    identity_nullifier VARCHAR(66) UNIQUE,
+    trust_tier SMALLINT NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+
+-- 1B. AUTH_NONCES (SIWE Challenge-Response)
+CREATE TABLE IF NOT EXISTS auth_nonces (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    address VARCHAR(42) NOT NULL,
+    nonce VARCHAR(64) NOT NULL UNIQUE,
+    expires_at TIMESTAMPTZ NOT NULL,
+    used_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_auth_nonces_address ON auth_nonces(address);
 
 -- 2. WALLETS
 CREATE TABLE IF NOT EXISTS wallets (
@@ -104,6 +127,11 @@ CREATE TABLE IF NOT EXISTS circles (
     min_bid NUMERIC(78, 0) NOT NULL DEFAULT 0,
     max_bid NUMERIC(78, 0) NOT NULL DEFAULT 0,
     total_discount_pool NUMERIC(78, 0) NOT NULL DEFAULT 0,
+    is_private_invite BOOLEAN NOT NULL DEFAULT FALSE,
+    invite_code_hash VARCHAR(66),
+    require_team1_attestation BOOLEAN NOT NULL DEFAULT FALSE,
+    is_hidden_by_admin BOOLEAN NOT NULL DEFAULT FALSE,
+    moderation_reason TEXT,
     creation_tx_hash VARCHAR(66),
     activated_at TIMESTAMPTZ,
     completed_at TIMESTAMPTZ,

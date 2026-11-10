@@ -13,6 +13,7 @@ import { HoverHint } from '@/components/ui/HoverHint';
 import { NetworkStatus } from '@/components/wallet/NetworkStatus';
 import { WalletInfo } from '@/components/wallet/WalletInfo';
 import { AccountMenu } from '@/components/layout/AccountMenu';
+import { frontendEnv } from '@/config/env';
 import {
   AlertTriangle,
   ArrowLeftRight,
@@ -90,20 +91,22 @@ export function EmbeddedWalletBar() {
           </div>
         </HoverHint>
 
-        <HoverHint
-          position="bottom"
-          hint="Swap nhanh 0.05 AVAX → +250 mUSDC qua Trader Joe Fuji"
-        >
-          <button
-            type="button"
-            disabled={swapMutation.isPending}
-            onClick={handleSwap}
-            className="hidden sm:inline-flex items-center gap-1 rounded-none border border-zinc-700 bg-zinc-800 px-2 py-1 font-mono text-xs font-bold uppercase text-sky-300 transition hover:border-sky-400 hover:text-white active:scale-95 mr-0.5"
+        {(frontendEnv.useMock || frontendEnv.enableDevDemoTools) && (
+          <HoverHint
+            position="bottom"
+            hint="[Demo] Mô phỏng Swap 0.05 AVAX → +250 mUSDC"
           >
-            <ArrowLeftRight className="h-3 w-3 text-sky-400" />
-            <span>Swap</span>
-          </button>
-        </HoverHint>
+            <button
+              type="button"
+              disabled={swapMutation.isPending}
+              onClick={handleSwap}
+              className="hidden sm:inline-flex items-center gap-1 rounded-none border border-zinc-700 bg-zinc-800 px-2 py-1 font-mono text-xs font-bold uppercase text-sky-300 transition hover:border-sky-400 hover:text-white active:scale-95 mr-0.5"
+            >
+              <ArrowLeftRight className="h-3 w-3 text-sky-400" />
+              <span>Swap</span>
+            </button>
+          </HoverHint>
+        )}
 
         <HoverHint
           position="bottom"

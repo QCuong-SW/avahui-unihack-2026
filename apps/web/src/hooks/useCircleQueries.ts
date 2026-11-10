@@ -36,7 +36,11 @@ export function useCircleDetailQuery(idOrAddress: string) {
       }
 
       try {
-        const liveCircle = await circleApi.getCircleById(idOrAddress);
+        const inviteFromUrl =
+          typeof window !== 'undefined'
+            ? new URLSearchParams(window.location.search).get('invite') || undefined
+            : undefined;
+        const liveCircle = await circleApi.getCircleById(idOrAddress, inviteFromUrl);
         if (liveCircle) return liveCircle;
       } catch (err) {
         console.warn(`[AvaHui] Failed to fetch circle ${idOrAddress} from API:`, err);

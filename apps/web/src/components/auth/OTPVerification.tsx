@@ -8,6 +8,7 @@ import {
   useRequestEmailOtpMutation,
   useVerifyEmailOtpMutation,
 } from '@/lib/auth/useAuthSession';
+import { frontendEnv } from '@/config/env';
 import { HoverHint } from '@/components/ui/HoverHint';
 import { AvahuiLogo } from '@/components/ui/AvahuiLogo';
 import {
@@ -154,14 +155,16 @@ export function OTPVerification() {
             <span>Back to login</span>
           </Link>
 
-          <HoverHint
-            hint="Mã OTP thử nghiệm: 123456 (Nhập 000000 để kiểm thử lỗi OTP không hợp lệ)"
-            side="left"
-          >
-            <span className="cursor-help rounded-none border border-zinc-800 bg-zinc-900 px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider text-zinc-400">
-              Demo OTP: 123456
-            </span>
-          </HoverHint>
+          {!session?.pendingOtp?.isRealPrivy && frontendEnv.enableDevDemoTools && (
+            <HoverHint
+              hint="Mã OTP thử nghiệm: 123456 (Nhập 000000 để kiểm thử lỗi OTP không hợp lệ)"
+              side="left"
+            >
+              <span className="cursor-help rounded-none border border-zinc-800 bg-zinc-900 px-2.5 py-1 font-mono text-[11px] uppercase tracking-wider text-zinc-400">
+                Demo OTP: 123456
+              </span>
+            </HoverHint>
+          )}
         </div>
 
         <div className="mt-6 flex items-center gap-3">

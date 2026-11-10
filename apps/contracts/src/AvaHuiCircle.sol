@@ -80,6 +80,7 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
     bytes32 public inviteCodeHash;
     bool public requireAttestation;
     address public attestationVerifier;
+    bool public override paused;
 
     mapping(uint8 => address) public slotToMember;
     mapping(address => MemberInfo) public members;
@@ -112,6 +113,23 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
     error DuplicateIdentityNullifier();
     error InvalidCommitment();
     error InvalidBidReveal();
+    error ContractPaused();
+    error ContractNotPaused();
+    error UnauthorizedGuardian();
+    error ConfigLockedAfterJoin();
+    error InvalidVerifier();
+    error BidAlreadyCommitted();
+
+    modifier whenNotPaused() {
+        if (paused) revert ContractPaused();
+        _;
+    }
+
+    modifier onlyGuardian() {
+        address g = getGuardian();
+        if (g == address(0) || msg.sender != g) revert UnauthorizedGuardian();
+        _;
+    }
 
     constructor(address _creator, IAvaHuiFactory.CreateCircleParams memory params) {
         factory = msg.sender;
@@ -132,9 +150,39 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
         status = STATUS_RECRUITING;
     }
 
+    function getGuardian() public view returns (address) {
+        (bool ok, bytes memory data) = factory.staticcall(
+            abi.encodeWithSignature("guardian()")
+        );
+        if (ok && data.length == 32) {
+            return abi.decode(data, (address));
+        }
+        return address(0);
+    }
+
+    function pause() external override onlyGuardian {
+        if (paused) revert ContractPaused();
+        paused = true;
+        emit CirclePaused(address(this), msg.sender, block.timestamp);
+    }
+
+    function unpause() external override onlyGuardian {
+        if (!paused) revert ContractNotPaused();
+        paused = false;
+        emit CircleUnpaused(address(this), msg.sender, block.timestamp);
+    }
+
+    function emergencyCancel() external override onlyGuardian nonReentrant {
+        if (status != STATUS_RECRUITING) revert InvalidStatus();
+        status = STATUS_CANCELLED;
+        _harvestAndRecallVault();
+        emit CircleCancelled(address(this), block.timestamp);
+    }
+
     function setYieldVault(address _vault) external {
         if (msg.sender != creator && msg.sender != factory) revert UnauthorizedCaller();
         if (status != STATUS_RECRUITING) revert InvalidStatus();
+        if (currentMemberCount > 0) revert ConfigLockedAfterJoin();
         yieldVault = IYieldVault(_vault);
     }
 
@@ -145,12 +193,13 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
     ) external {
         if (msg.sender != creator && msg.sender != factory) revert UnauthorizedCaller();
         if (status != STATUS_RECRUITING) revert InvalidStatus();
+        if (currentMemberCount > 0) revert ConfigLockedAfterJoin();
         inviteCodeHash = _inviteCodeHash;
         requireAttestation = _requireAttestation;
         attestationVerifier = _attestationVerifier;
     }
 
-    function joinCircle() external override nonReentrant {
+    function joinCircle() external override nonReentrant whenNotPaused {
         if (inviteCodeHash != bytes32(0) || requireAttestation) {
             revert SecurityGateRequired();
         }
@@ -160,7 +209,7 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
     function joinCircleProtected(
         string calldata inviteCode,
         bytes32 identityNullifier
-    ) external override nonReentrant {
+    ) external override nonReentrant whenNotPaused {
         if (inviteCodeHash != bytes32(0)) {
             if (keccak256(abi.encodePacked(inviteCode)) != inviteCodeHash) {
                 revert InvalidInviteCode();
@@ -170,14 +219,13 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
         if (requireAttestation) {
             if (identityNullifier == bytes32(0)) revert InvalidSybilAttestation();
             if (usedIdentityNullifiers[identityNullifier]) revert DuplicateIdentityNullifier();
+            if (attestationVerifier == address(0)) revert InvalidVerifier();
 
-            if (attestationVerifier != address(0)) {
-                bool valid = ITeam1AttestationVerifier(attestationVerifier).verifyMemberAttestation(
-                    msg.sender,
-                    identityNullifier
-                );
-                if (!valid) revert InvalidSybilAttestation();
-            }
+            bool valid = ITeam1AttestationVerifier(attestationVerifier).verifyMemberAttestation(
+                msg.sender,
+                identityNullifier
+            );
+            if (!valid) revert InvalidSybilAttestation();
 
             usedIdentityNullifiers[identityNullifier] = true;
             emit SybilAttestationVerified(address(this), msg.sender, identityNullifier);
@@ -224,7 +272,7 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
         }
     }
 
-    function contribute(uint8 roundNumber) external override nonReentrant {
+    function contribute(uint8 roundNumber) external override nonReentrant whenNotPaused {
         if (status != STATUS_ACTIVE) revert InvalidStatus();
         if (roundNumber != currentRound) revert InvalidRound();
         if (!members[msg.sender].exists) revert NotMember();
@@ -243,7 +291,7 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
         emit ContributionMade(address(this), roundNumber, msg.sender, contributionAmount, block.timestamp);
     }
 
-    function submitBid(uint8 roundNumber, uint256 bidAmount) external override nonReentrant {
+    function submitBid(uint8 roundNumber, uint256 bidAmount) external override nonReentrant whenNotPaused {
         if (status != STATUS_ACTIVE) revert InvalidStatus();
         if (allocationMode != MODE_BIDDING) revert BiddingNotEnabled();
         if (roundNumber != currentRound) revert InvalidRound();
@@ -273,11 +321,14 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
         return keccak256(abi.encodePacked(address(this), roundNumber, bidder, bidAmount, salt));
     }
 
-    function commitBid(uint8 roundNumber, bytes32 commitment) external override nonReentrant {
+    function commitBid(uint8 roundNumber, bytes32 commitment) external override nonReentrant whenNotPaused {
         if (status != STATUS_ACTIVE) revert InvalidStatus();
         if (allocationMode != MODE_BIDDING) revert BiddingNotEnabled();
         if (roundNumber != currentRound) revert InvalidRound();
         if (commitment == bytes32(0)) revert InvalidCommitment();
+        if (bidCommitments[roundNumber][msg.sender].commitment != bytes32(0)) {
+            revert BidAlreadyCommitted();
+        }
 
         MemberInfo storage member = members[msg.sender];
         if (!member.exists) revert NotMember();
@@ -301,7 +352,7 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
         uint8 roundNumber,
         uint256 bidAmount,
         bytes32 salt
-    ) external override nonReentrant {
+    ) external override nonReentrant whenNotPaused {
         if (status != STATUS_ACTIVE) revert InvalidStatus();
         if (allocationMode != MODE_BIDDING) revert BiddingNotEnabled();
         if (roundNumber != currentRound) revert InvalidRound();
@@ -333,7 +384,7 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
         emit BidSubmitted(address(this), roundNumber, msg.sender, bidAmount, block.timestamp);
     }
 
-    function settleRound(uint8 roundNumber) external override nonReentrant {
+    function settleRound(uint8 roundNumber) external override nonReentrant whenNotPaused {
         if (status != STATUS_ACTIVE) revert InvalidStatus();
         if (roundNumber != currentRound) revert InvalidRound();
 
@@ -589,7 +640,9 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
     function _depositToYieldVault(uint256 amount) internal {
         if (address(yieldVault) != address(0) && amount > 0) {
             token.approve(address(yieldVault), amount);
-            try yieldVault.depositPrincipal(amount) {} catch {}
+            try yieldVault.depositPrincipal(amount) {} catch {
+                token.approve(address(yieldVault), 0);
+            }
         }
     }
 

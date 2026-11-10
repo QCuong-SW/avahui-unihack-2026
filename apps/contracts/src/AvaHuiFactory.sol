@@ -8,9 +8,17 @@ contract AvaHuiFactory is IAvaHuiFactory {
     address[] private _allCircles;
     mapping(address => bool) public override isCircle;
 
+    address public override owner;
+    address public override guardian;
     address public defaultYieldVault;
     address public defaultAttestationVerifier;
 
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event GuardianUpdated(address indexed previousGuardian, address indexed newGuardian);
+    event DefaultModulesUpdated(address indexed yieldVault, address indexed attestationVerifier);
+
+    error Unauthorized();
+    error InvalidAddress();
     error InvalidTokenAddress();
     error InvalidAllocationMode();
     error InvalidMemberCount();
@@ -20,9 +28,36 @@ contract AvaHuiFactory is IAvaHuiFactory {
     error InvalidStartDeadline();
     error InvalidBidBounds();
 
-    function setDefaultModules(address _yieldVault, address _attestationVerifier) external {
+    modifier onlyOwner() {
+        if (msg.sender != owner) revert Unauthorized();
+        _;
+    }
+
+    constructor() {
+        owner = msg.sender;
+        guardian = msg.sender;
+        emit OwnershipTransferred(address(0), msg.sender);
+        emit GuardianUpdated(address(0), msg.sender);
+    }
+
+    function transferOwnership(address _newOwner) external onlyOwner {
+        if (_newOwner == address(0)) revert InvalidAddress();
+        address prev = owner;
+        owner = _newOwner;
+        emit OwnershipTransferred(prev, _newOwner);
+    }
+
+    function setGuardian(address _newGuardian) external onlyOwner {
+        if (_newGuardian == address(0)) revert InvalidAddress();
+        address prev = guardian;
+        guardian = _newGuardian;
+        emit GuardianUpdated(prev, _newGuardian);
+    }
+
+    function setDefaultModules(address _yieldVault, address _attestationVerifier) external onlyOwner {
         defaultYieldVault = _yieldVault;
         defaultAttestationVerifier = _attestationVerifier;
+        emit DefaultModulesUpdated(_yieldVault, _attestationVerifier);
     }
 
     function createCircle(CreateCircleParams calldata params)

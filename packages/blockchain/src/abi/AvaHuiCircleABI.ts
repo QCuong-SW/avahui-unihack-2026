@@ -114,6 +114,41 @@ export const AvaHuiCircleABI = [
   },
   {
     type: 'function',
+    name: 'paused',
+    inputs: [],
+    outputs: [{ name: '', type: 'bool', internalType: 'bool' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'getGuardian',
+    inputs: [],
+    outputs: [{ name: '', type: 'address', internalType: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'pause',
+    inputs: [],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'unpause',
+    inputs: [],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'emergencyCancel',
+    inputs: [],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
     name: 'getCircleSummary',
     inputs: [],
     outputs: [
@@ -306,6 +341,26 @@ export const AvaHuiCircleABI = [
     name: 'CircleCancelled',
     inputs: [
       { name: 'circleAddress', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'timestamp', type: 'uint256', indexed: false, internalType: 'uint256' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'CirclePaused',
+    inputs: [
+      { name: 'circleAddress', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'guardian', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'timestamp', type: 'uint256', indexed: false, internalType: 'uint256' },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'CircleUnpaused',
+    inputs: [
+      { name: 'circleAddress', type: 'address', indexed: true, internalType: 'address' },
+      { name: 'guardian', type: 'address', indexed: true, internalType: 'address' },
       { name: 'timestamp', type: 'uint256', indexed: false, internalType: 'uint256' },
     ],
     anonymous: false,

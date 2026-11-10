@@ -1,7 +1,12 @@
 'use client';
 
+import {
+  ACTIVE_WALLET_STORAGE_KEY,
+  AUTH_TOKEN_STORAGE_KEY,
+} from '@/lib/api/client';
+
 // ============================================================================
-// @avahui/web — Authentication & Session Management (Privy-compatible flow)
+// @avahui/web — Authentication & Session Management (Privy + SIWE flow)
 // Distinguishes Authentication state from Embedded Wallet state
 // ============================================================================
 
@@ -16,6 +21,7 @@ export interface AuthSessionState {
   isAuthenticated: boolean;
   userId: string;
   email: string;
+  walletAddress?: string;
   authMethod: AuthMethod | null;
   accessToken: string | null;
   /** Tracks which user IDs have already completed /onboarding/wallet */
@@ -29,6 +35,7 @@ export interface AuthSessionState {
     code: string;
     expiresAt: number;
     resendAvailableAt: number;
+    isRealPrivy?: boolean;
   } | null;
 }
 
@@ -64,7 +71,7 @@ export function loadAuthSession(): AuthSessionState {
     if (!raw) {
       window.localStorage.setItem(
         AUTH_STORAGE_KEY,
-        JSON.stringify(DEFAULT_AUTH_SESSION)
+        JSON.stringify(DEFAULT_AUTH_SESSION),
       );
       setSessionCookie(DEFAULT_AUTH_SESSION.accessToken);
       return DEFAULT_AUTH_SESSION;
@@ -83,6 +90,23 @@ export function saveAuthSession(session: AuthSessionState): AuthSessionState {
   if (typeof window !== 'undefined') {
     window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
     setSessionCookie(session.isAuthenticated ? session.accessToken : null);
+
+    if (
+      session.isAuthenticated &&
+      session.accessToken &&
+      session.accessToken.split('.').length === 3
+    ) {
+      window.localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, session.accessToken);
+    } else if (!session.isAuthenticated) {
+      window.localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
+      window.localStorage.removeItem(ACTIVE_WALLET_STORAGE_KEY);
+    }
+    if (session.isAuthenticated && session.walletAddress) {
+      window.localStorage.setItem(
+        ACTIVE_WALLET_STORAGE_KEY,
+        session.walletAddress.toLowerCase(),
+      );
+    }
   }
   return session;
 }
@@ -92,12 +116,54 @@ export function isValidEmail(email: string): boolean {
 }
 
 /**
- * Step 1 of Email OTP flow: validates email, generates 6-digit OTP with 5-minute expiry
- * and 60-second resend cooldown.
+ * Authenticates with a real cryptographic JWT (Privy JWT or Backend SIWE JWT).
+ */
+export function authenticateWithRealToken(params: {
+  userId: string;
+  email: string;
+  walletAddress?: string;
+  accessToken: string;
+  authMethod: AuthMethod;
+  forceWalletOnboarding?: boolean;
+}): {
+  session: AuthSessionState;
+  requiresWalletOnboarding: boolean;
+} {
+  const current = loadAuthSession();
+  const onboardedList = params.forceWalletOnboarding
+    ? current.onboardedUserIds.filter((id) => id !== params.userId)
+    : Array.from(new Set([...current.onboardedUserIds, params.userId]));
+
+  const alreadyOnboarded = !params.forceWalletOnboarding && onboardedList.includes(params.userId);
+
+  const nextSession: AuthSessionState = {
+    ...current,
+    isAuthenticated: true,
+    userId: params.userId,
+    email: params.email,
+    walletAddress: params.walletAddress?.toLowerCase(),
+    authMethod: params.authMethod,
+    accessToken: params.accessToken,
+    onboardedUserIds: onboardedList,
+    walletStatus: params.walletAddress
+      ? 'WALLET_CONNECTED_READY'
+      : 'WALLET_CREATED',
+    pendingOtp: null,
+  };
+
+  return {
+    session: saveAuthSession(nextSession),
+    requiresWalletOnboarding: !alreadyOnboarded,
+  };
+}
+
+/**
+ * Step 1 of Email OTP flow (dev/mock fallback or Privy real email flag).
  */
 export function requestEmailOtp(
   email: string,
-  targetUserId: string
+  targetUserId: string,
+  isRealPrivy = false,
 ): AuthSessionState {
   const normalized = email.trim().toLowerCase();
   if (!isValidEmail(normalized)) {
@@ -112,9 +178,10 @@ export function requestEmailOtp(
     pendingOtp: {
       email: normalized,
       targetUserId,
-      code: '123456',
+      code: isRealPrivy ? '' : '123456',
       expiresAt: now + 5 * 60 * 1000,
       resendAvailableAt: now + 60 * 1000,
+      isRealPrivy,
     },
   };
 
@@ -122,8 +189,7 @@ export function requestEmailOtp(
 }
 
 /**
- * Step 2 of Email OTP flow: verifies 6-digit OTP code.
- * Accepts '123456' (or any 6 digits except '000000' which simulates invalid OTP).
+ * Step 2 of Dev/Mock Email OTP flow.
  */
 export function verifyEmailOtpCode(inputCode: string): {
   session: AuthSessionState;
@@ -166,13 +232,13 @@ export function verifyEmailOtpCode(inputCode: string): {
 }
 
 /**
- * Google / External Wallet login: verifies existing wallet mapping first.
+ * Dev/Mock Provider login (only used when NEXT_PUBLIC_USE_MOCK=true or DEV demo mode).
  */
 export function authenticateWithProvider(
   method: 'GOOGLE' | 'EXTERNAL_WALLET',
   userId: string,
   email: string,
-  forceWalletOnboarding = false
+  forceWalletOnboarding = false,
 ): {
   session: AuthSessionState;
   requiresWalletOnboarding: boolean;
@@ -209,7 +275,7 @@ export function authenticateWithProvider(
 export function completeWalletOnboarding(): AuthSessionState {
   const current = loadAuthSession();
   const onboardedUserIds = Array.from(
-    new Set([...current.onboardedUserIds, current.userId])
+    new Set([...current.onboardedUserIds, current.userId]),
   );
 
   const updated: AuthSessionState = {
@@ -225,7 +291,7 @@ export function completeWalletOnboarding(): AuthSessionState {
  * Updates independent wallet status (Created / Connected Ready / Disconnected).
  */
 export function updateWalletConnectionState(
-  walletStatus: WalletConnectionState
+  walletStatus: WalletConnectionState,
 ): AuthSessionState {
   const current = loadAuthSession();
   return saveAuthSession({
@@ -236,8 +302,8 @@ export function updateWalletConnectionState(
 
 /**
  * Screen 05 Logout:
- * - Clears authentication session & access token cookie
- * - Preserves `onboardedUserIds` so the user's Embedded Wallet is NEVER deleted
+ * - Clears authentication session & access token cookie/localStorage
+ * - Preserves `onboardedUserIds` so Embedded Wallet mapping is never lost
  */
 export function logoutAuthSession(): AuthSessionState {
   const current = loadAuthSession();
@@ -245,6 +311,7 @@ export function logoutAuthSession(): AuthSessionState {
     isAuthenticated: false,
     userId: current.userId,
     email: '',
+    walletAddress: undefined,
     authMethod: null,
     accessToken: null,
     onboardedUserIds: current.onboardedUserIds,

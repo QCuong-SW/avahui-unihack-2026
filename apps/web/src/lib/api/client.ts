@@ -1,6 +1,6 @@
 /**
  * AvaHui API Client — HTTP Layer for NestJS Backend
- * Handles automatic JWT/Mock Auth injection, wallet address header, and error handling.
+ * Sends verified Bearer tokens (Privy JWT or SIWE JWT) without silent mock spoofing.
  */
 
 const getApiBaseUrl = (): string => {
@@ -9,6 +9,9 @@ const getApiBaseUrl = (): string => {
   }
   return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 };
+
+export const AUTH_TOKEN_STORAGE_KEY = 'avahui_auth_token';
+export const ACTIVE_WALLET_STORAGE_KEY = 'avahui_active_wallet';
 
 export class ApiError extends Error {
   constructor(
@@ -27,12 +30,67 @@ export interface RequestOptions extends RequestInit {
   params?: Record<string, string | number | boolean | undefined>;
 }
 
+function resolveStoredAuthToken(): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+  const directToken = window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY);
+  if (directToken && directToken !== 'mock-token') {
+    return directToken;
+  }
+  try {
+    const rawSession = window.localStorage.getItem(
+      'avahui_unihack_2026_auth_session_v2',
+    );
+    if (rawSession) {
+      const parsed = JSON.parse(rawSession);
+      if (
+        parsed?.isAuthenticated &&
+        typeof parsed.accessToken === 'string' &&
+        parsed.accessToken.split('.').length === 3
+      ) {
+        return parsed.accessToken;
+      }
+    }
+  } catch {
+    // ignore storage parse failure
+  }
+  return undefined;
+}
+
+function resolveStoredWalletAddress(): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+  const direct = window.localStorage.getItem(ACTIVE_WALLET_STORAGE_KEY);
+  if (direct) return direct;
+  try {
+    const storedState = window.localStorage.getItem(
+      'avahui_unihack_2026_mock_state_v2',
+    );
+    if (storedState) {
+      const parsedState = JSON.parse(storedState);
+      const curUser = parsedState?.users?.find(
+        (u: any) => u.id === parsedState.currentUserId,
+      );
+      if (curUser?.walletAddress) {
+        return curUser.walletAddress;
+      }
+    }
+  } catch {
+    // ignore storage parse failure
+  }
+  return undefined;
+}
+
 export async function apiFetch<T>(
   endpoint: string,
   options: RequestOptions = {},
 ): Promise<T> {
   const baseUrl = getApiBaseUrl();
-  const { walletAddress, token, params, headers: customHeaders, ...fetchOptions } = options;
+  const {
+    walletAddress,
+    token,
+    params,
+    headers: customHeaders,
+    ...fetchOptions
+  } = options;
 
   let url = `${baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
 
@@ -49,34 +107,8 @@ export async function apiFetch<T>(
     }
   }
 
-  // Auth header resolution
-  let authToken = token;
-  if (!authToken && typeof window !== 'undefined') {
-    authToken = localStorage.getItem('avahui_auth_token') || 'mock-token';
-  }
-
-  // Active wallet address resolution
-  let activeWallet = walletAddress;
-  if (!activeWallet && typeof window !== 'undefined') {
-    activeWallet = localStorage.getItem('avahui_active_wallet') || undefined;
-    if (!activeWallet) {
-      try {
-        const storedState = localStorage.getItem('avahui_unihack_2026_mock_state_v2');
-        if (storedState) {
-          const parsedState = JSON.parse(storedState);
-          const curUser = parsedState?.users?.find(
-            (u: any) => u.id === parsedState.currentUserId,
-          );
-          activeWallet = curUser?.walletAddress;
-        }
-      } catch {
-        // ignore JSON parse error
-      }
-    }
-    if (!activeWallet) {
-      activeWallet = '0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1';
-    }
-  }
+  const authToken = token || resolveStoredAuthToken();
+  const activeWallet = walletAddress || resolveStoredWalletAddress();
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -100,16 +132,22 @@ export async function apiFetch<T>(
     try {
       errorData = await response.json();
     } catch {
-      errorData = { message: response.statusText };
+      errorData = await response.text();
     }
-    const message =
-      errorData?.message || `Request failed with status ${response.status}`;
-    throw new ApiError(response.status, Array.isArray(message) ? message.join(', ') : message, errorData);
+    const errorMsg =
+      errorData?.message ||
+      errorData?.error ||
+      `HTTP ${response.status} Error calling ${endpoint}`;
+    throw new ApiError(
+      response.status,
+      Array.isArray(errorMsg) ? errorMsg.join(', ') : String(errorMsg),
+      errorData,
+    );
   }
 
   if (response.status === 204) {
     return {} as T;
   }
 
-  return response.json();
+  return response.json() as Promise<T>;
 }

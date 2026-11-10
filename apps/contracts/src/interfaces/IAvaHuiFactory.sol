@@ -30,6 +30,8 @@ interface IAvaHuiFactory {
         uint256 collateralAmount
     );
 
+    function owner() external view returns (address);
+    function guardian() external view returns (address);
     function createCircle(CreateCircleParams calldata params) external returns (address circleAddress);
     function getAllCircles() external view returns (address[] memory);
     function isCircle(address circle) external view returns (bool);

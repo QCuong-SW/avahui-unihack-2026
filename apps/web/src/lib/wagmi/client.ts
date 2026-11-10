@@ -10,6 +10,7 @@ import {
 import { privateKeyToAccount } from 'viem/accounts';
 import { avalancheFuji } from 'viem/chains';
 import { frontendEnv } from '@/config/env';
+import { getActiveEmbeddedProvider } from '@/lib/privy/privyBridge';
 
 export const FUJI_CHAIN_ID = avalancheFuji.id; // 43113
 
@@ -40,8 +41,7 @@ export const publicClient = createPublicClient({
 });
 
 /**
- * Local deterministic Ganache accounts (#0 -> #4) used ONLY when connected to Local EVM RPC.
- * Enables seamless on-chain signing across all 5 demo builders without requiring 5 manual MetaMask imports.
+ * Local deterministic Ganache accounts (#0 -> #4) used ONLY when allowLocalAutoSigner === true.
  */
 const LOCAL_DEV_PRIVATE_KEYS: Record<string, `0x${string}`> = {
   '0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1':
@@ -64,14 +64,34 @@ export interface ResolvedSigner {
 
 /**
  * Resolves the active EVM transaction signer:
- * 1. Injected browser wallet (Core Wallet / MetaMask) when connected & matching the active user
- * 2. Local EVM Dev Signer when running against http://127.0.0.1:8545
+ * 1. Active Privy Embedded Wallet EIP-1193 provider (for Google / Email users)
+ * 2. Injected browser wallet (Core Wallet / MetaMask) when connected & matching the active user
+ * 3. Local EVM Dev Signer strictly when running against http://127.0.0.1:8545 (allowLocalAutoSigner)
  */
 export async function resolveSignerClient(
   preferredAddress?: string,
 ): Promise<ResolvedSigner | null> {
   const normPreferred = preferredAddress?.toLowerCase();
 
+  // 1. Privy Embedded Wallet provider
+  const embedded = getActiveEmbeddedProvider(preferredAddress);
+  if (embedded?.provider) {
+    try {
+      const privyClient = createWalletClient({
+        chain: activeFujiChain,
+        transport: custom(embedded.provider),
+      });
+      return {
+        client: privyClient,
+        account: embedded.address as `0x${string}`,
+        isLocalAutoSigner: false,
+      };
+    } catch {
+      // fall through
+    }
+  }
+
+  // 2. Injected Browser Wallet (Core Wallet / MetaMask)
   if (typeof window !== 'undefined' && (window as any).ethereum) {
     try {
       const browserClient = createWalletClient({
@@ -92,11 +112,12 @@ export async function resolveSignerClient(
         }
       }
     } catch {
-      // Fall back to local auto signer if browser wallet isn't unlocked or on wrong account
+      // Fall through if browser wallet isn't unlocked or on wrong account
     }
   }
 
-  if (frontendEnv.isLocalEvm) {
+  // 3. Local EVM Dev Signer (strictly Ganache/Anvil local only)
+  if (frontendEnv.allowLocalAutoSigner) {
     const devKey =
       (normPreferred && LOCAL_DEV_PRIVATE_KEYS[normPreferred]) ||
       (!normPreferred

@@ -1,4 +1,4 @@
-import { Injectable, Optional } from '@nestjs/common';
+import { ForbiddenException, Injectable, Optional } from '@nestjs/common';
 import { TxStatus, TxType } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { AuthenticatedUser } from '../../../common/decorators/current-user.decorator';
@@ -15,11 +15,36 @@ export class TransactionsService {
 
   async trackTransaction(authUser: AuthenticatedUser, dto: TrackTransactionDto) {
     const txHash = normalizeAddress(dto.txHash);
-    const senderAddress = normalizeAddress(
-      dto.senderAddress ||
-        authUser.walletAddress ||
-        '0x71c95911e9a5d330f4d621842ec243ee13432921',
-    );
+    const ownedWallets = new Set<string>();
+    if (authUser.walletAddress) {
+      ownedWallets.add(normalizeAddress(authUser.walletAddress));
+    }
+    if (authUser.id && typeof this.prisma.wallet?.findMany === 'function') {
+      const wallets = await this.prisma.wallet.findMany({
+        where: { userId: authUser.id },
+      });
+      for (const w of wallets) {
+        ownedWallets.add(normalizeAddress(w.address));
+      }
+    }
+
+    let senderAddress = authUser.walletAddress
+      ? normalizeAddress(authUser.walletAddress)
+      : '';
+    if (dto.senderAddress) {
+      const requestedSender = normalizeAddress(dto.senderAddress);
+      if (ownedWallets.size > 0 && !ownedWallets.has(requestedSender)) {
+        throw new ForbiddenException(
+          'Cannot track transaction on behalf of another wallet address',
+        );
+      }
+      senderAddress = requestedSender;
+    }
+
+    if (!senderAddress) {
+      throw new ForbiddenException('Authenticated user has no linked wallet');
+    }
+
     const contractAddress = normalizeAddress(dto.contractAddress);
 
     let circleId: string | null = null;

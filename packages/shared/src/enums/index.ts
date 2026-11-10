@@ -1,3 +1,9 @@
+export enum UserRole {
+  MEMBER = 'MEMBER',
+  VERIFIER = 'VERIFIER',
+  ADMIN = 'ADMIN',
+}
+
 export enum AllocationMode {
   FIXED = 'FIXED',       // 0 trên Smart Contract
   BIDDING = 'BIDDING',   // 1 trên Smart Contract

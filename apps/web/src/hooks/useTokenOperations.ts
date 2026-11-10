@@ -94,31 +94,28 @@ export function useTokenOperations() {
 
             if (!isMockMode) {
               const signer = await resolveSignerClient(currentUser?.walletAddress);
-              if (signer) {
-                try {
-                  txHash = await signer.client.writeContract({
-                    address: frontendEnv.usdcTokenAddress,
-                    abi: MockUSDCABI,
-                    functionName: 'faucet',
-                    args: [amountBaseUnits],
-                    account: signer.account,
-                    chain: activeFujiChain,
-                  });
-                  await publicClient.waitForTransactionReceipt({
-                    hash: txHash as `0x${string}`,
-                  });
-                  liveConfirmed = true;
-                } catch (walletErr) {
-                  console.warn('[AvaHui] On-chain faucet call failed, falling back:', walletErr);
-                }
+              if (!signer) {
+                throw new Error(
+                  'Chưa có ví ký giao dịch. Vui lòng kết nối Core Wallet / MetaMask hoặc đăng nhập Privy.',
+                );
               }
-            }
-
-            if (!txHash) {
+              txHash = await signer.client.writeContract({
+                address: frontendEnv.usdcTokenAddress,
+                abi: MockUSDCABI,
+                functionName: 'faucet',
+                args: [amountBaseUnits],
+                account: signer.account,
+                chain: activeFujiChain,
+              });
+              await publicClient.waitForTransactionReceipt({
+                hash: txHash as `0x${string}`,
+              });
+              liveConfirmed = true;
+            } else {
               txHash = generateMockTxHash();
             }
 
-            if (!isMockMode) {
+            if (!isMockMode && txHash) {
               try {
                 await transactionApi.trackTransaction({
                   txHash,
@@ -131,7 +128,10 @@ export function useTokenOperations() {
               }
             }
 
-            await mockFaucetMutation.mutateAsync({ amountUsdc, skipMock: liveConfirmed });
+            await mockFaucetMutation.mutateAsync({
+              amountUsdc,
+              skipMock: liveConfirmed,
+            });
 
             return { txHash };
           } finally {
@@ -158,30 +158,27 @@ export function useTokenOperations() {
 
             if (!isMockMode) {
               const signer = await resolveSignerClient(currentUser?.walletAddress);
-              if (signer) {
-                try {
-                  txHash = await signer.client.writeContract({
-                    address: frontendEnv.usdcTokenAddress,
-                    abi: MockUSDCABI,
-                    functionName: 'approve',
-                    args: [spenderAddress, amountBaseUnits],
-                    account: signer.account,
-                    chain: activeFujiChain,
-                  });
-                  await publicClient.waitForTransactionReceipt({
-                    hash: txHash as `0x${string}`,
-                  });
-                } catch (walletErr) {
-                  console.warn('[AvaHui] On-chain approve call failed:', walletErr);
-                }
+              if (!signer) {
+                throw new Error(
+                  'Chưa có ví ký giao dịch. Vui lòng kết nối Core Wallet / MetaMask hoặc đăng nhập Privy.',
+                );
               }
-            }
-
-            if (!txHash) {
+              txHash = await signer.client.writeContract({
+                address: frontendEnv.usdcTokenAddress,
+                abi: MockUSDCABI,
+                functionName: 'approve',
+                args: [spenderAddress, amountBaseUnits],
+                account: signer.account,
+                chain: activeFujiChain,
+              });
+              await publicClient.waitForTransactionReceipt({
+                hash: txHash as `0x${string}`,
+              });
+            } else {
               txHash = generateMockTxHash();
             }
 
-            if (!isMockMode) {
+            if (!isMockMode && txHash) {
               try {
                 await transactionApi.trackTransaction({
                   txHash,

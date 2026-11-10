@@ -1,10 +1,14 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import { UserRole } from '@avahui/shared';
 
 export interface AuthenticatedUser {
   id?: string;
   privyDid: string;
   email?: string | null;
   walletAddress?: string | null;
+  role?: UserRole;
+  authType?: 'privy' | 'siwe' | 'dev_mock';
+  tokenWalletVerified?: boolean;
 }
 
 export const CurrentUser = createParamDecorator(
@@ -14,4 +18,3 @@ export const CurrentUser = createParamDecorator(
     return data ? user?.[data] : user;
   },
 );
-

@@ -94,9 +94,15 @@ export class UsersService {
     return {
       id: user.id,
       privyDid: user.privyDid,
+      role: user.role,
+      isActive: user.isActive,
       email: user.email,
       displayName: user.displayName,
       avatarUrl: user.avatarUrl,
+      team1Attested: user.team1Verified,
+      isTeam1Verified: user.team1Verified,
+      identityNullifier: user.identityNullifier ?? undefined,
+      trustTier: user.trustTier,
       walletAddress: primaryAddress,
       wallets: user.wallets.map((w) => ({
         id: w.id,

@@ -20,10 +20,14 @@ import { WALLET_STATUS_META } from '@/lib/wallet/walletStatus';
 import { formatUsdc, shortenAddress } from '@/lib/utils';
 import { HoverHint } from '@/components/ui/HoverHint';
 import {
+  Check,
   CheckCircle2,
   Coins,
+  Copy,
+  Download,
   Eye,
   Gavel,
+  KeyRound,
   Lock,
   ShieldAlert,
   ShieldCheck,
@@ -32,6 +36,7 @@ import {
   Trophy,
   Unlock,
   UserPlus,
+  XCircle,
   Zap,
 } from 'lucide-react';
 
@@ -48,8 +53,10 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
     executeCommitBid,
     executeRevealBid,
     getSavedSealedBid,
+    importSealedBidBackup,
     executeSettleRound,
     executeWithdrawCollateral,
+    executeCancelExpiredCircle,
     isJoining,
     isContributing,
     isBidding,
@@ -57,6 +64,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
     isRevealingBid,
     isSettling,
     isWithdrawing,
+    isCancelling,
   } = useCircleActions();
   const verifyTeam1Mutation = useVerifyTeam1AttestationMutation();
   const { runTransaction } = useTxLifecycle();
@@ -92,6 +100,11 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
   const [useSealedMode, setUseSealedMode] = useState<boolean>(
     circle.isSealedBid !== false
   );
+  const [saltCopied, setSaltCopied] = useState(false);
+  const [showSaltRecovery, setShowSaltRecovery] = useState(false);
+  const [recoveryBidInput, setRecoveryBidInput] = useState(String(suggestedBid));
+  const [recoverySaltInput, setRecoverySaltInput] = useState('');
+  const [recoveryError, setRecoveryError] = useState<string | null>(null);
   const [inviteCodeInput, setInviteCodeInput] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -188,8 +201,69 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
         return await executeRevealBid(
           circle,
           currentRoundObj.roundNumber,
-          revealAmount
+          { bidAmountUsdc: revealAmount, salt: savedSealedBid?.salt }
         );
+      },
+    });
+  };
+
+  const handleRevealRecoveredSalt = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentRoundObj) return;
+    setRecoveryError(null);
+    const parsedBid = parseFloat(recoveryBidInput);
+    if (!Number.isFinite(parsedBid) || parsedBid <= 0) {
+      setRecoveryError('Số tiền đấu giá không hợp lệ.');
+      return;
+    }
+    try {
+      importSealedBidBackup(
+        circle.id,
+        currentRoundObj.roundNumber,
+        parsedBid,
+        recoverySaltInput,
+      );
+      await runTransaction({
+        title: `Reveal Recovered Bid • Round #${currentRoundObj.roundNumber}`,
+        description: `Khôi phục Salt & Mở niêm phong ${formatUsdc(parsedBid)} mUSDC`,
+        action: async () => {
+          return await executeRevealBid(circle, currentRoundObj.roundNumber, {
+            bidAmountUsdc: parsedBid,
+            salt: recoverySaltInput.trim(),
+          });
+        },
+      });
+      setShowSaltRecovery(false);
+    } catch (err: any) {
+      setRecoveryError(err?.message || 'Salt không hợp lệ.');
+    }
+  };
+
+  const handleCopySalt = () => {
+    if (!savedSealedBid?.salt) return;
+    navigator.clipboard.writeText(savedSealedBid.salt);
+    setSaltCopied(true);
+    setTimeout(() => setSaltCopied(false), 1800);
+  };
+
+  const handleDownloadSaltBackup = () => {
+    if (!savedSealedBid) return;
+    const payload = JSON.stringify(savedSealedBid, null, 2);
+    const blob = new Blob([payload], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `avahui-salt-r${savedSealedBid.roundNumber}-${circle.id.slice(0, 8)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleCancelExpiredCircle = async () => {
+    await runTransaction({
+      title: 'Hủy dây hụi quá hạn & Mở hoàn cọc',
+      description: `Gọi cancelExpiredCircle() cho "${circle.name}"`,
+      action: async () => {
+        return await executeCancelExpiredCircle(circle);
       },
     });
   };
@@ -331,7 +405,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
             </div>
           ) : (
             <HoverHint
-              hint="Đổi sang tài khoản thành viên khác ở góc phải Navbar để thêm cho đủ số lượng kích hoạt vòng hụi"
+              hint="Đã giữ chỗ thành công. Chờ đủ thành viên để dây hụi tự động kích hoạt Vòng #1"
               className="w-full"
             >
               <div className="flex w-full items-center justify-between rounded-none border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 font-mono text-xs font-bold text-emerald-300">
@@ -343,6 +417,49 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
               </div>
             </HoverHint>
           )}
+
+          {/* Cancel Expired Recruiting Circle */}
+          {(() => {
+            const deadlineMs = circle.startDeadline
+              ? new Date(circle.startDeadline).getTime()
+              : null;
+            const isExpired =
+              deadlineMs !== null && Number.isFinite(deadlineMs) && Date.now() > deadlineMs;
+            return (
+              <div className="rounded-none border border-zinc-800 bg-zinc-950/60 p-3 space-y-2 font-mono text-[11px]">
+                <div className="flex items-center justify-between text-zinc-400">
+                  <span>Hạn tuyển thành viên:</span>
+                  <span className={isExpired ? 'font-bold text-rose-400' : 'text-zinc-300'}>
+                    {deadlineMs
+                      ? new Date(deadlineMs).toLocaleString('vi-VN')
+                      : '7 ngày'}
+                  </span>
+                </div>
+                <HoverHint
+                  hint={
+                    isExpired
+                      ? 'Đã quá hạn gom đủ thành viên — Bấm để hủy dây trên Smart Contract và mở rút 100% thế chấp'
+                      : 'Chỉ khả dụng sau khi quá hạn tuyển thành viên (startDeadline) mà chưa đủ người'
+                  }
+                  className="w-full"
+                >
+                  <button
+                    type="button"
+                    onClick={handleCancelExpiredCircle}
+                    disabled={isCancelling || !isExpired}
+                    className="flex w-full items-center justify-center gap-1.5 rounded-none border border-rose-500/40 bg-rose-500/10 px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-rose-300 transition hover:bg-rose-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    <XCircle className="h-3.5 w-3.5" />
+                    <span>
+                      {isExpired
+                        ? 'Hủy dây quá hạn & Hoàn cọc'
+                        : 'Chờ quá hạn mới có thể hủy'}
+                    </span>
+                  </button>
+                </HoverHint>
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -486,6 +603,30 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                           {shortenAddress(savedSealedBid.commitment, 6)}
                         </span>
                       </div>
+
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={handleCopySalt}
+                          className="flex-1 inline-flex items-center justify-center gap-1 rounded-none border border-zinc-700 bg-zinc-900 px-2 py-1 text-[10px] font-bold uppercase text-zinc-200 hover:border-sky-400 hover:text-white"
+                        >
+                          {saltCopied ? (
+                            <Check className="h-3 w-3 text-emerald-400" />
+                          ) : (
+                            <Copy className="h-3 w-3" />
+                          )}
+                          <span>{saltCopied ? 'Đã chép Salt' : 'Copy Salt'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleDownloadSaltBackup}
+                          className="flex-1 inline-flex items-center justify-center gap-1 rounded-none border border-zinc-700 bg-zinc-900 px-2 py-1 text-[10px] font-bold uppercase text-sky-300 hover:border-sky-400 hover:text-white"
+                        >
+                          <Download className="h-3 w-3" />
+                          <span>Sao lưu JSON</span>
+                        </button>
+                      </div>
+
                       {savedSealedBid.revealed ? (
                         <div className="flex items-center justify-between text-emerald-400 font-bold">
                           <span>Đã mở niêm phong (Revealed):</span>
@@ -506,6 +647,55 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                       )}
                     </div>
                   )}
+
+                  {/* Recovery Form if User Switched Browser / Cleared Cache */}
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowSaltRecovery((v) => !v)}
+                      className="inline-flex items-center gap-1 font-mono text-[10px] text-zinc-400 underline hover:text-sky-300"
+                    >
+                      <KeyRound className="h-3 w-3" />
+                      <span>
+                        {showSaltRecovery
+                          ? 'Ẩn khôi phục Salt'
+                          : 'Đổi trình duyệt / Mất Salt? Nhập lại Salt để Reveal'}
+                      </span>
+                    </button>
+
+                    {showSaltRecovery && (
+                      <form
+                        onSubmit={handleRevealRecoveredSalt}
+                        className="mt-2 space-y-2 rounded-none border border-zinc-800 bg-zinc-950 p-2.5 font-mono text-[11px]"
+                      >
+                        {recoveryError && (
+                          <div className="text-rose-400">{recoveryError}</div>
+                        )}
+                        <input
+                          type="number"
+                          step="1"
+                          value={recoveryBidInput}
+                          onChange={(e) => setRecoveryBidInput(e.target.value)}
+                          placeholder="Giá đã đấu (mUSDC)"
+                          className="w-full rounded-none border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-white focus:border-sky-400 focus:outline-none"
+                        />
+                        <input
+                          type="text"
+                          value={recoverySaltInput}
+                          onChange={(e) => setRecoverySaltInput(e.target.value)}
+                          placeholder="0x... (Salt 64 hex ký tự)"
+                          className="w-full rounded-none border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-white focus:border-sky-400 focus:outline-none"
+                        />
+                        <button
+                          type="submit"
+                          disabled={isRevealingBid || isBidding}
+                          className="w-full rounded-none border border-sky-400 bg-sky-500/20 px-3 py-1.5 font-bold uppercase text-sky-300 hover:bg-sky-500 hover:text-zinc-950"
+                        >
+                          Khôi phục &amp; Reveal Bid
+                        </button>
+                      </form>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <form onSubmit={handleSubmitBid} className="space-y-2">
@@ -667,6 +857,38 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
               </div>
             )
           ) : null}
+        </div>
+      )}
+
+      {/* CASE 4: CANCELLED — Refund Collateral */}
+      {circle.status === CircleStatus.Cancelled && (
+        <div className="space-y-3 font-mono">
+          <div className="flex items-center justify-between rounded-none border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs font-bold text-rose-300">
+            <span>Dây hụi đã hủy (Cancelled)</span>
+            <span>Hoàn 100% cọc</span>
+          </div>
+          {myMember &&
+            (myMember.status === MemberStatus.Withdrawn ? (
+              <div className="flex items-center justify-between rounded-none border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-xs font-bold text-emerald-300">
+                <span className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                  <span>Đã hoàn trả tiền thế chấp</span>
+                </span>
+                <span>0.00 mUSDC</span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleWithdrawCollateral}
+                disabled={isWithdrawing}
+                className="flex w-full items-center justify-center gap-2 rounded-none border border-emerald-500 bg-emerald-500 px-4 py-3 font-mono text-xs font-bold uppercase tracking-wider text-zinc-950 transition hover:bg-emerald-400"
+              >
+                <Unlock className="h-4 w-4" />
+                <span>
+                  Rút hoàn cọc +{formatUsdc(myMember.lockedCollateralFormatted)} mUSDC
+                </span>
+              </button>
+            ))}
         </div>
       )}
 

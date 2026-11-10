@@ -19,6 +19,7 @@ async function main() {
       circle_members,
       circles,
       wallets,
+      auth_nonces,
       users
     RESTART IDENTITY CASCADE;
   `);

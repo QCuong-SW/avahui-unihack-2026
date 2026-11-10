@@ -47,6 +47,7 @@ export const createCircleSchema = z
     isSealedBid: z.boolean().optional(),
     enableYieldVault: z.boolean().optional(),
     isPrivateInvite: z.boolean().optional(),
+    inviteCode: z.string().max(64).optional(),
     requireTeam1Attestation: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {

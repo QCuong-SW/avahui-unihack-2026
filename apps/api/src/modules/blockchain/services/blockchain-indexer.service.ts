@@ -361,12 +361,50 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
     const contributionAmount = String(args.contributionAmount || '0');
     const collateralAmount = String(args.collateralAmount || '0');
 
+    let onChainInviteHash: string | null = null;
+    let onChainRequireAttestation = false;
+    if (
+      !process.env.JEST_WORKER_ID &&
+      this.publicClient &&
+      typeof this.publicClient.readContract === 'function'
+    ) {
+      try {
+        const [inviteHashRaw, requireAttestRaw] = await Promise.all([
+          this.publicClient.readContract({
+            address: circleAddress as `0x${string}`,
+            abi: AvaHuiCircleABI,
+            functionName: 'inviteCodeHash',
+          }),
+          this.publicClient.readContract({
+            address: circleAddress as `0x${string}`,
+            abi: AvaHuiCircleABI,
+            functionName: 'requireAttestation',
+          }),
+        ]);
+        const normalizedHash = String(inviteHashRaw || '').toLowerCase();
+        if (
+          normalizedHash &&
+          normalizedHash !==
+            '0x0000000000000000000000000000000000000000000000000000000000000000'
+        ) {
+          onChainInviteHash = normalizedHash;
+        }
+        onChainRequireAttestation = Boolean(requireAttestRaw);
+      } catch {
+        // Ignore when offline or in unit tests without live RPC
+      }
+    }
+
     const circle = await tx.circle.upsert({
       where: { metadataId },
       update: {
         contractAddress: circleAddress,
         status: CircleStatus.RECRUITING,
         creationTxHash: txHash,
+        ...(onChainInviteHash
+          ? { isPrivateInvite: true, inviteCodeHash: onChainInviteHash }
+          : {}),
+        ...(onChainRequireAttestation ? { requireTeam1Attestation: true } : {}),
       },
       create: {
         metadataId,
@@ -388,6 +426,9 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
         biddingDurationSeconds: allocationMode === AllocationMode.BIDDING ? 180 : 0,
         gracePeriodSeconds: 60,
         startDeadline: new Date(Date.now() + 7 * 86400 * 1000),
+        isPrivateInvite: Boolean(onChainInviteHash),
+        inviteCodeHash: onChainInviteHash,
+        requireTeam1Attestation: onChainRequireAttestation,
         creationTxHash: txHash,
       },
     });

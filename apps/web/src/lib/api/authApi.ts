@@ -12,12 +12,50 @@ export interface UpdateUserInput {
   avatarUrl?: string;
 }
 
+export interface SiweNonceResponse {
+  address: string;
+  nonce: string;
+  message: string;
+  expiresAt: string;
+}
+
+export interface VerifySiweInput {
+  address: string;
+  message: string;
+  signature: string;
+  nonce?: string;
+}
+
+export interface VerifySiweResponse {
+  accessToken: string;
+  user: UserProfileDto;
+}
+
 export const authApi = {
-  syncUser: async (input: SyncAuthInput, walletAddress?: string): Promise<UserProfileDto> => {
+  requestSiweNonce: async (address: string): Promise<SiweNonceResponse> => {
+    return apiFetch<SiweNonceResponse>('/auth/siwe/nonce', {
+      method: 'GET',
+      params: { address },
+    });
+  },
+
+  verifySiwe: async (input: VerifySiweInput): Promise<VerifySiweResponse> => {
+    return apiFetch<VerifySiweResponse>('/auth/siwe/verify', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    });
+  },
+
+  syncUser: async (
+    input: SyncAuthInput,
+    walletAddress?: string,
+    token?: string,
+  ): Promise<UserProfileDto> => {
     return apiFetch<UserProfileDto>('/auth/sync', {
       method: 'POST',
       body: JSON.stringify(input),
       walletAddress: walletAddress || input.walletAddress,
+      token,
     });
   },
 
@@ -28,7 +66,10 @@ export const authApi = {
     });
   },
 
-  updateMe: async (input: UpdateUserInput, walletAddress?: string): Promise<UserProfileDto> => {
+  updateMe: async (
+    input: UpdateUserInput,
+    walletAddress?: string,
+  ): Promise<UserProfileDto> => {
     return apiFetch<UserProfileDto>('/users/me', {
       method: 'PATCH',
       body: JSON.stringify(input),

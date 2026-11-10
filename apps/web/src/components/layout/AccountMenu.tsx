@@ -21,9 +21,12 @@ import {
   Copy,
   LogOut,
   Settings,
+  Shield,
   Users,
   Wallet,
 } from 'lucide-react';
+import { UserRole } from '@avahui/shared';
+import { frontendEnv } from '@/config/env';
 
 export function AccountMenu() {
   const { data: state } = useAvaHuiState();
@@ -179,43 +182,60 @@ export function AccountMenu() {
               </div>
             </div>
 
-            {/* 4. Quick Demo Account Switcher */}
-            <div className="border-t border-zinc-800 pt-2.5">
-              <div className="mb-1.5 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
-                <Users className="h-3 w-3 text-avalanche-red" />
-                <span>Chuyển nhanh Thành viên Demo</span>
+            {/* 4. Quick Demo Account Switcher (Only in explicit Local Dev Mode) */}
+            {frontendEnv.enableDevDemoTools && (
+              <div className="border-t border-zinc-800 pt-2.5">
+                <div className="mb-1.5 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                  <Users className="h-3 w-3 text-avalanche-red" />
+                  <span>[DEV] Chuyển nhanh Thành viên Demo</span>
+                </div>
+                <div className="max-h-36 space-y-1 overflow-y-auto pr-1">
+                  {state.users.map((u) => {
+                    const active = u.id === currentUser.id;
+                    return (
+                      <button
+                        key={u.id}
+                        type="button"
+                        onClick={() => {
+                          switchUserMutation.mutate(u.id);
+                          setMenuOpen(false);
+                        }}
+                        className={`flex w-full items-center justify-between rounded-none border border-transparent px-2.5 py-1.5 text-left text-xs transition ${
+                          active
+                            ? 'border-avalanche-red/50 bg-avalanche-red/15 font-bold text-white'
+                            : 'text-zinc-400 hover:border-zinc-800 hover:bg-zinc-900 hover:text-zinc-200'
+                        }`}
+                      >
+                        <span className="truncate">
+                          {u.displayName.split(' (')[0]}
+                        </span>
+                        <span className="font-mono text-[11px] text-emerald-400">
+                          {formatUsdc(u.usdcBalance)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-              <div className="max-h-36 space-y-1 overflow-y-auto pr-1">
-                {state.users.map((u) => {
-                  const active = u.id === currentUser.id;
-                  return (
-                    <button
-                      key={u.id}
-                      type="button"
-                      onClick={() => {
-                        switchUserMutation.mutate(u.id);
-                        setMenuOpen(false);
-                      }}
-                      className={`flex w-full items-center justify-between rounded-none border border-transparent px-2.5 py-1.5 text-left text-xs transition ${
-                        active
-                          ? 'border-avalanche-red/50 bg-avalanche-red/15 font-bold text-white'
-                          : 'text-zinc-400 hover:border-zinc-800 hover:bg-zinc-900 hover:text-zinc-200'
-                      }`}
-                    >
-                      <span className="truncate">
-                        {u.displayName.split(' (')[0]}
-                      </span>
-                      <span className="font-mono text-[11px] text-emerald-400">
-                        {formatUsdc(u.usdcBalance)}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            )}
 
-            {/* 5. Account Settings & Logout Actions */}
+            {/* 5. Account Settings, Admin Console & Logout Actions */}
             <div className="space-y-1 border-t border-zinc-800 pt-2.5">
+              {(currentUser.role === UserRole.ADMIN ||
+                currentUser.role === UserRole.VERIFIER) && (
+                <Link
+                  href="/admin"
+                  onClick={() => setMenuOpen(false)}
+                  className="flex w-full items-center justify-between rounded-none border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-300 transition hover:bg-emerald-500/20 hover:text-white"
+                >
+                  <span className="flex items-center gap-2">
+                    <Shield className="h-3.5 w-3.5 text-emerald-400" />
+                    <span>Admin / Verifier Console</span>
+                  </span>
+                  <span className="font-mono text-[10px] uppercase">{currentUser.role}</span>
+                </Link>
+              )}
+
               <Link
                 href="/profile"
                 onClick={() => setMenuOpen(false)}
