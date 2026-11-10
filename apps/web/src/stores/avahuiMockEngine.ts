@@ -26,7 +26,8 @@ import {
   generateMockTxHash,
 } from '@/lib/utils';
 
-const STORAGE_KEY = 'avahui_unihack_2026_mock_state_v1';
+const STORAGE_KEY = 'avahui_unihack_2026_mock_state_v2';
+const ACTIVE_WALLET_KEY = 'avahui_active_wallet';
 
 export interface AvaHuiMockState {
   currentUserId: string;
@@ -85,6 +86,10 @@ export function loadMockState(): AvaHuiMockState {
 export function saveMockState(state: AvaHuiMockState): AvaHuiMockState {
   if (typeof window !== 'undefined') {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const curUser = state.users.find((u) => u.id === state.currentUserId);
+    if (curUser?.walletAddress) {
+      window.localStorage.setItem(ACTIVE_WALLET_KEY, curUser.walletAddress);
+    }
   }
   return state;
 }

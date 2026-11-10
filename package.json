@@ -19,6 +19,7 @@
     "db:down": "docker compose stop postgres",
     "docker:deploy": "docker compose --profile deploy up -d --build",
     "docker:down": "docker compose --profile deploy down",
-    "deploy:fuji": "pnpm --filter @avahui/api run deploy:fuji"
+    "deploy:fuji": "pnpm --filter @avahui/api run deploy:fuji",
+    "db:reset-seed": "pnpm --filter @avahui/api run db:reset-seed"
   }
 }

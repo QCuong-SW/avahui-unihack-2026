@@ -2,18 +2,25 @@
 // @avahui/web — Frontend Environment Configuration
 // ============================================================================
 
+const rpcUrl =
+  process.env.NEXT_PUBLIC_AVALANCHE_RPC_URL ||
+  'https://api.avax-test.network/ext/bc/C/rpc';
+
 export const frontendEnv = {
-  useMock: process.env.NEXT_PUBLIC_USE_MOCK !== 'false',
+  useMock: process.env.NEXT_PUBLIC_USE_MOCK === 'true',
   apiUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1',
   privyAppId: process.env.NEXT_PUBLIC_PRIVY_APP_ID || 'mock_privy_app_id',
   chainId: Number(process.env.NEXT_PUBLIC_CHAIN_ID || 43113),
-  rpcUrl:
-    process.env.NEXT_PUBLIC_AVALANCHE_RPC_URL ||
-    'https://api.avax-test.network/ext/bc/C/rpc',
+  rpcUrl,
+  isLocalEvm: rpcUrl.includes('127.0.0.1') || rpcUrl.includes('localhost'),
   explorerUrl:
     process.env.NEXT_PUBLIC_BLOCK_EXPLORER_URL || 'https://testnet.snowtrace.io',
   factoryAddress: (process.env.NEXT_PUBLIC_ROSCA_FACTORY_ADDRESS ||
-    '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512') as `0x${string}`,
+    '0xd833215cbcc3f914bd1c9ece3ee7bf8b14f841bb') as `0x${string}`,
   usdcTokenAddress: (process.env.NEXT_PUBLIC_USDC_TOKEN_ADDRESS ||
-    '0x5FbDB2315678afecb367f032d93F642f64180aa3') as `0x${string}`,
+    '0xcfeb869f69431e42cdb54a4f4f105c19c080a601') as `0x${string}`,
+  yieldVaultAddress: (process.env.NEXT_PUBLIC_YIELD_VAULT_ADDRESS ||
+    '0x254dffcd3277c0b1660f6d42efbb754edababc2b') as `0x${string}`,
+  sybilVerifierAddress: (process.env.NEXT_PUBLIC_SYBIL_VERIFIER_ADDRESS ||
+    '0xc89ce4735882c9f0f0fe26686c53074e09b0d550') as `0x${string}`,
 } as const;

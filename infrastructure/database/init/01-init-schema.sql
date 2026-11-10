@@ -38,9 +38,13 @@ DO $$ BEGIN
         'JOIN_CIRCLE',
         'CONTRIBUTE',
         'PLACE_BID',
+        'COMMIT_BID',
+        'REVEAL_BID',
         'SETTLE_ROUND',
         'WITHDRAW_COLLATERAL',
-        'CANCEL_CIRCLE'
+        'CANCEL_CIRCLE',
+        'SWAP_TOKEN',
+        'VERIFY_ATTESTATION'
     );
 EXCEPTION
     WHEN duplicate_object THEN null;

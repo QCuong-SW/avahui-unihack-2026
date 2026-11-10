@@ -1,13 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { TxStatus, TxType } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { AuthenticatedUser } from '../../../common/decorators/current-user.decorator';
 import { normalizeAddress } from '../../../common/utils/format.util';
 import { TrackTransactionDto } from '../dto/track-transaction.dto';
+import { BlockchainIndexerService } from '../../blockchain/services/blockchain-indexer.service';
 
 @Injectable()
 export class TransactionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly indexerService?: BlockchainIndexerService,
+  ) {}
 
   async trackTransaction(authUser: AuthenticatedUser, dto: TrackTransactionDto) {
     const txHash = normalizeAddress(dto.txHash);
@@ -54,7 +58,20 @@ export class TransactionsService {
       include: { circle: true },
     });
 
-    return this.mapTransaction(record);
+    // Event-driven instant index trigger so UI sees confirmed state immediately
+    let refreshed = record;
+    if (this.indexerService) {
+      await this.indexerService.pollOnce().catch(() => 0);
+      if (typeof this.prisma.blockchainTransaction.findUnique === 'function') {
+        refreshed =
+          (await this.prisma.blockchainTransaction.findUnique({
+            where: { txHash },
+            include: { circle: true },
+          })) || record;
+      }
+    }
+
+    return this.mapTransaction(refreshed);
   }
 
   async getMyTransactions(authUser: AuthenticatedUser, circleIdFilter?: string) {

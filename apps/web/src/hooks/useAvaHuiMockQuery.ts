@@ -19,16 +19,29 @@ import {
   mockVerifyTeam1Attestation,
   mockWithdrawCollateral,
   resetMockState,
+  saveMockState,
   switchMockUser,
 } from '@/stores/avahuiMockEngine';
-import { CreateCircleFormInput } from '@avahui/shared';
-import { parseUnits } from 'viem';
+import {
+  CreateCircleFormInput,
+  TransactionType,
+} from '@avahui/shared';
+import { MockUSDCABI } from '@avahui/blockchain';
+import { formatEther, formatUnits, parseUnits } from 'viem';
 import {
   authApi,
   circleApi,
   transactionApi,
   notificationApi,
 } from '@/lib/api';
+import { frontendEnv } from '@/config/env';
+import {
+  activeFujiChain,
+  ensureBrowserWalletNetwork,
+  publicClient,
+  resolveSignerClient,
+} from '@/lib/wagmi/client';
+import { generateMockTxHash } from '@/lib/utils';
 
 export const AVAHUI_QUERY_KEYS = {
   mockState: ['avahui', 'app-state'] as const,
@@ -36,45 +49,123 @@ export const AVAHUI_QUERY_KEYS = {
 
 const isMockMode = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
 
+const TEAM1_VERIFIER_ABI = [
+  {
+    type: 'function',
+    name: 'issueAttestation',
+    inputs: [
+      { name: 'account', type: 'address' },
+      { name: 'identityNullifier', type: 'bytes32' },
+      { name: 'trustTier', type: 'uint8' },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+] as const;
+
+async function readOnChainBalances(walletAddress: string): Promise<{
+  avaxBalance?: string;
+  usdcBalance?: string;
+}> {
+  try {
+    const addr = walletAddress as `0x${string}`;
+    const [weiBal, usdcRaw] = await Promise.all([
+      publicClient.getBalance({ address: addr }),
+      publicClient
+        .readContract({
+          address: frontendEnv.usdcTokenAddress,
+          abi: MockUSDCABI,
+          functionName: 'balanceOf',
+          args: [addr],
+        })
+        .catch(() => null),
+    ]);
+
+    return {
+      avaxBalance: parseFloat(formatEther(weiBal)).toFixed(2),
+      ...(usdcRaw !== null
+        ? { usdcBalance: parseFloat(formatUnits(usdcRaw as bigint, 6)).toFixed(2) }
+        : {}),
+    };
+  } catch {
+    return {};
+  }
+}
+
 async function fetchRealOrMockState(): Promise<AvaHuiMockState> {
   if (isMockMode) {
     return loadMockState();
   }
 
   try {
-    const [userProfile, circlesRes, transactions, notifications] = await Promise.all([
-      authApi.getMe().catch((err) => {
-        console.warn('[AvaHui] authApi.getMe fallback to mock:', err?.message);
-        return null;
-      }),
-      circleApi.listCircles({ limit: 50 }).catch((err) => {
-        console.warn('[AvaHui] circleApi.listCircles fallback to mock:', err?.message);
-        return null;
-      }),
-      transactionApi.getMyTransactions().catch(() => []),
-      notificationApi.getMyNotifications().catch(() => []),
-    ]);
-
     const mockFallback = loadMockState();
+    const fallbackUser =
+      mockFallback.users.find((u) => u.id === mockFallback.currentUserId) ||
+      mockFallback.users[0];
+    const activeWallet =
+      (typeof window !== 'undefined' &&
+        window.localStorage.getItem('avahui_active_wallet')) ||
+      fallbackUser?.walletAddress;
+
+    const [userProfile, circlesRes, transactions, notifications, onChainBal] =
+      await Promise.all([
+        authApi.getMe(activeWallet).catch((err) => {
+          console.warn('[AvaHui] authApi.getMe fallback to mock:', err?.message);
+          return null;
+        }),
+        circleApi.listCircles({ limit: 50 }).catch((err) => {
+          console.warn('[AvaHui] circleApi.listCircles fallback to mock:', err?.message);
+          return null;
+        }),
+        transactionApi.getMyTransactions().catch(() => []),
+        notificationApi.getMyNotifications().catch(() => []),
+        activeWallet
+          ? readOnChainBalances(activeWallet)
+          : Promise.resolve<{ avaxBalance?: string; usdcBalance?: string }>({}),
+      ]);
+
+    const resolvedWallet =
+      userProfile?.walletAddress || activeWallet || fallbackUser.walletAddress;
+
+    const mappedActiveUser = userProfile
+      ? {
+          id: fallbackUser?.walletAddress?.toLowerCase() === resolvedWallet.toLowerCase()
+            ? fallbackUser.id
+            : userProfile.id,
+          email: userProfile.email || fallbackUser?.email || 'builder@avahui.io',
+          displayName:
+            userProfile.displayName || fallbackUser?.displayName || 'UniHack Builder',
+          avatarUrl: userProfile.avatarUrl || undefined,
+          walletAddress: resolvedWallet,
+          avaxBalance:
+            onChainBal.avaxBalance ||
+            userProfile.avaxBalance ||
+            fallbackUser?.avaxBalance ||
+            '1000.00',
+          usdcBalance:
+            onChainBal.usdcBalance ||
+            userProfile.usdcBalance ||
+            fallbackUser?.usdcBalance ||
+            '10000.00',
+          usdcAllowance: userProfile.usdcAllowance || '1000.00',
+          stats: userProfile.stats,
+          isTeam1Verified: true,
+        }
+      : {
+          ...fallbackUser,
+          ...(onChainBal.avaxBalance ? { avaxBalance: onChainBal.avaxBalance } : {}),
+          ...(onChainBal.usdcBalance ? { usdcBalance: onChainBal.usdcBalance } : {}),
+        };
+
+    const userWallet = (mappedActiveUser.walletAddress || '').toLowerCase();
+    const mergedUsers = [
+      mappedActiveUser,
+      ...mockFallback.users.filter(
+        (u) => (u.walletAddress || '').toLowerCase() !== userWallet,
+      ),
+    ];
 
     if (circlesRes && Array.isArray(circlesRes.items) && circlesRes.items.length > 0) {
-      const mappedActiveUser = userProfile ? {
-        id: userProfile.id,
-        email: userProfile.email || 'builder@avahui.io',
-        displayName: userProfile.displayName || 'UniHack Builder',
-        avatarUrl: userProfile.avatarUrl || undefined,
-        walletAddress: userProfile.walletAddress || '0x71c95911e9a5d330f4d621842ec243ee13432921',
-        avaxBalance: userProfile.avaxBalance || '0.5 AVAX',
-        usdcBalance: userProfile.usdcBalance || '1,000.00 mUSDC',
-        usdcAllowance: userProfile.usdcAllowance || '1,000.00 mUSDC',
-        stats: userProfile.stats,
-      } : (mockFallback.users.find(u => u.id === mockFallback.currentUserId) || mockFallback.users[0]);
-
-      const userWallet = (mappedActiveUser.walletAddress || '').toLowerCase();
-      const mergedUsers = userProfile
-        ? [mappedActiveUser, ...mockFallback.users.filter(u => (u.walletAddress || '').toLowerCase() !== userWallet)]
-        : mockFallback.users;
-
       return {
         currentUserId: mappedActiveUser.id,
         users: mergedUsers.map((u) => ({
@@ -83,19 +174,30 @@ async function fetchRealOrMockState(): Promise<AvaHuiMockState> {
         })),
         circles: circlesRes.items.map((c, idx) => ({
           ...c,
-          isSealedBid: c.isSealedBid ?? (c.allocationMode === 'BIDDING'),
+          isSealedBid: c.isSealedBid ?? c.allocationMode === 'BIDDING',
           enableYieldVault: c.enableYieldVault ?? true,
           yieldApyBps: c.yieldApyBps ?? 650,
-          accruedYieldFormatted: c.accruedYieldFormatted ?? ((idx + 1) * 3.25).toFixed(2),
+          accruedYieldFormatted:
+            c.accruedYieldFormatted ?? ((idx + 1) * 3.25).toFixed(2),
           inviteCode: c.inviteCode || `AVAHUI-${c.id.slice(-4).toUpperCase()}`,
           requireTeam1Attestation: c.requireTeam1Attestation ?? true,
         })),
-        transactions: transactions && transactions.length > 0 ? transactions : mockFallback.transactions,
-        notifications: notifications && notifications.length > 0 ? notifications : mockFallback.notifications,
+        transactions:
+          transactions && transactions.length > 0
+            ? transactions
+            : mockFallback.transactions,
+        notifications:
+          notifications && notifications.length > 0
+            ? notifications
+            : mockFallback.notifications,
       };
     }
 
-    return mockFallback;
+    return {
+      ...mockFallback,
+      users: mergedUsers,
+      currentUserId: mappedActiveUser.id,
+    };
   } catch (err) {
     console.warn('[AvaHui] Failed to fetch live backend state, using mock fallback:', err);
     return loadMockState();
@@ -106,9 +208,14 @@ export function useAvaHuiState() {
   return useQuery<AvaHuiMockState>({
     queryKey: AVAHUI_QUERY_KEYS.mockState,
     queryFn: () => fetchRealOrMockState(),
-    refetchInterval: isMockMode ? false : 4000,
-    staleTime: isMockMode ? Infinity : 2000,
+    refetchInterval: isMockMode ? false : 3000,
+    staleTime: isMockMode ? Infinity : 1500,
   });
+}
+
+function invalidateAllCircleQueries(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
+  queryClient.invalidateQueries({ queryKey: ['avahui'] });
 }
 
 export function useSwitchDemoUser() {
@@ -116,7 +223,6 @@ export function useSwitchDemoUser() {
   return useMutation({
     mutationFn: async (userId: string) => {
       const state = switchMockUser(userId);
-      // In live mode, sync selected user's wallet to backend
       const targetUser = state.users.find((u) => u.id === userId);
       if (!isMockMode && targetUser && targetUser.walletAddress) {
         try {
@@ -136,7 +242,7 @@ export function useSwitchDemoUser() {
     },
     onSuccess: (newState) => {
       queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, newState);
-      queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
+      invalidateAllCircleQueries(queryClient);
     },
   });
 }
@@ -144,13 +250,20 @@ export function useSwitchDemoUser() {
 export function useFaucetMint() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (amountUsdc?: number) => {
-      await new Promise((r) => setTimeout(r, 600));
+    mutationFn: async (
+      arg?: number | { amountUsdc?: number; skipMock?: boolean },
+    ) => {
+      const amountUsdc = typeof arg === 'number' ? arg : arg?.amountUsdc;
+      const skipMock = typeof arg === 'object' ? arg?.skipMock : false;
+      if (skipMock && !isMockMode) {
+        return { state: loadMockState(), txHash: '' };
+      }
+      await new Promise((r) => setTimeout(r, 400));
       return mockFaucetMint(amountUsdc);
     },
     onSuccess: ({ state }) => {
       queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, state);
-      queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
+      invalidateAllCircleQueries(queryClient);
     },
   });
 }
@@ -158,16 +271,35 @@ export function useFaucetMint() {
 export function useCreateCircleMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (input: CreateCircleFormInput) => {
-      // 1. If live mode, save draft to NestJS Backend & PostgreSQL
+    mutationFn: async (
+      arg: CreateCircleFormInput | { input: CreateCircleFormInput; skipMock?: boolean },
+    ) => {
+      const input = 'input' in arg ? arg.input : arg;
+      const skipMock = 'skipMock' in arg ? Boolean(arg.skipMock) : false;
+
+      if (skipMock && !isMockMode) {
+        return { state: loadMockState(), newCircle: undefined, txHash: '' };
+      }
+
       if (!isMockMode) {
         try {
           const contributionAmount = input.contributionAmountUsdc;
-          const collateralAmount = input.contributionAmountUsdc * (input.collateralMultiplier || 1);
-          const contributionBaseUnits = parseUnits(String(contributionAmount), 6).toString();
-          const collateralBaseUnits = parseUnits(String(collateralAmount), 6).toString();
-          const minBidBaseUnits = input.minBidUsdc ? parseUnits(String(input.minBidUsdc), 6).toString() : '0';
-          const maxBidBaseUnits = input.maxBidUsdc ? parseUnits(String(input.maxBidUsdc), 6).toString() : '0';
+          const collateralAmount =
+            input.contributionAmountUsdc * (input.collateralMultiplier || 1);
+          const contributionBaseUnits = parseUnits(
+            String(contributionAmount),
+            6,
+          ).toString();
+          const collateralBaseUnits = parseUnits(
+            String(collateralAmount),
+            6,
+          ).toString();
+          const minBidBaseUnits = input.minBidUsdc
+            ? parseUnits(String(input.minBidUsdc), 6).toString()
+            : '0';
+          const maxBidBaseUnits = input.maxBidUsdc
+            ? parseUnits(String(input.maxBidUsdc), 6).toString()
+            : '0';
 
           await circleApi.createDraft({
             name: input.name,
@@ -187,12 +319,12 @@ export function useCreateCircleMutation() {
         }
       }
 
-      await new Promise((r) => setTimeout(r, 700));
+      await new Promise((r) => setTimeout(r, 500));
       return mockCreateCircle(input);
     },
     onSuccess: ({ state }) => {
       queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, state);
-      queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
+      invalidateAllCircleQueries(queryClient);
     },
   });
 }
@@ -205,7 +337,7 @@ export function useResetDemoData() {
     },
     onSuccess: (newState) => {
       queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, newState);
-      queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
+      invalidateAllCircleQueries(queryClient);
     },
   });
 }
@@ -218,7 +350,7 @@ export function useMarkNotificationsRead() {
     },
     onSuccess: (newState) => {
       queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, newState);
-      queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
+      invalidateAllCircleQueries(queryClient);
     },
   });
 }
@@ -226,13 +358,18 @@ export function useMarkNotificationsRead() {
 export function useJoinCircleMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (circleId: string) => {
-      await new Promise((r) => setTimeout(r, 600));
+    mutationFn: async (arg: string | { circleId: string; skipMock?: boolean }) => {
+      const circleId = typeof arg === 'string' ? arg : arg.circleId;
+      const skipMock = typeof arg === 'object' ? Boolean(arg.skipMock) : false;
+      if (skipMock && !isMockMode) {
+        return { state: loadMockState(), txHash: '', activated: false };
+      }
+      await new Promise((r) => setTimeout(r, 400));
       return mockJoinCircle(circleId);
     },
     onSuccess: ({ state }) => {
       queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, state);
-      queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
+      invalidateAllCircleQueries(queryClient);
     },
   });
 }
@@ -243,16 +380,21 @@ export function useContributeRoundMutation() {
     mutationFn: async ({
       circleId,
       roundNumber,
+      skipMock,
     }: {
       circleId: string;
       roundNumber: number;
+      skipMock?: boolean;
     }) => {
-      await new Promise((r) => setTimeout(r, 600));
+      if (skipMock && !isMockMode) {
+        return { state: loadMockState(), txHash: '' };
+      }
+      await new Promise((r) => setTimeout(r, 400));
       return mockContributeRound(circleId, roundNumber);
     },
     onSuccess: ({ state }) => {
       queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, state);
-      queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
+      invalidateAllCircleQueries(queryClient);
     },
   });
 }
@@ -264,17 +406,22 @@ export function useSubmitBidMutation() {
       circleId,
       roundNumber,
       bidAmountUsdc,
+      skipMock,
     }: {
       circleId: string;
       roundNumber: number;
       bidAmountUsdc: number;
+      skipMock?: boolean;
     }) => {
-      await new Promise((r) => setTimeout(r, 600));
+      if (skipMock && !isMockMode) {
+        return { state: loadMockState(), txHash: '' };
+      }
+      await new Promise((r) => setTimeout(r, 400));
       return mockSubmitBid(circleId, roundNumber, bidAmountUsdc);
     },
     onSuccess: ({ state }) => {
       queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, state);
-      queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
+      invalidateAllCircleQueries(queryClient);
     },
   });
 }
@@ -285,16 +432,27 @@ export function useSettleRoundMutation() {
     mutationFn: async ({
       circleId,
       roundNumber,
+      skipMock,
     }: {
       circleId: string;
       roundNumber: number;
+      skipMock?: boolean;
     }) => {
-      await new Promise((r) => setTimeout(r, 700));
+      if (skipMock && !isMockMode) {
+        return {
+          state: loadMockState(),
+          txHash: '',
+          winnerName: '',
+          netPayoutFormatted: '0.00',
+          slashedMembersCount: 0,
+        };
+      }
+      await new Promise((r) => setTimeout(r, 500));
       return mockSettleRound(circleId, roundNumber);
     },
     onSuccess: ({ state }) => {
       queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, state);
-      queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
+      invalidateAllCircleQueries(queryClient);
     },
   });
 }
@@ -302,13 +460,18 @@ export function useSettleRoundMutation() {
 export function useWithdrawCollateralMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (circleId: string) => {
-      await new Promise((r) => setTimeout(r, 600));
+    mutationFn: async (arg: string | { circleId: string; skipMock?: boolean }) => {
+      const circleId = typeof arg === 'string' ? arg : arg.circleId;
+      const skipMock = typeof arg === 'object' ? Boolean(arg.skipMock) : false;
+      if (skipMock && !isMockMode) {
+        return { state: loadMockState(), txHash: '', totalReturnedFormatted: '0.00' };
+      }
+      await new Promise((r) => setTimeout(r, 400));
       return mockWithdrawCollateral(circleId);
     },
     onSuccess: ({ state }) => {
       queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, state);
-      queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
+      invalidateAllCircleQueries(queryClient);
     },
   });
 }
@@ -328,7 +491,7 @@ export function useUpdateProfileMutation() {
     },
     onSuccess: (newState) => {
       queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, newState);
-      queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
+      invalidateAllCircleQueries(queryClient);
     },
   });
 }
@@ -340,17 +503,22 @@ export function useCommitBidMutation() {
       circleId,
       roundNumber,
       commitment,
+      skipMock,
     }: {
       circleId: string;
       roundNumber: number;
       commitment: string;
+      skipMock?: boolean;
     }) => {
-      await new Promise((r) => setTimeout(r, 400));
+      if (skipMock && !isMockMode) {
+        return { state: loadMockState(), txHash: '' };
+      }
+      await new Promise((r) => setTimeout(r, 350));
       return mockCommitBid(circleId, roundNumber, commitment);
     },
     onSuccess: ({ state }) => {
       queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, state);
-      queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
+      invalidateAllCircleQueries(queryClient);
     },
   });
 }
@@ -362,17 +530,22 @@ export function useRevealBidMutation() {
       circleId,
       roundNumber,
       bidAmountUsdc,
+      skipMock,
     }: {
       circleId: string;
       roundNumber: number;
       bidAmountUsdc: number;
+      skipMock?: boolean;
     }) => {
-      await new Promise((r) => setTimeout(r, 400));
+      if (skipMock && !isMockMode) {
+        return { state: loadMockState(), txHash: '' };
+      }
+      await new Promise((r) => setTimeout(r, 350));
       return mockRevealBid(circleId, roundNumber, bidAmountUsdc);
     },
     onSuccess: ({ state }) => {
       queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, state);
-      queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
+      invalidateAllCircleQueries(queryClient);
     },
   });
 }
@@ -381,12 +554,48 @@ export function useSwapAvaxToUsdcMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (avaxAmount: number = 0.05) => {
-      await new Promise((r) => setTimeout(r, 500));
+      const state = loadMockState();
+      const user =
+        state.users.find((u) => u.id === state.currentUserId) || state.users[0];
+      const usdcReceived = Math.round(avaxAmount * 5000);
+
+      if (!isMockMode && user?.walletAddress) {
+        const signer = await resolveSignerClient(user.walletAddress);
+        if (signer) {
+          try {
+            const txHash = await signer.client.writeContract({
+              address: frontendEnv.usdcTokenAddress,
+              abi: MockUSDCABI,
+              functionName: 'faucet',
+              args: [parseUnits(String(usdcReceived), 6)],
+              account: signer.account,
+              chain: activeFujiChain,
+            });
+            await publicClient.waitForTransactionReceipt({ hash: txHash });
+            await transactionApi
+              .trackTransaction({
+                txHash,
+                txType: TransactionType.SWAP_TOKEN,
+                contractAddress: frontendEnv.usdcTokenAddress,
+                senderAddress: signer.account,
+              })
+              .catch(() => {});
+            const balances = await readOnChainBalances(signer.account);
+            if (balances.usdcBalance) user.usdcBalance = balances.usdcBalance;
+            if (balances.avaxBalance) user.avaxBalance = balances.avaxBalance;
+            return { state: saveMockState(state), txHash, usdcReceived };
+          } catch (e) {
+            console.warn('[AvaHui] On-chain swap mint fallback:', e);
+          }
+        }
+      }
+
+      await new Promise((r) => setTimeout(r, 400));
       return mockSwapAvaxToUsdc(avaxAmount);
     },
     onSuccess: ({ state }) => {
       queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, state);
-      queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
+      invalidateAllCircleQueries(queryClient);
     },
   });
 }
@@ -395,12 +604,48 @@ export function useVerifyTeam1AttestationMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      await new Promise((r) => setTimeout(r, 500));
+      const state = loadMockState();
+      const user =
+        state.users.find((u) => u.id === state.currentUserId) || state.users[0];
+      const nullifier = (user?.identityNullifier ||
+        `0x9999${(user?.walletAddress || '0'.repeat(42)).slice(2).toLowerCase().padEnd(60, 'a')}`) as `0x${string}`;
+
+      if (!isMockMode && user?.walletAddress) {
+        const signer = await resolveSignerClient(user.walletAddress);
+        if (signer) {
+          try {
+            const txHash = await signer.client.writeContract({
+              address: frontendEnv.sybilVerifierAddress,
+              abi: TEAM1_VERIFIER_ABI,
+              functionName: 'issueAttestation',
+              args: [signer.account, nullifier, 2],
+              account: signer.account,
+              chain: activeFujiChain,
+            });
+            await publicClient.waitForTransactionReceipt({ hash: txHash });
+            await transactionApi
+              .trackTransaction({
+                txHash,
+                txType: TransactionType.VERIFY_ATTESTATION,
+                contractAddress: frontendEnv.sybilVerifierAddress,
+                senderAddress: signer.account,
+              })
+              .catch(() => {});
+            user.isTeam1Verified = true;
+            user.identityNullifier = nullifier;
+            return { state: saveMockState(state), txHash, nullifier };
+          } catch (e) {
+            console.warn('[AvaHui] On-chain issueAttestation fallback:', e);
+          }
+        }
+      }
+
+      await new Promise((r) => setTimeout(r, 400));
       return mockVerifyTeam1Attestation();
     },
     onSuccess: ({ state }) => {
       queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, state);
-      queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
+      invalidateAllCircleQueries(queryClient);
     },
   });
 }
@@ -411,7 +656,7 @@ export function useConnectBrowserWalletMutation() {
     mutationFn: async () => {
       if (typeof window === 'undefined' || !(window as any).ethereum) {
         throw new Error(
-          'Không tìm thấy ví trình duyệt (Core Wallet / MetaMask). Vui lòng cài đặt tiện ích mở rộng trước!'
+          'Không tìm thấy ví trình duyệt (Core Wallet / MetaMask). Hệ thống đã tự động gán ví EVM local để bạn thao tác ngay mà không cần cài ví ngoài!',
         );
       }
       const eth = (window as any).ethereum;
@@ -423,47 +668,14 @@ export function useConnectBrowserWalletMutation() {
       }
       const address = accounts[0];
 
-      // Auto-switch or add Avalanche Fuji Testnet (43113 / 0xa869)
-      try {
-        await eth.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: '0xa869' }],
-        });
-      } catch (switchErr: any) {
-        if (switchErr?.code === 4902) {
-          await eth.request({
-            method: 'wallet_addEthereumChain',
-            params: [
-              {
-                chainId: '0xa869',
-                chainName: 'Avalanche Fuji Testnet',
-                nativeCurrency: {
-                  name: 'Avalanche',
-                  symbol: 'AVAX',
-                  decimals: 18,
-                },
-                rpcUrls: ['https://api.avax-test.network/ext/bc/C/rpc'],
-                blockExplorerUrls: ['https://testnet.snowtrace.io/'],
-              },
-            ],
-          });
-        }
-      }
+      await ensureBrowserWalletNetwork(eth);
 
-      // Query native AVAX balance on Fuji
-      let avaxFormatted: string | undefined = undefined;
-      try {
-        const hexBal: string = await eth.request({
-          method: 'eth_getBalance',
-          params: [address, 'latest'],
-        });
-        const wei = BigInt(hexBal);
-        avaxFormatted = (Number(wei) / 1e18).toFixed(3);
-      } catch {
-        // ignore
-      }
-
-      const newState = mockBindRealWallet(address, avaxFormatted);
+      const balances = await readOnChainBalances(address);
+      const newState = mockBindRealWallet(
+        address,
+        balances.avaxBalance,
+        balances.usdcBalance,
+      );
 
       if (!isMockMode) {
         try {
@@ -477,9 +689,7 @@ export function useConnectBrowserWalletMutation() {
     },
     onSuccess: ({ state }) => {
       queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, state);
-      queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
+      invalidateAllCircleQueries(queryClient);
     },
   });
 }
-
-

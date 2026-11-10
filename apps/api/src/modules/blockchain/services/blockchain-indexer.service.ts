@@ -116,7 +116,14 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
 
       if (!state) {
         const startBlockEnv = BigInt(process.env.INDEXER_START_BLOCK || 0);
-        const initialBlock = startBlockEnv > 0n ? startBlockEnv - 1n : safeTargetBlock;
+        const isLocalRpc =
+          this.rpcUrl.includes('127.0.0.1') || this.rpcUrl.includes('localhost');
+        const initialBlock =
+          startBlockEnv > 0n
+            ? startBlockEnv - 1n
+            : isLocalRpc
+              ? 0n
+              : safeTargetBlock;
         state = await this.prisma.indexerState.create({
           data: {
             chainId: this.chainId,
@@ -160,9 +167,17 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
           toBlock,
         });
 
+        const newlyCreatedCircles: `0x${string}`[] = [];
         for (const rawLog of logs) {
           const decoded = this.tryDecodeLog(rawLog);
           if (!decoded) continue;
+
+          if (decoded.eventName === 'CircleCreated' && decoded.args?.circleAddress) {
+            const addr = normalizeAddress(decoded.args.circleAddress) as `0x${string}`;
+            if (!targetAddresses.includes(addr)) {
+              newlyCreatedCircles.push(addr);
+            }
+          }
 
           const didProcess = await this.processDecodedEvent({
             chainId: this.chainId,
@@ -175,6 +190,31 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
             args: decoded.args,
           });
           if (didProcess) processedCount++;
+        }
+
+        // Catch same-batch events emitted by circles deployed in this block window
+        if (newlyCreatedCircles.length > 0) {
+          const extraLogs = await this.publicClient.getLogs({
+            address: newlyCreatedCircles,
+            fromBlock,
+            toBlock,
+          });
+          for (const rawLog of extraLogs) {
+            const decoded = this.tryDecodeLog(rawLog);
+            if (!decoded) continue;
+
+            const didProcess = await this.processDecodedEvent({
+              chainId: this.chainId,
+              txHash: normalizeAddress(rawLog.transactionHash || ''),
+              logIndex: Number(rawLog.logIndex ?? 0),
+              blockNumber: BigInt(rawLog.blockNumber ?? fromBlock),
+              blockTimestamp: new Date(),
+              contractAddress: normalizeAddress(rawLog.address),
+              eventName: decoded.eventName,
+              args: decoded.args,
+            });
+            if (didProcess) processedCount++;
+          }
         }
       }
 
@@ -590,29 +630,44 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
 
     const round = await this.ensureRoundExists(tx, circle, roundNumber);
 
-    await tx.bid.create({
-      data: {
-        circleId: circle.id,
+    const existingBid = await tx.bid.findFirst({
+      where: {
         roundId: round.id,
-        roundNumber,
         bidderAddress,
         bidAmount,
-        isWinningBid: false,
-        txHash,
-        placedAt: event.blockTimestamp,
       },
     });
 
-    const grossPot = BigInt(circle.maxMembers) * BigInt(circle.contributionAmount.toString());
-    const netPayout = grossPot - BigInt(bidAmount);
+    if (!existingBid) {
+      await tx.bid.create({
+        data: {
+          circleId: circle.id,
+          roundId: round.id,
+          roundNumber,
+          bidderAddress,
+          bidAmount,
+          isWinningBid: false,
+          txHash,
+          placedAt: event.blockTimestamp,
+        },
+      });
+    }
 
-    await tx.round.update({
-      where: { id: round.id },
-      data: {
-        winningBidAmount: bidAmount,
-        netPayoutAmount: netPayout.toString(),
-      },
-    });
+    const currentTopBid = BigInt(
+      round.winningBidAmount ? round.winningBidAmount.toString() : '0',
+    );
+    if (BigInt(bidAmount) > currentTopBid) {
+      const grossPot = BigInt(circle.maxMembers) * BigInt(circle.contributionAmount.toString());
+      const netPayout = grossPot - BigInt(bidAmount);
+
+      await tx.round.update({
+        where: { id: round.id },
+        data: {
+          winningBidAmount: bidAmount,
+          netPayoutAmount: netPayout.toString(),
+        },
+      });
+    }
 
     await this.confirmTransactionRecord(
       tx,
@@ -1102,7 +1157,7 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
       bidderAddress,
       circleAddress,
       circle.id,
-      TxType.PLACE_BID,
+      TxType.COMMIT_BID,
     );
   }
 
@@ -1111,8 +1166,24 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
     event: IndexedEventInput,
     txHash: string,
   ) {
-    // BidRevealed is also followed by or equivalent to BidSubmitted with verified amount
     await this.handleBidSubmitted(tx, event, txHash);
+    const args = event.args;
+    const circleAddress = normalizeAddress(args.circleAddress || event.contractAddress);
+    const bidderAddress = normalizeAddress(args.bidder);
+    const circle = await tx.circle.findUnique({
+      where: { contractAddress: circleAddress },
+    });
+    if (circle) {
+      await this.confirmTransactionRecord(
+        tx,
+        event,
+        txHash,
+        bidderAddress,
+        circleAddress,
+        circle.id,
+        TxType.REVEAL_BID,
+      );
+    }
   }
 
   private async handleYieldHarvested(
@@ -1168,7 +1239,7 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
       memberAddress,
       circleAddress,
       circle?.id ?? null,
-      TxType.JOIN_CIRCLE,
+      TxType.VERIFY_ATTESTATION,
     );
   }
 }

@@ -16,6 +16,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node prisma/seeds/seed.ts",
+    "db:reset-seed": "node scripts/reset-db.js && ts-node prisma/seeds/seed.ts",
     "deploy:fuji": "node scripts/deploy-fuji.js"
   },
   "dependencies": {

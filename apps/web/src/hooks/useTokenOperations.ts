@@ -1,11 +1,14 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { parseUnits, formatUnits, createWalletClient, custom } from 'viem';
-import { avalancheFuji } from 'viem/chains';
+import { parseUnits, formatUnits } from 'viem';
 import { MockUSDCABI } from '@avahui/blockchain';
 import { TransactionType } from '@avahui/shared';
-import { publicClient } from '@/lib/wagmi/client';
+import {
+  activeFujiChain,
+  publicClient,
+  resolveSignerClient,
+} from '@/lib/wagmi/client';
 import { frontendEnv } from '@/config/env';
 import { transactionApi } from '@/lib/api';
 import { useTxLifecycle } from '@/features/transactions/hooks/useTxLifecycle';
@@ -68,50 +71,46 @@ export function useTokenOperations() {
         return allowance;
       } catch (err) {
         console.warn('[AvaHui] Failed to read on-chain allowance:', err);
-        return parseUnits('1000000', 6);
+        return 0n;
       }
     },
     [],
   );
 
   /**
-   * Mint testnet mUSDC via Faucet
-   * If real injected/embedded wallet is present, calls on-chain faucet; otherwise records transaction and triggers mock mint.
+   * Mint testnet mUSDC via Faucet on-chain
    */
   const requestFaucet = useCallback(
     async (amountUsdc: number = 1000) => {
       return runTransaction({
         title: `Faucet +${amountUsdc.toLocaleString()} mUSDC`,
-        description: 'Nhận token thử nghiệm trên mạng Avalanche Fuji Testnet',
+        description: 'Nhận token thử nghiệm trực tiếp từ Smart Contract MockUSDC',
         action: async () => {
           setIsOperating(true);
           try {
             const amountBaseUnits = parseUnits(String(amountUsdc), 6);
             let txHash: string | null = null;
+            let liveConfirmed = false;
 
-            if (
-              !isMockMode &&
-              typeof window !== 'undefined' &&
-              window.ethereum &&
-              currentUser?.walletAddress
-            ) {
-              try {
-                const walletClient = createWalletClient({
-                  chain: avalancheFuji,
-                  transport: custom(window.ethereum),
-                });
-                const [account] = await walletClient.getAddresses();
-                if (account) {
-                  txHash = await walletClient.writeContract({
+            if (!isMockMode) {
+              const signer = await resolveSignerClient(currentUser?.walletAddress);
+              if (signer) {
+                try {
+                  txHash = await signer.client.writeContract({
                     address: frontendEnv.usdcTokenAddress,
                     abi: MockUSDCABI,
                     functionName: 'faucet',
                     args: [amountBaseUnits],
-                    account,
+                    account: signer.account,
+                    chain: activeFujiChain,
                   });
+                  await publicClient.waitForTransactionReceipt({
+                    hash: txHash as `0x${string}`,
+                  });
+                  liveConfirmed = true;
+                } catch (walletErr) {
+                  console.warn('[AvaHui] On-chain faucet call failed, falling back:', walletErr);
                 }
-              } catch (walletErr) {
-                console.warn('[AvaHui] On-chain faucet call reverted/rejected, falling back:', walletErr);
               }
             }
 
@@ -119,7 +118,6 @@ export function useTokenOperations() {
               txHash = generateMockTxHash();
             }
 
-            // Track transaction in backend API
             if (!isMockMode) {
               try {
                 await transactionApi.trackTransaction({
@@ -133,8 +131,7 @@ export function useTokenOperations() {
               }
             }
 
-            // Update UI state
-            await mockFaucetMutation.mutateAsync(amountUsdc);
+            await mockFaucetMutation.mutateAsync({ amountUsdc, skipMock: liveConfirmed });
 
             return { txHash };
           } finally {
@@ -159,29 +156,24 @@ export function useTokenOperations() {
           try {
             let txHash: string | null = null;
 
-            if (
-              !isMockMode &&
-              typeof window !== 'undefined' &&
-              window.ethereum &&
-              currentUser?.walletAddress
-            ) {
-              try {
-                const walletClient = createWalletClient({
-                  chain: avalancheFuji,
-                  transport: custom(window.ethereum),
-                });
-                const [account] = await walletClient.getAddresses();
-                if (account) {
-                  txHash = await walletClient.writeContract({
+            if (!isMockMode) {
+              const signer = await resolveSignerClient(currentUser?.walletAddress);
+              if (signer) {
+                try {
+                  txHash = await signer.client.writeContract({
                     address: frontendEnv.usdcTokenAddress,
                     abi: MockUSDCABI,
                     functionName: 'approve',
                     args: [spenderAddress, amountBaseUnits],
-                    account,
+                    account: signer.account,
+                    chain: activeFujiChain,
                   });
+                  await publicClient.waitForTransactionReceipt({
+                    hash: txHash as `0x${string}`,
+                  });
+                } catch (walletErr) {
+                  console.warn('[AvaHui] On-chain approve call failed:', walletErr);
                 }
-              } catch (walletErr) {
-                console.warn('[AvaHui] On-chain approve call reverted/rejected:', walletErr);
               }
             }
 
@@ -189,7 +181,6 @@ export function useTokenOperations() {
               txHash = generateMockTxHash();
             }
 
-            // Track transaction in backend API
             if (!isMockMode) {
               try {
                 await transactionApi.trackTransaction({

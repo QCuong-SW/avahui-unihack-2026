@@ -42,6 +42,10 @@ contract AvaHuiYieldVault is IYieldVault, ReentrancyGuard {
         _accrue(msg.sender);
 
         asset.safeTransferFrom(msg.sender, address(this), amount);
+        if (_positions[msg.sender].principal == 0 && _positions[msg.sender].accruedYield == 0) {
+            // Warm storage slot on first deposit to prevent block.timestamp delta SSTORE gas spikes during eth_estimateGas
+            _positions[msg.sender].accruedYield = 1;
+        }
         _positions[msg.sender].principal += amount;
 
         emit YieldDeposited(msg.sender, amount, block.timestamp);

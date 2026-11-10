@@ -3,16 +3,13 @@
 import { useCallback } from 'react';
 import {
   parseUnits,
-  createWalletClient,
-  custom,
   keccak256,
   encodePacked,
+  decodeEventLog,
 } from 'viem';
-import { avalancheFuji } from 'viem/chains';
 import {
   AvaHuiCircleABI,
   AvaHuiFactoryABI,
-  MockUSDCABI,
 } from '@avahui/blockchain';
 import {
   AllocationMode,
@@ -35,7 +32,11 @@ import {
 } from '@/hooks/useAvaHuiMockQuery';
 import { useTokenOperations } from '@/hooks/useTokenOperations';
 import { generateMockTxHash } from '@/lib/utils';
-import { publicClient } from '@/lib/wagmi/client';
+import {
+  activeFujiChain,
+  publicClient,
+  resolveSignerClient,
+} from '@/lib/wagmi/client';
 
 const isMockMode = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
 
@@ -56,22 +57,27 @@ export function useCircleActions() {
     state?.users.find((u) => u.id === state.currentUserId) || state?.users[0];
 
   /**
-   * Helper to get an active wallet client from window.ethereum
+   * Ensure ERC20 allowance is sufficient before contract transferFrom
    */
-  const getActiveWalletClient = useCallback(async () => {
-    if (typeof window === 'undefined' || !window.ethereum) return null;
-    try {
-      const client = createWalletClient({
-        chain: avalancheFuji,
-        transport: custom(window.ethereum),
-      });
-      const [account] = await client.getAddresses();
-      if (!account) return null;
-      return { client, account };
-    } catch {
-      return null;
-    }
-  }, []);
+  const ensureSufficientAllowance = useCallback(
+    async (
+      ownerAddress: `0x${string}`,
+      spenderAddress: `0x${string}`,
+      requiredAmount: bigint,
+      circleId?: string,
+    ) => {
+      if (isMockMode) return;
+      try {
+        const currentAllowance = await getAllowance(ownerAddress, spenderAddress);
+        if (currentAllowance < requiredAmount) {
+          await approveToken(spenderAddress, requiredAmount * 2n, circleId);
+        }
+      } catch (e) {
+        console.warn('[AvaHui] Allowance check/approve warning:', e);
+      }
+    },
+    [approveToken, getAllowance],
+  );
 
   /**
    * ACTION 1: Join Circle & Lock Collateral (Supports V1 joinCircle & V2 joinCircleProtected)
@@ -81,47 +87,48 @@ export function useCircleActions() {
       const circleAddress = (circle.contractAddress || frontendEnv.factoryAddress) as `0x${string}`;
       const collateralBaseUnits = parseUnits(circle.collateralAmountFormatted || '100', 6);
 
-      // 1. Check & Approve collateral allowance
-      if (!isMockMode && circle.contractAddress && currentUser?.walletAddress) {
-        try {
-          const currentAllowance = await getAllowance(
-            currentUser.walletAddress as `0x${string}`,
-            circleAddress,
-          );
-          if (currentAllowance < collateralBaseUnits) {
-            await approveToken(circleAddress, collateralBaseUnits, circle.id);
-          }
-        } catch (e) {
-          console.warn('[AvaHui] Allowance check error:', e);
-        }
-      }
-
-      // 2. Perform Join on Smart Contract if live wallet available
       let txHash: string | null = null;
+      let liveConfirmed = false;
+
       if (!isMockMode && circle.contractAddress) {
-        const wallet = await getActiveWalletClient();
-        if (wallet) {
+        const signer = await resolveSignerClient(currentUser?.walletAddress);
+        if (signer) {
+          await ensureSufficientAllowance(
+            signer.account,
+            circleAddress,
+            collateralBaseUnits,
+            circle.id,
+          );
+
           try {
-            if (inviteCode || circle.isPrivateInvite) {
+            const requiresProtected = Boolean(circle.isPrivateInvite);
+            if (requiresProtected || (inviteCode && circle.isPrivateInvite)) {
               const nullifier = (currentUser?.identityNullifier ||
-                `0x9999${wallet.account.slice(2).toLowerCase().padEnd(60, 'a')}`) as `0x${string}`;
-              txHash = await wallet.client.writeContract({
+                `0x9999${signer.account.slice(2).toLowerCase().padEnd(60, 'a')}`) as `0x${string}`;
+              txHash = await signer.client.writeContract({
                 address: circleAddress,
                 abi: AvaHuiCircleABI,
                 functionName: 'joinCircleProtected',
                 args: [inviteCode || circle.inviteCode || '', nullifier],
-                account: wallet.account,
+                account: signer.account,
+                chain: activeFujiChain,
+                gas: 500_000n,
               });
             } else {
-              txHash = await wallet.client.writeContract({
+              txHash = await signer.client.writeContract({
                 address: circleAddress,
                 abi: AvaHuiCircleABI,
                 functionName: 'joinCircle',
-                account: wallet.account,
+                account: signer.account,
+                chain: activeFujiChain,
+                gas: 500_000n,
               });
             }
+            await publicClient.waitForTransactionReceipt({ hash: txHash as `0x${string}` });
+            liveConfirmed = true;
           } catch (contractErr) {
-            console.warn('[AvaHui] On-chain joinCircle failed, using fallback:', contractErr);
+            console.warn('[AvaHui] On-chain joinCircle error:', contractErr);
+            throw contractErr;
           }
         }
       }
@@ -130,7 +137,6 @@ export function useCircleActions() {
         txHash = generateMockTxHash();
       }
 
-      // 3. Track transaction in Backend API
       if (!isMockMode) {
         try {
           await transactionApi.trackTransaction({
@@ -145,11 +151,10 @@ export function useCircleActions() {
         }
       }
 
-      // 4. Update UI state
-      await joinMutation.mutateAsync(circle.id);
+      await joinMutation.mutateAsync({ circleId: circle.id, skipMock: liveConfirmed });
       return { txHash };
     },
-    [approveToken, currentUser?.walletAddress, getActiveWalletClient, getAllowance, joinMutation],
+    [currentUser?.identityNullifier, currentUser?.walletAddress, ensureSufficientAllowance, joinMutation],
   );
 
   /**
@@ -160,36 +165,33 @@ export function useCircleActions() {
       const circleAddress = (circle.contractAddress || frontendEnv.factoryAddress) as `0x${string}`;
       const contributionBaseUnits = parseUnits(circle.contributionAmountFormatted || '50', 6);
 
-      // 1. Check & Approve contribution allowance
-      if (!isMockMode && circle.contractAddress && currentUser?.walletAddress) {
-        try {
-          const currentAllowance = await getAllowance(
-            currentUser.walletAddress as `0x${string}`,
-            circleAddress,
-          );
-          if (currentAllowance < contributionBaseUnits) {
-            await approveToken(circleAddress, contributionBaseUnits, circle.id);
-          }
-        } catch (e) {
-          console.warn('[AvaHui] Contribution allowance check error:', e);
-        }
-      }
-
-      // 2. Perform Contribute on Smart Contract if live wallet available
       let txHash: string | null = null;
+      let liveConfirmed = false;
+
       if (!isMockMode && circle.contractAddress) {
-        const wallet = await getActiveWalletClient();
-        if (wallet) {
+        const signer = await resolveSignerClient(currentUser?.walletAddress);
+        if (signer) {
+          await ensureSufficientAllowance(
+            signer.account,
+            circleAddress,
+            contributionBaseUnits,
+            circle.id,
+          );
           try {
-            txHash = await wallet.client.writeContract({
+            txHash = await signer.client.writeContract({
               address: circleAddress,
               abi: AvaHuiCircleABI,
               functionName: 'contribute',
               args: [roundNumber],
-              account: wallet.account,
+              account: signer.account,
+              chain: activeFujiChain,
+              gas: 500_000n,
             });
+            await publicClient.waitForTransactionReceipt({ hash: txHash as `0x${string}` });
+            liveConfirmed = true;
           } catch (contractErr) {
-            console.warn('[AvaHui] On-chain contribute failed, using fallback:', contractErr);
+            console.warn('[AvaHui] On-chain contribute error:', contractErr);
+            throw contractErr;
           }
         }
       }
@@ -198,7 +200,6 @@ export function useCircleActions() {
         txHash = generateMockTxHash();
       }
 
-      // 3. Track transaction in Backend API
       if (!isMockMode) {
         try {
           await transactionApi.trackTransaction({
@@ -213,11 +214,14 @@ export function useCircleActions() {
         }
       }
 
-      // 4. Update UI state
-      await contributeMutation.mutateAsync({ circleId: circle.id, roundNumber });
+      await contributeMutation.mutateAsync({
+        circleId: circle.id,
+        roundNumber,
+        skipMock: liveConfirmed,
+      });
       return { txHash };
     },
-    [approveToken, contributeMutation, currentUser?.walletAddress, getActiveWalletClient, getAllowance],
+    [contributeMutation, currentUser?.walletAddress, ensureSufficientAllowance],
   );
 
   /**
@@ -233,19 +237,25 @@ export function useCircleActions() {
       const bidAmountBaseUnits = parseUnits(String(bidAmountUsdc), 6);
 
       let txHash: string | null = null;
+      let liveConfirmed = false;
+
       if (!isMockMode && circle.contractAddress) {
-        const wallet = await getActiveWalletClient();
-        if (wallet) {
+        const signer = await resolveSignerClient(currentUser?.walletAddress);
+        if (signer) {
           try {
-            txHash = await wallet.client.writeContract({
+            txHash = await signer.client.writeContract({
               address: circleAddress,
               abi: AvaHuiCircleABI,
               functionName: 'submitBid',
               args: [roundNumber, bidAmountBaseUnits],
-              account: wallet.account,
+              account: signer.account,
+              chain: activeFujiChain,
             });
+            await publicClient.waitForTransactionReceipt({ hash: txHash as `0x${string}` });
+            liveConfirmed = true;
           } catch (contractErr) {
-            console.warn('[AvaHui] On-chain submitBid failed, using fallback:', contractErr);
+            console.warn('[AvaHui] On-chain submitBid error:', contractErr);
+            throw contractErr;
           }
         }
       }
@@ -268,10 +278,15 @@ export function useCircleActions() {
         }
       }
 
-      await bidMutation.mutateAsync({ circleId: circle.id, roundNumber, bidAmountUsdc });
+      await bidMutation.mutateAsync({
+        circleId: circle.id,
+        roundNumber,
+        bidAmountUsdc,
+        skipMock: liveConfirmed,
+      });
       return { txHash };
     },
-    [bidMutation, currentUser?.walletAddress, getActiveWalletClient],
+    [bidMutation, currentUser?.walletAddress],
   );
 
   /**
@@ -282,19 +297,56 @@ export function useCircleActions() {
       const circleAddress = (circle.contractAddress || frontendEnv.factoryAddress) as `0x${string}`;
 
       let txHash: string | null = null;
+      let liveConfirmed = false;
+
       if (!isMockMode && circle.contractAddress) {
-        const wallet = await getActiveWalletClient();
-        if (wallet) {
+        const signer = await resolveSignerClient(currentUser?.walletAddress);
+        if (signer) {
           try {
-            txHash = await wallet.client.writeContract({
+            // If running on Local EVM Node, advance block timestamp if needed so demo settlement can be tested without waiting minutes
+            if (frontendEnv.isLocalEvm) {
+              try {
+                const roundOnChain: any = await publicClient.readContract({
+                  address: circleAddress,
+                  abi: AvaHuiCircleABI,
+                  functionName: 'getRoundInfo',
+                  args: [roundNumber],
+                });
+                const block = await publicClient.getBlock();
+                const biddingDeadline = BigInt(roundOnChain[3] || 0);
+                const graceDeadline = BigInt(roundOnChain[4] || 0);
+                const targetTs = graceDeadline > biddingDeadline ? graceDeadline + 2n : biddingDeadline + 2n;
+                if (block.timestamp <= targetTs) {
+                  await fetch(frontendEnv.rpcUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      jsonrpc: '2.0',
+                      id: Date.now(),
+                      method: 'evm_setNextBlockTimestamp',
+                      params: [Number(targetTs)],
+                    }),
+                  });
+                }
+              } catch {
+                // ignore RPC helper error on non-ganache chains
+              }
+            }
+
+            txHash = await signer.client.writeContract({
               address: circleAddress,
               abi: AvaHuiCircleABI,
               functionName: 'settleRound',
               args: [roundNumber],
-              account: wallet.account,
+              account: signer.account,
+              chain: activeFujiChain,
+              gas: 750_000n,
             });
+            await publicClient.waitForTransactionReceipt({ hash: txHash as `0x${string}` });
+            liveConfirmed = true;
           } catch (contractErr) {
-            console.warn('[AvaHui] On-chain settleRound failed, using fallback:', contractErr);
+            console.warn('[AvaHui] On-chain settleRound error:', contractErr);
+            throw contractErr;
           }
         }
       }
@@ -317,32 +369,43 @@ export function useCircleActions() {
         }
       }
 
-      await settleMutation.mutateAsync({ circleId: circle.id, roundNumber });
+      await settleMutation.mutateAsync({
+        circleId: circle.id,
+        roundNumber,
+        skipMock: liveConfirmed,
+      });
       return { txHash };
     },
-    [currentUser?.walletAddress, getActiveWalletClient, settleMutation],
+    [currentUser?.walletAddress, settleMutation],
   );
 
   /**
-   * ACTION 5: Withdraw Collateral & Claim Discount Bonus
+   * ACTION 5: Withdraw Collateral & Claim Discount + Yield Bonus
    */
   const executeWithdrawCollateral = useCallback(
     async (circle: CircleItem): Promise<{ txHash: string }> => {
       const circleAddress = (circle.contractAddress || frontendEnv.factoryAddress) as `0x${string}`;
 
       let txHash: string | null = null;
+      let liveConfirmed = false;
+
       if (!isMockMode && circle.contractAddress) {
-        const wallet = await getActiveWalletClient();
-        if (wallet) {
+        const signer = await resolveSignerClient(currentUser?.walletAddress);
+        if (signer) {
           try {
-            txHash = await wallet.client.writeContract({
+            txHash = await signer.client.writeContract({
               address: circleAddress,
               abi: AvaHuiCircleABI,
               functionName: 'withdrawCollateral',
-              account: wallet.account,
+              account: signer.account,
+              chain: activeFujiChain,
+              gas: 500_000n,
             });
+            await publicClient.waitForTransactionReceipt({ hash: txHash as `0x${string}` });
+            liveConfirmed = true;
           } catch (contractErr) {
-            console.warn('[AvaHui] On-chain withdrawCollateral failed, using fallback:', contractErr);
+            console.warn('[AvaHui] On-chain withdrawCollateral error:', contractErr);
+            throw contractErr;
           }
         }
       }
@@ -365,63 +428,67 @@ export function useCircleActions() {
         }
       }
 
-      await withdrawMutation.mutateAsync(circle.id);
+      await withdrawMutation.mutateAsync({ circleId: circle.id, skipMock: liveConfirmed });
       return { txHash };
     },
-    [currentUser?.walletAddress, getActiveWalletClient, withdrawMutation],
+    [currentUser?.walletAddress, withdrawMutation],
   );
 
   /**
-   * ACTION 6: Create New Circle (3-Step Flow: Draft -> SC Factory -> Track)
+   * ACTION 6: Create New Circle (Draft -> On-Chain Factory.createCircle -> Auto Join Slot #1 -> Track)
    */
   const executeCreateCircle = useCallback(
-    async (values: CreateCircleFormInput): Promise<{ txHash: string; newCircle?: CircleItem }> => {
+    async (values: CreateCircleFormInput): Promise<{ txHash: string; newCircle?: { id: string } }> => {
       let draftRes: any = null;
       let txHash: string | null = null;
+      let deployedCircleAddress: `0x${string}` | null = null;
+      let liveConfirmed = false;
+
+      const contributionBaseUnits = parseUnits(String(values.contributionAmountUsdc), 6);
+      const collateralBaseUnits = parseUnits(
+        String(values.contributionAmountUsdc * (values.collateralMultiplier || 1)),
+        6,
+      );
+      const minBidBaseUnits = values.minBidUsdc
+        ? parseUnits(String(values.minBidUsdc), 6)
+        : 0n;
+      const maxBidBaseUnits = values.maxBidUsdc
+        ? parseUnits(String(values.maxBidUsdc), 6)
+        : 0n;
 
       // Step A: Save draft off-chain to NestJS API
       if (!isMockMode) {
         try {
-          const contributionBaseUnits = parseUnits(String(values.contributionAmountUsdc), 6).toString();
-          const collateralBaseUnits = parseUnits(
-            String(values.contributionAmountUsdc * (values.collateralMultiplier || 1)),
-            6,
-          ).toString();
-          const minBidBaseUnits = values.minBidUsdc
-            ? parseUnits(String(values.minBidUsdc), 6).toString()
-            : '0';
-          const maxBidBaseUnits = values.maxBidUsdc
-            ? parseUnits(String(values.maxBidUsdc), 6).toString()
-            : '0';
-
           draftRes = await circleApi.createDraft({
             name: values.name,
             description: values.description,
             creatorAddress: currentUser?.walletAddress || undefined,
             allocationMode: values.allocationMode,
             maxMembers: values.maxMembers,
-            contributionAmount: contributionBaseUnits,
-            collateralAmount: collateralBaseUnits,
+            contributionAmount: contributionBaseUnits.toString(),
+            collateralAmount: collateralBaseUnits.toString(),
             roundDurationSeconds: values.roundDurationSeconds,
             biddingDurationSeconds: values.biddingDurationSeconds,
             gracePeriodSeconds: values.gracePeriodSeconds,
-            minBid: minBidBaseUnits,
-            maxBid: maxBidBaseUnits,
+            minBid: minBidBaseUnits.toString(),
+            maxBid: maxBidBaseUnits.toString(),
           });
         } catch (err) {
           console.warn('[AvaHui] Failed to create circle draft:', err);
         }
       }
 
-      // Step B: Call AvaHuiFactory.createCircle on-chain if wallet available
+      // Step B: Call AvaHuiFactory.createCircle on-chain
       if (!isMockMode) {
-        const wallet = await getActiveWalletClient();
-        if (wallet) {
+        const signer = await resolveSignerClient(currentUser?.walletAddress);
+        if (signer) {
           try {
             const metadataId = draftRes?.metadataId || `meta_${Date.now()}`;
-            const startDeadline = BigInt(draftRes?.startDeadlineUnix || Math.floor(Date.now() / 1000) + 86400);
+            const startDeadline = BigInt(
+              draftRes?.startDeadlineUnix || Math.floor(Date.now() / 1000) + 7 * 86400,
+            );
 
-            txHash = await wallet.client.writeContract({
+            txHash = await signer.client.writeContract({
               address: frontendEnv.factoryAddress,
               abi: AvaHuiFactoryABI,
               functionName: 'createCircle',
@@ -432,23 +499,63 @@ export function useCircleActions() {
                   token: frontendEnv.usdcTokenAddress,
                   allocationMode: values.allocationMode === AllocationMode.BIDDING ? 1 : 0,
                   maxMembers: values.maxMembers,
-                  contributionAmount: parseUnits(String(values.contributionAmountUsdc), 6),
-                  collateralAmount: parseUnits(
-                    String(values.contributionAmountUsdc * (values.collateralMultiplier || 1)),
-                    6,
-                  ),
+                  contributionAmount: contributionBaseUnits,
+                  collateralAmount: collateralBaseUnits,
                   roundDuration: BigInt(values.roundDurationSeconds),
                   biddingDuration: BigInt(values.biddingDurationSeconds || 0),
                   gracePeriod: BigInt(values.gracePeriodSeconds || 60),
                   startDeadline,
-                  minBid: parseUnits(String(values.minBidUsdc || 0), 6),
-                  maxBid: parseUnits(String(values.maxBidUsdc || 0), 6),
+                  minBid: minBidBaseUnits,
+                  maxBid: maxBidBaseUnits,
                 },
               ],
-              account: wallet.account,
+              account: signer.account,
+              chain: activeFujiChain,
             });
+
+            const receipt = await publicClient.waitForTransactionReceipt({
+              hash: txHash as `0x${string}`,
+            });
+
+            for (const log of receipt.logs) {
+              try {
+                const decoded: any = decodeEventLog({
+                  abi: AvaHuiFactoryABI,
+                  data: log.data,
+                  topics: log.topics,
+                });
+                if (decoded.eventName === 'CircleCreated' && decoded.args?.circleAddress) {
+                  deployedCircleAddress = decoded.args.circleAddress as `0x${string}`;
+                  break;
+                }
+              } catch {
+                // ignore unrelated log
+              }
+            }
+
+            // Auto-join Creator into Slot #1 with collateral lock on the newly deployed circle
+            if (deployedCircleAddress) {
+              await ensureSufficientAllowance(
+                signer.account,
+                deployedCircleAddress,
+                collateralBaseUnits,
+                draftRes?.id,
+              );
+              const joinTx = await signer.client.writeContract({
+                address: deployedCircleAddress,
+                abi: AvaHuiCircleABI,
+                functionName: 'joinCircle',
+                account: signer.account,
+                chain: activeFujiChain,
+                gas: 500_000n,
+              });
+              await publicClient.waitForTransactionReceipt({ hash: joinTx });
+            }
+
+            liveConfirmed = true;
           } catch (contractErr) {
-            console.warn('[AvaHui] On-chain createCircle failed, using fallback:', contractErr);
+            console.warn('[AvaHui] On-chain createCircle failed:', contractErr);
+            throw contractErr;
           }
         }
       }
@@ -457,7 +564,7 @@ export function useCircleActions() {
         txHash = generateMockTxHash();
       }
 
-      // Step C: Track transaction
+      // Step C: Track transaction & trigger Backend Indexer sync
       if (!isMockMode) {
         try {
           await transactionApi.trackTransaction({
@@ -472,11 +579,17 @@ export function useCircleActions() {
         }
       }
 
-      // Step D: Update mock state machine
-      const mutationRes = await createCircleMutation.mutateAsync(values);
-      return { txHash, newCircle: mutationRes.newCircle };
+      const mutationRes = await createCircleMutation.mutateAsync({
+        input: values,
+        skipMock: liveConfirmed,
+      });
+
+      const resolvedCircleId =
+        deployedCircleAddress || draftRes?.id || mutationRes?.newCircle?.id;
+
+      return { txHash, newCircle: resolvedCircleId ? { id: resolvedCircleId } : undefined };
     },
-    [createCircleMutation, currentUser?.walletAddress, getActiveWalletClient],
+    [createCircleMutation, currentUser?.walletAddress, ensureSufficientAllowance],
   );
 
   /**
@@ -490,24 +603,21 @@ export function useCircleActions() {
     ): Promise<{ txHash: string; commitment: string; salt: string }> => {
       const circleAddress = (circle.contractAddress || frontendEnv.factoryAddress) as `0x${string}`;
       const bidderAddress = (currentUser?.walletAddress ||
-        '0x71c95911e9a5d330f4d621842ec243ee13432921') as `0x${string}`;
+        '0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1') as `0x${string}`;
       const bidAmountBaseUnits = parseUnits(String(bidAmountUsdc), 6);
 
-      // Generate deterministic or random 32-byte salt
       const randomHex = Array.from({ length: 64 }, () =>
         Math.floor(Math.random() * 16).toString(16),
       ).join('');
       const salt = `0x${randomHex}` as `0x${string}`;
 
-      // keccak256(abi.encodePacked(circleAddress, uint16(roundNumber), bidderAddress, bidAmountBaseUnits, salt))
       const commitment = keccak256(
         encodePacked(
-          ['address', 'uint16', 'address', 'uint256', 'bytes32'],
+          ['address', 'uint8', 'address', 'uint256', 'bytes32'],
           [circleAddress, roundNumber, bidderAddress, bidAmountBaseUnits, salt],
         ),
       );
 
-      // Persist sealed bid secret in browser storage for Phase 2 Reveal
       if (typeof window !== 'undefined') {
         const storageKey = `avahui_sealed_bid_${circle.id}_${roundNumber}_${bidderAddress.toLowerCase()}`;
         window.localStorage.setItem(
@@ -525,19 +635,25 @@ export function useCircleActions() {
       }
 
       let txHash: string | null = null;
+      let liveConfirmed = false;
+
       if (!isMockMode && circle.contractAddress) {
-        const wallet = await getActiveWalletClient();
-        if (wallet) {
+        const signer = await resolveSignerClient(currentUser?.walletAddress);
+        if (signer) {
           try {
-            txHash = await wallet.client.writeContract({
+            txHash = await signer.client.writeContract({
               address: circleAddress,
               abi: AvaHuiCircleABI,
               functionName: 'commitBid',
               args: [roundNumber, commitment],
-              account: wallet.account,
+              account: signer.account,
+              chain: activeFujiChain,
             });
+            await publicClient.waitForTransactionReceipt({ hash: txHash as `0x${string}` });
+            liveConfirmed = true;
           } catch (contractErr) {
-            console.warn('[AvaHui] On-chain commitBid failed, using fallback:', contractErr);
+            console.warn('[AvaHui] On-chain commitBid failed:', contractErr);
+            throw contractErr;
           }
         }
       }
@@ -564,11 +680,12 @@ export function useCircleActions() {
         circleId: circle.id,
         roundNumber,
         commitment,
+        skipMock: liveConfirmed,
       });
 
       return { txHash, commitment, salt };
     },
-    [commitBidMutation, currentUser?.walletAddress, getActiveWalletClient],
+    [commitBidMutation, currentUser?.walletAddress],
   );
 
   /**
@@ -582,7 +699,7 @@ export function useCircleActions() {
     ): Promise<{ txHash: string; bidAmountUsdc: number }> => {
       const circleAddress = (circle.contractAddress || frontendEnv.factoryAddress) as `0x${string}`;
       const bidderAddress = (currentUser?.walletAddress ||
-        '0x71c95911e9a5d330f4d621842ec243ee13432921') as `0x${string}`;
+        '0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1') as `0x${string}`;
       const storageKey = `avahui_sealed_bid_${circle.id}_${roundNumber}_${bidderAddress.toLowerCase()}`;
 
       let bidAmountUsdc = fallbackBidAmountUsdc || 10;
@@ -606,19 +723,25 @@ export function useCircleActions() {
       const bidAmountBaseUnits = parseUnits(String(bidAmountUsdc), 6);
 
       let txHash: string | null = null;
+      let liveConfirmed = false;
+
       if (!isMockMode && circle.contractAddress) {
-        const wallet = await getActiveWalletClient();
-        if (wallet) {
+        const signer = await resolveSignerClient(currentUser?.walletAddress);
+        if (signer) {
           try {
-            txHash = await wallet.client.writeContract({
+            txHash = await signer.client.writeContract({
               address: circleAddress,
               abi: AvaHuiCircleABI,
               functionName: 'revealBid',
               args: [roundNumber, bidAmountBaseUnits, salt],
-              account: wallet.account,
+              account: signer.account,
+              chain: activeFujiChain,
             });
+            await publicClient.waitForTransactionReceipt({ hash: txHash as `0x${string}` });
+            liveConfirmed = true;
           } catch (contractErr) {
-            console.warn('[AvaHui] On-chain revealBid failed, using fallback:', contractErr);
+            console.warn('[AvaHui] On-chain revealBid failed:', contractErr);
+            throw contractErr;
           }
         }
       }
@@ -645,11 +768,12 @@ export function useCircleActions() {
         circleId: circle.id,
         roundNumber,
         bidAmountUsdc,
+        skipMock: liveConfirmed,
       });
 
       return { txHash, bidAmountUsdc };
     },
-    [currentUser?.walletAddress, getActiveWalletClient, revealBidMutation],
+    [currentUser?.walletAddress, revealBidMutation],
   );
 
   const getSavedSealedBid = useCallback(

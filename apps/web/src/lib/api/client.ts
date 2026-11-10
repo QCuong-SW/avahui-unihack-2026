@@ -58,18 +58,23 @@ export async function apiFetch<T>(
   // Active wallet address resolution
   let activeWallet = walletAddress;
   if (!activeWallet && typeof window !== 'undefined') {
-    try {
-      const storedSession = localStorage.getItem('avahui_session');
-      if (storedSession) {
-        const parsed = JSON.parse(storedSession);
-        activeWallet = parsed?.user?.walletAddress || parsed?.walletAddress;
+    activeWallet = localStorage.getItem('avahui_active_wallet') || undefined;
+    if (!activeWallet) {
+      try {
+        const storedState = localStorage.getItem('avahui_unihack_2026_mock_state_v2');
+        if (storedState) {
+          const parsedState = JSON.parse(storedState);
+          const curUser = parsedState?.users?.find(
+            (u: any) => u.id === parsedState.currentUserId,
+          );
+          activeWallet = curUser?.walletAddress;
+        }
+      } catch {
+        // ignore JSON parse error
       }
-    } catch {
-      // ignore JSON parse error
     }
     if (!activeWallet) {
-      // Default to demo builder wallet if none found
-      activeWallet = '0x71c95911e9a5d330f4d621842ec243ee13432921';
+      activeWallet = '0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1';
     }
   }
 
