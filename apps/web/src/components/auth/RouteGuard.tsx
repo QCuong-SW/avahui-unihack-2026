@@ -4,26 +4,28 @@ import React, { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthSession } from '@/lib/auth/useAuthSession';
 
-const PUBLIC_ROUTES = ['/login', '/login/verify'];
+const AUTH_PUBLIC_ROUTES = ['/login', '/login/verify'];
+const ALWAYS_PUBLIC_ROUTES = ['/'];
 
 export function RouteGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || '/';
   const router = useRouter();
   const { data: session, isLoading } = useAuthSession();
 
-  const isPublicRoute = PUBLIC_ROUTES.some(
+  const isAlwaysPublic = ALWAYS_PUBLIC_ROUTES.includes(pathname);
+  const isAuthRoute = AUTH_PUBLIC_ROUTES.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
 
   useEffect(() => {
-    if (isLoading || !session) return;
+    if (isLoading || !session || isAlwaysPublic) return;
 
-    if (!session.isAuthenticated && !isPublicRoute) {
+    if (!session.isAuthenticated && !isAuthRoute) {
       router.replace('/login');
       return;
     }
 
-    if (session.isAuthenticated && isPublicRoute) {
+    if (session.isAuthenticated && isAuthRoute) {
       const hasOnboardedWallet = session.onboardedUserIds.includes(
         session.userId
       );
@@ -31,7 +33,11 @@ export function RouteGuard({ children }: { children: React.ReactNode }) {
         hasOnboardedWallet ? '/dashboard' : '/onboarding/wallet'
       );
     }
-  }, [isLoading, isPublicRoute, router, session]);
+  }, [isAlwaysPublic, isAuthRoute, isLoading, router, session]);
+
+  if (isAlwaysPublic) {
+    return <>{children}</>;
+  }
 
   if (isLoading || !session) {
     return (
@@ -41,7 +47,7 @@ export function RouteGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!session.isAuthenticated && !isPublicRoute) {
+  if (!session.isAuthenticated && !isAuthRoute) {
     return null;
   }
 

@@ -1,6 +1,6 @@
 import React from 'react';
-import { DashboardView } from '@/features/circles/components/DashboardView';
+import { LandingView } from '@/features/landing/components/LandingView';
 
 export default function HomePage() {
-  return <DashboardView />;
+  return <LandingView />;
 }

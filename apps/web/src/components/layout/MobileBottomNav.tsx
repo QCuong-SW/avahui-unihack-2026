@@ -20,11 +20,13 @@ const MOBILE_NAV_ITEMS = [
 export function MobileBottomNav() {
   const pathname = usePathname() || '/';
 
-  // Do not show bottom nav on standalone auth or onboarding screens
-  const isAuthScreen =
-    pathname.startsWith('/login') || pathname.startsWith('/onboarding/wallet');
+  // Do not show bottom nav on public landing, auth, or onboarding screens
+  const isHiddenScreen =
+    pathname === '/' ||
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/onboarding/wallet');
 
-  if (isAuthScreen) return null;
+  if (isHiddenScreen) return null;
 
   return (
     <nav

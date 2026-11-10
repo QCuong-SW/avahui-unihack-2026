@@ -32,17 +32,17 @@ export interface AuthSessionState {
   } | null;
 }
 
-const AUTH_STORAGE_KEY = 'avahui_unihack_2026_auth_session_v1';
+const AUTH_STORAGE_KEY = 'avahui_unihack_2026_auth_session_v2';
 const AUTH_COOKIE_NAME = 'avahui_auth_token';
 
 const DEFAULT_AUTH_SESSION: AuthSessionState = {
-  isAuthenticated: true,
+  isAuthenticated: false,
   userId: 'usr_01',
   email: 'minh.nguyen@avahui.io',
-  authMethod: 'GOOGLE',
-  accessToken: 'prv_mock_jwt_usr_01',
+  authMethod: null,
+  accessToken: null,
   onboardedUserIds: ['usr_01', 'usr_02', 'usr_03', 'usr_04', 'usr_05'],
-  walletStatus: 'WALLET_CONNECTED_READY',
+  walletStatus: 'WALLET_CREATED',
   pendingOtp: null,
 };
 

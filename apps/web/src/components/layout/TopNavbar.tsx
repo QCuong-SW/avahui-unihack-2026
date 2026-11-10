@@ -9,8 +9,10 @@ import { AvahuiLogo } from '@/components/ui/AvahuiLogo';
 import {
   Compass,
   LayoutDashboard,
+  LogIn,
   PlusCircle,
   UserCircle,
+  Zap,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -23,6 +25,65 @@ const NAV_ITEMS = [
 export function TopNavbar() {
   const pathname = usePathname() || '/';
 
+  // Dedicated Marketing/Product Navbar for the public Landing Page (`/`)
+  if (pathname === '/') {
+    return (
+      <header className="sticky top-0 z-40 border-b border-zinc-800/90 bg-surface-bg/90 backdrop-blur-md animate-fade-down">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <div className="flex items-center gap-6">
+            <Link
+              href="/"
+              className="flex items-center gap-2.5 transition-transform hover:scale-[1.02] active:scale-95"
+            >
+              <AvahuiLogo size={34} roundedClass="rounded-none" />
+              <div>
+                <span className="text-base sm:text-lg font-extrabold uppercase tracking-wider text-white">
+                  Avahui
+                </span>
+                <span className="ml-2 hidden sm:inline-block border border-zinc-800 bg-zinc-900 px-1.5 py-0.5 font-mono text-[10px] font-bold text-avalanche-red">
+                  V2 ON-CHAIN
+                </span>
+              </div>
+            </Link>
+
+            <nav className="hidden items-center gap-5 font-mono text-xs font-bold uppercase tracking-wider text-zinc-400 md:flex">
+              <a href="#co-che" className="transition hover:text-white">
+                Cơ chế
+              </a>
+              <a href="#bao-mat" className="transition hover:text-white">
+                Bảo mật V2
+              </a>
+              <a href="#lo-trinh" className="transition hover:text-white">
+                Lộ trình
+              </a>
+              <Link href="/circles" className="transition hover:text-emerald-400">
+                Dây hụi Live
+              </Link>
+            </nav>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-1.5 rounded-none border border-zinc-700 bg-zinc-900 px-3 sm:px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-zinc-200 transition hover:border-zinc-500 hover:text-white"
+            >
+              <LogIn className="h-3.5 w-3.5" />
+              <span>Đăng nhập</span>
+            </Link>
+
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-1.5 rounded-none border border-avalanche-red bg-avalanche-red px-3 sm:px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-avalanche-red/25 transition hover:bg-avalanche-darkRed"
+            >
+              <Zap className="h-3.5 w-3.5" />
+              <span>Mở App</span>
+            </Link>
+          </div>
+        </div>
+      </header>
+    );
+  }
+
   // Standalone minimalist navbar for Auth & Wallet Onboarding screens
   const isStandaloneAuthScreen =
     pathname.startsWith('/login') || pathname.startsWith('/onboarding/wallet');
@@ -32,7 +93,7 @@ export function TopNavbar() {
       <header className="sticky top-0 z-40 border-b border-zinc-800 bg-surface-bg/95 backdrop-blur-md animate-fade-down">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-3 sm:px-4 py-3">
           <Link
-            href="/login"
+            href="/"
             className="flex items-center gap-2.5 transition-transform hover:scale-[1.02] active:scale-95"
           >
             <AvahuiLogo size={34} roundedClass="rounded-none" />
