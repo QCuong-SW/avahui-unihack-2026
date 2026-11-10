@@ -34,6 +34,22 @@ interface IAvaHuiCircle {
         uint256 timestamp
     );
 
+    event BidCommitted(
+        address indexed circleAddress,
+        uint8 indexed roundNumber,
+        address indexed bidder,
+        bytes32 commitment,
+        uint256 timestamp
+    );
+
+    event BidRevealed(
+        address indexed circleAddress,
+        uint8 indexed roundNumber,
+        address indexed bidder,
+        uint256 bidAmount,
+        uint256 timestamp
+    );
+
     event CollateralSlashed(
         address indexed circleAddress,
         uint8 indexed roundNumber,
@@ -58,6 +74,18 @@ interface IAvaHuiCircle {
         uint256 timestamp
     );
 
+    event YieldHarvested(
+        address indexed circleAddress,
+        uint256 yieldEarned,
+        uint256 timestamp
+    );
+
+    event SybilAttestationVerified(
+        address indexed circleAddress,
+        address indexed member,
+        bytes32 indexed identityNullifier
+    );
+
     event CollateralWithdrawn(
         address indexed circleAddress,
         address indexed member,
@@ -72,8 +100,11 @@ interface IAvaHuiCircle {
 
     // --- WRITE FUNCTIONS CHO FRONTEND ---
     function joinCircle() external;
+    function joinCircleProtected(string calldata inviteCode, bytes32 identityNullifier) external;
     function contribute(uint8 roundNumber) external;
     function submitBid(uint8 roundNumber, uint256 bidAmount) external;
+    function commitBid(uint8 roundNumber, bytes32 commitment) external;
+    function revealBid(uint8 roundNumber, uint256 bidAmount, bytes32 salt) external;
     function settleRound(uint8 roundNumber) external;
     function withdrawCollateral() external;
     function cancelExpiredCircle() external;
@@ -90,4 +121,3 @@ interface IAvaHuiCircle {
         uint256 totalDiscountPool
     );
 }
-

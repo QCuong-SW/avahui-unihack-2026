@@ -4,6 +4,8 @@ pragma solidity ^0.8.24;
 import {IAvaHuiCircle} from "./interfaces/IAvaHuiCircle.sol";
 import {IAvaHuiFactory} from "./interfaces/IAvaHuiFactory.sol";
 import {IERC20Minimal} from "./interfaces/IERC20Minimal.sol";
+import {IYieldVault} from "./interfaces/IYieldVault.sol";
+import {ITeam1AttestationVerifier} from "./verifiers/Team1AttestationVerifier.sol";
 import {SafeTransferLib, ReentrancyGuard} from "./libraries/SecurityLib.sol";
 
 contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
@@ -43,6 +45,13 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
         uint8 contributionsCount;
     }
 
+    struct BidCommitment {
+        bytes32 commitment;
+        uint64 committedAt;
+        bool revealed;
+        uint256 revealedAmount;
+    }
+
     string public metadataId;
     string public name;
     address public immutable factory;
@@ -65,10 +74,19 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
     uint8 public currentRound;
     uint256 public totalDiscountPool;
 
+    // --- V2 Extensions: Yield Vault, Commit-Reveal, Invite & Sybil Resistance ---
+    IYieldVault public yieldVault;
+    uint256 public totalYieldEarned;
+    bytes32 public inviteCodeHash;
+    bool public requireAttestation;
+    address public attestationVerifier;
+
     mapping(uint8 => address) public slotToMember;
     mapping(address => MemberInfo) public members;
     mapping(uint8 => RoundInfo) public rounds;
     mapping(uint8 => mapping(address => bool)) public hasContributed;
+    mapping(uint8 => mapping(address => BidCommitment)) public bidCommitments;
+    mapping(bytes32 => bool) public usedIdentityNullifiers;
 
     error InvalidStatus();
     error InvalidRound();
@@ -87,6 +105,13 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
     error SettlementConditionsNotMet();
     error InsufficientCollateralToSlash(address member);
     error AlreadyWithdrawn();
+    error UnauthorizedCaller();
+    error SecurityGateRequired();
+    error InvalidInviteCode();
+    error InvalidSybilAttestation();
+    error DuplicateIdentityNullifier();
+    error InvalidCommitment();
+    error InvalidBidReveal();
 
     constructor(address _creator, IAvaHuiFactory.CreateCircleParams memory params) {
         factory = msg.sender;
@@ -107,17 +132,72 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
         status = STATUS_RECRUITING;
     }
 
+    function setYieldVault(address _vault) external {
+        if (msg.sender != creator && msg.sender != factory) revert UnauthorizedCaller();
+        if (status != STATUS_RECRUITING) revert InvalidStatus();
+        yieldVault = IYieldVault(_vault);
+    }
+
+    function configureSecurity(
+        bytes32 _inviteCodeHash,
+        bool _requireAttestation,
+        address _attestationVerifier
+    ) external {
+        if (msg.sender != creator && msg.sender != factory) revert UnauthorizedCaller();
+        if (status != STATUS_RECRUITING) revert InvalidStatus();
+        inviteCodeHash = _inviteCodeHash;
+        requireAttestation = _requireAttestation;
+        attestationVerifier = _attestationVerifier;
+    }
+
     function joinCircle() external override nonReentrant {
+        if (inviteCodeHash != bytes32(0) || requireAttestation) {
+            revert SecurityGateRequired();
+        }
+        _joinMember(msg.sender);
+    }
+
+    function joinCircleProtected(
+        string calldata inviteCode,
+        bytes32 identityNullifier
+    ) external override nonReentrant {
+        if (inviteCodeHash != bytes32(0)) {
+            if (keccak256(abi.encodePacked(inviteCode)) != inviteCodeHash) {
+                revert InvalidInviteCode();
+            }
+        }
+
+        if (requireAttestation) {
+            if (identityNullifier == bytes32(0)) revert InvalidSybilAttestation();
+            if (usedIdentityNullifiers[identityNullifier]) revert DuplicateIdentityNullifier();
+
+            if (attestationVerifier != address(0)) {
+                bool valid = ITeam1AttestationVerifier(attestationVerifier).verifyMemberAttestation(
+                    msg.sender,
+                    identityNullifier
+                );
+                if (!valid) revert InvalidSybilAttestation();
+            }
+
+            usedIdentityNullifiers[identityNullifier] = true;
+            emit SybilAttestationVerified(address(this), msg.sender, identityNullifier);
+        }
+
+        _joinMember(msg.sender);
+    }
+
+    function _joinMember(address memberAddr) internal {
         if (status != STATUS_RECRUITING) revert InvalidStatus();
         if (block.timestamp > startDeadline) revert RecruitmentExpired();
-        if (members[msg.sender].exists) revert AlreadyJoined();
+        if (members[memberAddr].exists) revert AlreadyJoined();
         if (currentMemberCount >= maxMembers) revert CircleFull();
 
-        token.safeTransferFrom(msg.sender, address(this), collateralAmount);
+        token.safeTransferFrom(memberAddr, address(this), collateralAmount);
+        _depositToYieldVault(collateralAmount);
 
         uint8 assignedSlot = ++currentMemberCount;
-        slotToMember[assignedSlot] = msg.sender;
-        members[msg.sender] = MemberInfo({
+        slotToMember[assignedSlot] = memberAddr;
+        members[memberAddr] = MemberInfo({
             slotIndex: assignedSlot,
             lockedCollateral: collateralAmount,
             hasReceivedPayout: false,
@@ -127,7 +207,7 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
             exists: true
         });
 
-        emit MemberJoined(address(this), msg.sender, assignedSlot, collateralAmount);
+        emit MemberJoined(address(this), memberAddr, assignedSlot, collateralAmount);
 
         if (currentMemberCount == maxMembers) {
             status = STATUS_ACTIVE;
@@ -155,6 +235,7 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
         if (block.timestamp > round.graceDeadline) revert ContributionWindowClosed();
 
         token.safeTransferFrom(msg.sender, address(this), contributionAmount);
+        _depositToYieldVault(contributionAmount);
 
         hasContributed[roundNumber][msg.sender] = true;
         round.contributionsCount += 1;
@@ -180,6 +261,75 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
         round.highestBidder = msg.sender;
         round.highestBid = bidAmount;
 
+        emit BidSubmitted(address(this), roundNumber, msg.sender, bidAmount, block.timestamp);
+    }
+
+    function computeBidCommitment(
+        uint8 roundNumber,
+        address bidder,
+        uint256 bidAmount,
+        bytes32 salt
+    ) public view returns (bytes32) {
+        return keccak256(abi.encodePacked(address(this), roundNumber, bidder, bidAmount, salt));
+    }
+
+    function commitBid(uint8 roundNumber, bytes32 commitment) external override nonReentrant {
+        if (status != STATUS_ACTIVE) revert InvalidStatus();
+        if (allocationMode != MODE_BIDDING) revert BiddingNotEnabled();
+        if (roundNumber != currentRound) revert InvalidRound();
+        if (commitment == bytes32(0)) revert InvalidCommitment();
+
+        MemberInfo storage member = members[msg.sender];
+        if (!member.exists) revert NotMember();
+        if (member.hasReceivedPayout) revert AlreadyReceivedPayout();
+
+        RoundInfo storage round = rounds[roundNumber];
+        if (round.status != ROUND_OPEN) revert InvalidRound();
+        if (block.timestamp > round.biddingDeadline) revert BiddingWindowClosed();
+
+        bidCommitments[roundNumber][msg.sender] = BidCommitment({
+            commitment: commitment,
+            committedAt: uint64(block.timestamp),
+            revealed: false,
+            revealedAmount: 0
+        });
+
+        emit BidCommitted(address(this), roundNumber, msg.sender, commitment, block.timestamp);
+    }
+
+    function revealBid(
+        uint8 roundNumber,
+        uint256 bidAmount,
+        bytes32 salt
+    ) external override nonReentrant {
+        if (status != STATUS_ACTIVE) revert InvalidStatus();
+        if (allocationMode != MODE_BIDDING) revert BiddingNotEnabled();
+        if (roundNumber != currentRound) revert InvalidRound();
+
+        MemberInfo storage member = members[msg.sender];
+        if (!member.exists) revert NotMember();
+        if (member.hasReceivedPayout) revert AlreadyReceivedPayout();
+
+        RoundInfo storage round = rounds[roundNumber];
+        if (round.status != ROUND_OPEN) revert InvalidRound();
+        if (block.timestamp > round.biddingDeadline) revert BiddingWindowClosed();
+
+        BidCommitment storage bc = bidCommitments[roundNumber][msg.sender];
+        if (bc.commitment == bytes32(0) || bc.revealed) revert InvalidBidReveal();
+
+        bytes32 expected = computeBidCommitment(roundNumber, msg.sender, bidAmount, salt);
+        if (expected != bc.commitment) revert InvalidBidReveal();
+        if (bidAmount < minBid || bidAmount > maxBid) revert BidOutOfBounds();
+
+        bc.revealed = true;
+        bc.revealedAmount = bidAmount;
+
+        if (bidAmount > round.highestBid) {
+            round.highestBidder = msg.sender;
+            round.highestBid = bidAmount;
+        }
+
+        emit BidRevealed(address(this), roundNumber, msg.sender, bidAmount, block.timestamp);
         emit BidSubmitted(address(this), roundNumber, msg.sender, bidAmount, block.timestamp);
     }
 
@@ -275,7 +425,10 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
             nextRoundNumber
         );
 
+        _withdrawFromYieldVault(netPayout);
+
         if (status == STATUS_COMPLETED) {
+            _harvestAndRecallVault();
             emit CircleCompleted(address(this), totalDiscountPool, block.timestamp);
         }
 
@@ -289,15 +442,22 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
         if (!member.exists) revert NotMember();
         if (member.isWithdrawn) revert AlreadyWithdrawn();
 
+        if (status == STATUS_CANCELLED) {
+            _harvestAndRecallVault();
+        }
+
         member.isWithdrawn = true;
         uint256 collateralReturned = member.lockedCollateral;
         member.lockedCollateral = 0;
 
         uint256 discountBonus = 0;
-        if (status == STATUS_COMPLETED && totalDiscountPool > 0) {
-            discountBonus = totalDiscountPool / uint256(maxMembers);
-            if (msg.sender == creator) {
-                discountBonus += totalDiscountPool % uint256(maxMembers);
+        if (status == STATUS_COMPLETED) {
+            uint256 combinedBonusPool = totalDiscountPool + totalYieldEarned;
+            if (combinedBonusPool > 0) {
+                discountBonus = combinedBonusPool / uint256(maxMembers);
+                if (msg.sender == creator) {
+                    discountBonus += combinedBonusPool % uint256(maxMembers);
+                }
             }
         }
 
@@ -312,7 +472,13 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
         if (block.timestamp <= startDeadline) revert RecruitmentNotExpired();
 
         status = STATUS_CANCELLED;
+        _harvestAndRecallVault();
         emit CircleCancelled(address(this), block.timestamp);
+    }
+
+    function getEstimatedPoolYield() external view returns (uint256) {
+        if (address(yieldVault) == address(0)) return totalYieldEarned;
+        return totalYieldEarned + yieldVault.previewYield(address(this));
     }
 
     function getCircleSummary()
@@ -419,5 +585,36 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
             contributionsCount: 0
         });
     }
-}
 
+    function _depositToYieldVault(uint256 amount) internal {
+        if (address(yieldVault) != address(0) && amount > 0) {
+            token.approve(address(yieldVault), amount);
+            try yieldVault.depositPrincipal(amount) {} catch {}
+        }
+    }
+
+    function _withdrawFromYieldVault(uint256 amount) internal {
+        if (address(yieldVault) != address(0) && amount > 0) {
+            uint256 principalInVault = yieldVault.principalOf(address(this));
+            uint256 pullAmount = amount <= principalInVault ? amount : principalInVault;
+            if (pullAmount > 0) {
+                try yieldVault.withdrawPrincipal(pullAmount, address(this)) {} catch {}
+            }
+        }
+    }
+
+    function _harvestAndRecallVault() internal {
+        if (address(yieldVault) != address(0)) {
+            uint256 principalInVault = yieldVault.principalOf(address(this));
+            if (principalInVault > 0) {
+                try yieldVault.withdrawPrincipal(principalInVault, address(this)) {} catch {}
+            }
+            try yieldVault.harvestYield(address(this)) returns (uint256 harvested) {
+                if (harvested > 0) {
+                    totalYieldEarned += harvested;
+                    emit YieldHarvested(address(this), harvested, block.timestamp);
+                }
+            } catch {}
+        }
+    }
+}
