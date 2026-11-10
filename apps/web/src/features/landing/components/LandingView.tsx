@@ -41,38 +41,38 @@ const TERMINAL_DEMOS: Record<
   }
 > = {
   ESCROW: {
-    badge: 'SMART CONTRACT ESCROW',
-    title: 'Quỹ Thế Chấp Tự Trị Trên Chuỗi',
-    status: 'LOCKED • 100% VERIFIED',
+    badge: 'HỢP ĐỒNG GIỮ QUỸ CHUNG',
+    title: 'Tiền Quỹ Do Hệ Thống Tự Động Giữ',
+    status: 'ĐÃ KHÓA • CÔNG KHAI',
     lines: [
-      { label: 'Quy mô nhóm', value: '5 Thành viên • 5 Vòng xoay vòng' },
-      { label: 'Thế chấp yêu cầu', value: '100.00 mUSDC / Slot (Tự hoàn trả cuối kỳ)', tone: 'amber' },
-      { label: 'Gross Pot / Vòng', value: '500.00 mUSDC giải ngân tức thì', tone: 'emerald' },
-      { label: 'Chủ hụi giữ tiền', value: 'KHÔNG TỒN TẠI (Smart Contract giữ 100%)', tone: 'red' },
+      { label: 'Quy mô nhóm', value: '5 Thành viên • 5 Kỳ đóng góp' },
+      { label: 'Tiền cọc giữ chỗ', value: '100.00 mUSDC / Suất (Hoàn trả cuối dây)', tone: 'amber' },
+      { label: 'Tiền hốt mỗi kỳ', value: '500.00 mUSDC chuyển thẳng người thắng', tone: 'emerald' },
+      { label: 'Chủ hụi giữ tiền', value: 'KHÔNG CÓ (Hợp đồng giữ toàn bộ quỹ)', tone: 'red' },
     ],
     codeSnippet: 'AvaHuiCircle.joinCircleProtected(inviteCode, nullifier)',
   },
   SEALED_BID: {
-    badge: 'COMMIT-REVEAL PRIVACY',
-    title: 'Đấu Giá Kín Chống Nhìn Trộm Mempool',
-    status: 'CRYPTOGRAPHICALLY SEALED',
+    badge: 'BỎ THĂM KÍN 2 BƯỚC',
+    title: 'Bỏ Thăm Kín, Không Lo Lộ Mức Giá',
+    status: 'ĐÃ NIÊM PHONG MẬT MÃ',
     lines: [
-      { label: 'Pha 1 (Commit)', value: 'Gửi hash ẩn keccak256(bid, salt) lên chuỗi', tone: 'sky' },
-      { label: 'Salt bảo mật', value: '0x7a9f...c41b (Chỉ người đấu giá nắm giữ)' },
-      { label: 'Pha 2 (Reveal)', value: 'Mở niêm phong xác thực đúng hàm băm gốc', tone: 'emerald' },
-      { label: 'Bảo vệ MEV', value: 'Chống hoàn toàn bot Front-run & thông đồng giá', tone: 'amber' },
+      { label: 'Bước 1 (Gửi kín)', value: 'Khóa mức giá thành mã ẩn bằng số bí mật', tone: 'sky' },
+      { label: 'Mã bảo vệ riêng', value: '0x7a9f...c41b (Chỉ riêng bạn nắm giữ)' },
+      { label: 'Bước 2 (Mở thăm)', value: 'Hết giờ mới mở đối chiếu công khai', tone: 'emerald' },
+      { label: 'Công bằng cho cả nhóm', value: 'Không ai nhìn trộm giá để trả nhỉnh hơn', tone: 'amber' },
     ],
     codeSnippet: 'keccak256(abi.encodePacked(circle, uint8(round), bidder, bidAmount, salt))',
   },
   YIELD_SLASH: {
-    badge: 'ERC-4626 + AUTO-SLASH',
-    title: 'Vốn Nhàn Rỗi Sinh Lời & Tự Động Phạt Nợ',
-    status: '6.50% APY • ENGINE ARMED',
+    badge: 'SINH LÃI + TỰ BÙ CỌC',
+    title: 'Tiền Cọc Sinh Lãi & Tự Bù Khi Đóng Trễ',
+    status: '~6.5%/NĂM • ĐANG BẬT',
     lines: [
-      { label: 'ERC-4626 Yield Vault', value: 'Sinh lãi 6.50% APY trên tiền thế chấp khóa', tone: 'emerald' },
-      { label: 'Trễ hạn đóng kỳ', value: 'Tự trích thế chấp bù 100% Quỹ (Auto-Slash)', tone: 'amber' },
-      { label: 'Chống Sybil Team1', value: 'Xác thực 1-Human-1-Slot qua Nullifier', tone: 'sky' },
-      { label: 'Tổng thưởng cuối kỳ', value: 'Gốc thế chấp + Chiết khấu + Lãi DeFi Vault', tone: 'emerald' },
+      { label: 'Kho sinh lãi tự động', value: 'Tiền cọc nằm chờ tự sinh lãi ~6.5%/năm', tone: 'emerald' },
+      { label: 'Khi có người đóng trễ', value: 'Tự trích tiền cọc bù đủ cho kỳ hốt', tone: 'amber' },
+      { label: 'Bảo vệ người thật', value: 'Mỗi cá nhân chỉ xác thực được 1 suất', tone: 'sky' },
+      { label: 'Nhận lại cuối dây', value: '100% Tiền cọc + Chiết khấu + Tiền lãi', tone: 'emerald' },
     ],
     codeSnippet: 'AvaHuiYieldVault.harvestYield() => totalDiscountPool += accruedYield',
   },
@@ -172,7 +172,7 @@ export function LandingView() {
           <div className="space-y-6 lg:col-span-7">
             <div className="inline-flex items-center gap-2 rounded-none border border-avalanche-red/40 bg-avalanche-red/10 px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-avalanche-red">
               <span className="h-2 w-2 animate-pulse bg-emerald-400" />
-              <span>Trustless On-Chain ROSCA • Avalanche C-Chain (43113)</span>
+              <span>Hụi Minh Bạch Trên Blockchain • Mạng Avalanche (43113)</span>
             </div>
 
             <h1 className="text-4xl font-black uppercase leading-[1.06] tracking-tight text-white sm:text-5xl lg:text-6xl">
@@ -186,12 +186,12 @@ export function LandingView() {
             </h1>
 
             <p className="max-w-2xl text-base leading-relaxed text-zinc-300 sm:text-lg">
-              <strong className="text-white">Avahui Protocol</strong> chuyển hóa mô hình{' '}
-              <em>Hụi / Họ (ROSCA)</em> truyền thống lên Smart Contract bất biến.
-              Bảo chứng kỳ đóng bằng <span className="text-amber-300 font-semibold">Thế chấp Auto-Slash</span>,{' '}
-              <span className="text-sky-300 font-semibold">Đấu giá kín Commit-Reveal</span> chống lộ giá,{' '}
-              <span className="text-emerald-400 font-semibold">Lãi kép DeFi 6.5% APY</span> và{' '}
-              <span className="text-white font-semibold">Chống Sybil Team1</span>.
+              <strong className="text-white">Avahui</strong> đưa mô hình chơi{' '}
+              <em>Hụi / Họ</em> truyền thống lên mạng lưới Blockchain minh bạch và tự động.
+              An tâm góp quỹ nhờ <span className="text-amber-300 font-semibold">tiền cọc tự bù khi có người đóng trễ</span>,{' '}
+              <span className="text-sky-300 font-semibold">bỏ thăm kín không lo lộ giá</span>,{' '}
+              <span className="text-emerald-400 font-semibold">tiền nhàn rỗi tự sinh lãi 6.5%/năm</span> và{' '}
+              <span className="text-white font-semibold">mỗi người thật chỉ giữ một suất</span>.
             </p>
 
             {/* Primary CTA Buttons */}
@@ -218,7 +218,7 @@ export function LandingView() {
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-3 font-mono text-xs text-zinc-400">
               <span className="inline-flex items-center gap-1.5">
                 <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                Ví nhúng Google / Email OTP / Core &amp; MetaMask
+                Tạo ví dễ dàng qua Google / Email hoặc nối Core &amp; MetaMask
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
@@ -226,7 +226,7 @@ export function LandingView() {
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                Mã nguồn Smart Contract minh bạch 100%
+                Quy tắc hợp đồng công khai, ai cũng kiểm tra được
               </span>
             </div>
           </div>
@@ -252,9 +252,9 @@ export function LandingView() {
               <div className="grid grid-cols-3 border-b border-zinc-800 bg-zinc-900/60 font-mono text-[11px]">
                 {(
                   [
-                    { key: 'ESCROW', label: '01. Escrow', icon: Lock },
-                    { key: 'SEALED_BID', label: '02. Sealed-Bid', icon: Eye },
-                    { key: 'YIELD_SLASH', label: '03. Yield/Slash', icon: TrendingUp },
+                    { key: 'ESCROW', label: '01. Quỹ Cọc', icon: Lock },
+                    { key: 'SEALED_BID', label: '02. Thăm Kín', icon: Eye },
+                    { key: 'YIELD_SLASH', label: '03. Lãi & Bù', icon: TrendingUp },
                   ] as const
                 ).map((tab) => {
                   const Icon = tab.icon;
@@ -341,32 +341,32 @@ export function LandingView() {
           {[
             {
               value: '0%',
-              label: 'Rủi ro ôm tiền bỏ trốn',
-              sub: 'Quỹ giữ hoàn toàn trong Smart Contract',
+              label: 'Rủi ro chủ hụi ôm tiền',
+              sub: 'Quỹ giữ hoàn toàn trong hợp đồng tự động',
               color: 'text-avalanche-red',
               activeBorder: 'border-avalanche-red bg-avalanche-red/10 shadow-[0_14px_38px_-10px_rgba(232,65,66,0.45)]',
               topBar: 'bg-avalanche-red',
             },
             {
               value: '100%–300%',
-              label: 'Bảo chứng thế chấp mUSDC',
-              sub: 'Auto-Slash bù đắp tức thì khi có trễ hạn',
+              label: 'Tiền cọc bảo đảm',
+              sub: 'Tự động trích tiền cọc bù ngay khi có người trễ hạn',
               color: 'text-amber-300',
               activeBorder: 'border-amber-400 bg-amber-500/10 shadow-[0_14px_38px_-10px_rgba(251,191,36,0.35)]',
               topBar: 'bg-amber-400',
             },
             {
-              value: '+6.50% APY',
-              label: 'Lãi kép ERC-4626 Yield',
-              sub: 'Vốn thế chấp nhàn rỗi vẫn tự động sinh lời',
+              value: '+6.5% / Năm',
+              label: 'Tiền cọc tự sinh lãi',
+              sub: 'Khoản cọc nằm chờ trong dây vẫn tự cộng lãi mỗi ngày',
               color: 'text-emerald-400',
               activeBorder: 'border-emerald-400 bg-emerald-500/10 shadow-[0_14px_38px_-10px_rgba(52,211,153,0.35)]',
               topBar: 'bg-emerald-400',
             },
             {
               value: '< 2 Giây',
-              label: 'Avalanche Finality',
-              sub: 'Chốt giao dịch siêu tốc, phí gas tối giản',
+              label: 'Xử lý trên Avalanche',
+              sub: 'Xác nhận đóng & nhận tiền nhanh, phí rất thấp',
               color: 'text-sky-300',
               activeBorder: 'border-sky-400 bg-sky-500/10 shadow-[0_14px_38px_-10px_rgba(56,189,248,0.35)]',
               topBar: 'bg-sky-400',
@@ -416,13 +416,13 @@ export function LandingView() {
       >
         <div className="mb-10 max-w-2xl space-y-2">
           <div className="font-mono text-xs font-bold uppercase tracking-widest text-avalanche-red">
-            01 // Giải Quyết Bài Toán Ngàn Đời
+            01 // Giải Quyết Nỗi Lo Chơi Hụi
           </div>
           <h2 className="text-2xl font-black uppercase tracking-tight text-white sm:text-3xl">
-            Từ &ldquo;Tin Vào Lời Hứa&rdquo; Sang &ldquo;Tin Vào Mật Mã&rdquo;
+            Từ &ldquo;Tin Vào Lời Hứa&rdquo; Sang &ldquo;Quy Tắc Minh Bạch&rdquo;
           </h2>
           <p className="text-sm text-zinc-400">
-            Mọi điểm yếu khiến hàng loạt dây hụi truyền thống đổ vỡ đều được thay thế bằng cơ chế thực thi cưỡng chế trên Blockchain.
+            Những điểm yếu khiến dây hụi truyền thống dễ đổ vỡ đều được thay thế bằng quy tắc tự động và rõ ràng trên Blockchain.
           </p>
         </div>
 
@@ -431,7 +431,7 @@ export function LandingView() {
           <div className="rounded-none border border-zinc-800 bg-surface-card p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-zinc-800 pb-3 font-mono">
               <span className="text-sm font-bold uppercase tracking-wider text-zinc-300">
-                Hụi Truyền Thống (Web0)
+                Hụi Truyền Thống
               </span>
               <span className="border border-rose-500/40 bg-rose-500/10 px-2 py-0.5 text-[10px] font-bold uppercase text-rose-400">
                 Rủi ro cao
@@ -439,10 +439,10 @@ export function LandingView() {
             </div>
             <ul className="space-y-3 text-sm text-zinc-300">
               {[
-                'Chủ hụi cầm tiền mặt toàn nhóm — nguy cơ vỡ hụi, ôm tiền bỏ trốn bất kỳ lúc nào.',
+                'Chủ hụi cầm tiền mặt toàn nhóm — dễ phát sinh rủi ro giữ tiền hoặc giật hụi.',
                 'Người hốt hụi sớm rồi "bùng" các kỳ sau, cả nhóm phải gánh nợ thay.',
-                'Bỏ thăm kín bằng giấy dễ bị chủ hụi thông đồng, lộ giá bỏ thăm cho người thân.',
-                'Tiền quỹ thu góp nằm im trong két hoặc tài khoản cá nhân, không sinh lợi suất.',
+                'Bỏ thăm kín bằng giấy dễ bị chủ hụi can thiệp, lộ mức giá cho người quen.',
+                'Tiền quỹ thu góp nằm im một chỗ, không sinh thêm đồng lãi nào.',
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2.5">
                   <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
@@ -456,18 +456,18 @@ export function LandingView() {
           <div className="rounded-none border border-emerald-500/40 bg-emerald-500/5 p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-emerald-500/20 pb-3 font-mono">
               <span className="text-sm font-bold uppercase tracking-wider text-white">
-                Avahui On-Chain Protocol V2
+                Avahui Trên Blockchain
               </span>
               <span className="border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-300">
-                Trustless 100%
+                Không cần chủ hụi
               </span>
             </div>
             <ul className="space-y-3 text-sm text-zinc-200">
               {[
-                'Smart Contract độc lập giữ quỹ (Factory Pattern) — không ai có quyền rút ngang quỹ chung.',
-                'Bắt buộc khóa thế chấp 100%–300% mUSDC; trễ hạn sẽ tự động Auto-Slash đắp đủ kỳ góp.',
-                'Đấu giá kín 2 pha Commit-Reveal dùng hàm băm keccak256 — giữ bí mật giá đấu trên Mempool.',
-                'Vốn thế chấp nhàn rỗi tự động gửi vào ERC-4626 Yield Vault (6.50% APY) chia đều cuối kỳ.',
+                'Hợp đồng tự động giữ quỹ riêng cho từng dây hụi — không cá nhân nào tự ý rút được tiền chung.',
+                'Thành viên đặt cọc 100%–300% mUSDC; nếu có người đóng trễ, hệ thống tự trích cọc bù đủ kỳ góp.',
+                'Bỏ thăm kín qua hai bước mã hóa — giữ bí mật mức giá của bạn cho đến khi mở hòm công khai.',
+                'Tiền cọc nhàn rỗi được gửi sinh lãi tự động (~6.5%/năm) và chia đều cho cả nhóm khi kết thúc.',
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2.5">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
@@ -489,10 +489,10 @@ export function LandingView() {
         <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
           <div className="mb-10 max-w-2xl space-y-2">
             <div className="font-mono text-xs font-bold uppercase tracking-widest text-avalanche-red">
-              02 // Kiến Trúc Bảo Mật &amp; DeFi V2
+              02 // 4 Lớp Bảo Vệ Chính
             </div>
             <h2 className="text-2xl font-black uppercase tracking-tight text-white sm:text-3xl">
-              4 Mô-đun Nâng Cấp Chuẩn Tài Chính Phi Tập Trung
+              4 Cơ Chế Giúp Dây Hụi Vận Hành An Toàn
             </h2>
           </div>
 
@@ -500,39 +500,39 @@ export function LandingView() {
             {[
               {
                 num: '01',
-                title: 'Sealed-Bid Bidding (Commit-Reveal)',
-                tag: 'Chống MEV & Lộ giá',
+                title: 'Bỏ Thăm Kín Hai Bước',
+                tag: 'Chống lộ giá bỏ thăm',
                 icon: Lock,
                 accent: 'text-sky-400 border-sky-500/30 bg-sky-500/10',
                 glow: 'border-sky-400/70 bg-sky-500/5 shadow-[0_14px_36px_-12px_rgba(56,189,248,0.35)]',
-                desc: 'Ở pha Commit, thành viên chỉ gửi mã băm keccak256 của mức chiết khấu + Salt ngẫu nhiên. Đến pha Reveal mới mở khóa đối chiếu, loại bỏ hoàn toàn tình trạng nhìn trộm giá để trả cao hơn 1 đồng.',
+                desc: 'Mức giá bạn đưa ra được khóa thành mã bí mật kèm số ngẫu nhiên ở bước đầu. Hết giờ mới đồng loạt mở thăm đối chiếu, ngăn việc nhìn trộm để trả cao hơn 1 đồng.',
               },
               {
                 num: '02',
-                title: 'ERC-4626 Yield on Undisbursed Pool',
-                tag: 'Lãi Kép 6.50% APY',
+                title: 'Tiền Cọc Nằm Chờ Vẫn Sinh Lãi',
+                tag: 'Lãi kép ~6.5% / năm',
                 icon: TrendingUp,
                 accent: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
                 glow: 'border-emerald-400/70 bg-emerald-500/5 shadow-[0_14px_36px_-12px_rgba(52,211,153,0.35)]',
-                desc: 'Toàn bộ tài sản thế chấp và vốn chờ giải ngân tự động sinh lời trong AvaHuiYieldVault. Khi kết thúc chu kỳ, lợi nhuận được thu hoạch và chia đều cộng hưởng vào thưởng chiết khấu.',
+                desc: 'Toàn bộ tiền cọc và quỹ chờ giải ngân không nằm chết một chỗ mà tự sinh lời trong kho lãi. Cuối dây, phần lãi thu được sẽ chia thêm cho các thành viên đóng đúng hạn.',
               },
               {
                 num: '03',
-                title: 'Team1 Anti-Sybil Attestation',
-                tag: '1-Human-1-Slot',
+                title: 'Xác Thực Mỗi Người Một Suất',
+                tag: 'Ngăn tài khoản ảo',
                 icon: ShieldCheck,
                 accent: 'text-amber-400 border-amber-500/30 bg-amber-500/10',
                 glow: 'border-amber-400/70 bg-amber-500/5 shadow-[0_14px_36px_-12px_rgba(251,191,36,0.35)]',
-                desc: 'Tích hợp Team1AttestationVerifier phát hành identityNullifier duy nhất cho mỗi cá nhân thật, ngăn chặn kẻ xấu tạo nhiều ví ảo thông đồng thâu tóm dây hụi.',
+                desc: 'Mỗi cá nhân thật chỉ xác nhận được một suất tham gia hợp lệ bằng mã định danh riêng, ngăn kẻ xấu lập nhiều tài khoản ảo để thông đồng thâu tóm dây hụi.',
               },
               {
                 num: '04',
-                title: 'Invite Members by Link & On-Chain Gate',
-                tag: 'Nhóm Riêng Tư Bảo Mật',
+                title: 'Lập Nhóm Riêng Bằng Link Mời',
+                tag: 'Chỉ người có mã mới vào',
                 icon: Share2,
                 accent: 'text-avalanche-red border-avalanche-red/30 bg-avalanche-red/10',
                 glow: 'border-avalanche-red/80 bg-avalanche-red/5 shadow-[0_14px_36px_-12px_rgba(232,65,66,0.4)]',
-                desc: 'Tạo dây hụi riêng tư cho bạn bè, đồng nghiệp hoặc hội nhóm Builders với mã mời băm trên Smart Contract. Gửi 1 đường dẫn ?invite= để tham gia và kiểm chứng tức thì.',
+                desc: 'Tạo dây hụi kín cho bạn bè, đồng nghiệp hoặc hội nhóm với mã mời khóa chặt ngay trên hợp đồng. Chỉ cần gửi 1 đường link là người quen có thể kiểm tra và vào dây ngay.',
               },
             ].map((card, idx) => {
               const Icon = card.icon;
@@ -553,7 +553,7 @@ export function LandingView() {
                       <Icon className="h-5 w-5" />
                     </div>
                     <span className={`font-mono text-[11px] font-bold uppercase tracking-wider transition-colors ${isHighlighted ? 'text-white' : 'text-zinc-500'}`}>
-                      MODULE // {card.num}
+                      CƠ CHẾ // {card.num}
                     </span>
                   </div>
                   <div className="mt-4 inline-block border border-zinc-700 bg-zinc-900 px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-zinc-300">
@@ -582,7 +582,7 @@ export function LandingView() {
         <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
           <div className="max-w-2xl space-y-2">
             <div className="font-mono text-xs font-bold uppercase tracking-widest text-avalanche-red">
-              03 // Trải Nghiệm Đơn Giản Như Web2
+              03 // Tham Gia Nhanh Trong Vài Phút
             </div>
             <h2 className="text-2xl font-black uppercase tracking-tight text-white sm:text-3xl">
               4 Bước Khởi Chạy Dây Hụi Đầu Tiên
@@ -601,28 +601,28 @@ export function LandingView() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 font-mono">
           {[
             {
-              step: 'STEP 01',
-              title: 'Đăng nhập & Nhận Ví',
+              step: 'BƯỚC 01',
+              title: 'Đăng Nhập & Có Ví Ngay',
               icon: KeyRound,
-              desc: 'Vào bằng Google, Email OTP (Ví MPC tự tạo) hoặc nối trực tiếp ví Core Wallet / MetaMask.',
+              desc: 'Vào bằng Google, Email hoặc nối ví Core / MetaMask — chưa rành tiền số vẫn dùng được ngay.',
             },
             {
-              step: 'STEP 02',
-              title: 'Faucet / Swap mUSDC',
+              step: 'BƯỚC 02',
+              title: 'Nhận Thử mUSDC',
               icon: Coins,
-              desc: 'Nhận ngay 1,000 mUSDC thử nghiệm hoặc Swap 1-click AVAX sang mUSDC trên Navbar.',
+              desc: 'Nhận ngay 1,000 mUSDC thử nghiệm hoặc đổi trực tiếp từ AVAX ngay trên thanh công cụ.',
             },
             {
-              step: 'STEP 03',
-              title: 'Tham gia & Khóa Slot',
+              step: 'BƯỚC 03',
+              title: 'Chọn Dây & Đặt Cọc',
               icon: Users,
-              desc: 'Chọn dây hụi FIXED hoặc BIDDING, khóa thế chấp 1x–3x để nhận vị trí Slot On-Chain.',
+              desc: 'Chọn dây hụi đóng đều hoặc bỏ thăm hốt sớm, đặt tiền cọc bảo đảm để giữ suất chơi.',
             },
             {
-              step: 'STEP 04',
+              step: 'BƯỚC 04',
               title: 'Đóng Kỳ & Thu Hoạch',
               icon: Sparkles,
-              desc: 'Đấu giá kín, nhận Payout sớm hoặc chờ cuối kỳ rút 100% Thế chấp + Chiết khấu + Lãi 6.5%.',
+              desc: 'Bỏ thăm kín nhận hụi khi cần, hoặc đợi đến cuối dây rút đủ tiền cọc, chiết khấu và tiền lãi.',
             },
           ].map((item, idx) => {
             const Icon = item.icon;
@@ -673,13 +673,13 @@ export function LandingView() {
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-widest text-emerald-400">
               <Zap className="h-3.5 w-3.5" />
-              <span>Sẵn sàng trải nghiệm On-Chain Real-Time</span>
+              <span>Sẵn sàng trải nghiệm ngay trên hệ thống</span>
             </div>
             <h2 className="text-2xl font-black uppercase tracking-tight text-white sm:text-3xl">
               Bắt Đầu Tham Gia Hoặc Tạo Dây Hụi Ngay Hôm Nay
             </h2>
             <p className="text-sm text-zinc-400">
-              Trải nghiệm đầy đủ từ Đăng nhập, Ví điện tử, Sealed-Bid Commit-Reveal đến Giải ngân Tự động trên mạng Avalanche.
+              Trải nghiệm trọn vẹn từ đăng nhập, nhận tiền thử nghiệm, bỏ thăm kín cho đến nhận tiền tự động trên mạng Avalanche.
             </p>
           </div>
 
