@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAuthSession } from '@/lib/auth/useAuthSession';
 import {
@@ -91,6 +91,23 @@ export function LandingView() {
   const { data: session } = useAuthSession();
   const [activeTab, setActiveTab] = useState<TerminalTab>('ESCROW');
   const activeSection = useActiveLandingSection('hero');
+
+  // Sequential 2-second spotlight cycle across 4-item grids (pauses when user hovers an item)
+  const [spotlightIndex, setSpotlightIndex] = useState(0);
+  const [hoveredMetric, setHoveredMetric] = useState<number | null>(null);
+  const [hoveredModule, setHoveredModule] = useState<number | null>(null);
+  const [hoveredStep, setHoveredStep] = useState<number | null>(null);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSpotlightIndex((prev) => (prev + 1) % 4);
+    }, 2000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const activeMetricIdx = hoveredMetric ?? spotlightIndex;
+  const activeModuleIdx = hoveredModule ?? spotlightIndex;
+  const activeStepIdx = hoveredStep ?? spotlightIndex;
 
   const isAuthenticated = Boolean(session?.isAuthenticated);
   const currentDemo = TERMINAL_DEMOS[activeTab];
@@ -314,49 +331,79 @@ export function LandingView() {
       </ScrollFocusSection>
 
       {/* ================================================================= */}
-      {/* SECTION 1: 4 TRUSTED METRICS STRIP                                */}
+      {/* SECTION 1: 4 TRUSTED METRICS STRIP (2s Sequential Lift & Glow)    */}
       {/* ================================================================= */}
       <ScrollFocusSection
         id="metrics"
         className="border-b border-zinc-800 bg-zinc-950/70"
       >
-        <div className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-y divide-zinc-800 sm:divide-y-0 lg:grid-cols-4 font-mono">
+        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-3 px-4 py-6 sm:px-6 lg:grid-cols-4 font-mono">
           {[
             {
               value: '0%',
               label: 'Rủi ro ôm tiền bỏ trốn',
               sub: 'Quỹ giữ hoàn toàn trong Smart Contract',
               color: 'text-avalanche-red',
+              activeBorder: 'border-avalanche-red bg-avalanche-red/10 shadow-[0_14px_38px_-10px_rgba(232,65,66,0.45)]',
+              topBar: 'bg-avalanche-red',
             },
             {
               value: '100%–300%',
               label: 'Bảo chứng thế chấp mUSDC',
               sub: 'Auto-Slash bù đắp tức thì khi có trễ hạn',
               color: 'text-amber-300',
+              activeBorder: 'border-amber-400 bg-amber-500/10 shadow-[0_14px_38px_-10px_rgba(251,191,36,0.35)]',
+              topBar: 'bg-amber-400',
             },
             {
               value: '+6.50% APY',
               label: 'Lãi kép ERC-4626 Yield',
               sub: 'Vốn thế chấp nhàn rỗi vẫn tự động sinh lời',
               color: 'text-emerald-400',
+              activeBorder: 'border-emerald-400 bg-emerald-500/10 shadow-[0_14px_38px_-10px_rgba(52,211,153,0.35)]',
+              topBar: 'bg-emerald-400',
             },
             {
               value: '< 2 Giây',
               label: 'Avalanche Finality',
               sub: 'Chốt giao dịch siêu tốc, phí gas tối giản',
               color: 'text-sky-300',
+              activeBorder: 'border-sky-400 bg-sky-500/10 shadow-[0_14px_38px_-10px_rgba(56,189,248,0.35)]',
+              topBar: 'bg-sky-400',
             },
-          ].map((stat) => (
-            <div key={stat.label} className="p-6 transition hover:bg-zinc-900/40">
-              <div className={`text-2xl font-black sm:text-3xl ${stat.color}`}>
-                {stat.value}
+          ].map((stat, idx) => {
+            const isHighlighted = activeMetricIdx === idx;
+            return (
+              <div
+                key={stat.label}
+                onMouseEnter={() => setHoveredMetric(idx)}
+                onMouseLeave={() => setHoveredMetric(null)}
+                className={`relative border p-5 sm:p-6 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                  isHighlighted
+                    ? `-translate-y-2.5 scale-[1.02] opacity-100 ${stat.activeBorder}`
+                    : 'translate-y-0 scale-100 border-zinc-800/80 bg-surface-card/60 opacity-75 hover:opacity-100'
+                }`}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`absolute left-0 right-0 top-0 h-[2px] transition-all duration-500 ${
+                    isHighlighted ? `${stat.topBar} opacity-100` : 'opacity-0'
+                  }`}
+                />
+                <div
+                  className={`text-2xl font-black sm:text-3xl transition-transform duration-500 ${
+                    stat.color
+                  } ${isHighlighted ? 'scale-[1.04] origin-left' : ''}`}
+                >
+                  {stat.value}
+                </div>
+                <div className="mt-1.5 text-xs font-bold uppercase tracking-wider text-white">
+                  {stat.label}
+                </div>
+                <div className="mt-1 text-[11px] text-zinc-400">{stat.sub}</div>
               </div>
-              <div className="mt-1 text-xs font-bold uppercase tracking-wider text-white">
-                {stat.label}
-              </div>
-              <div className="mt-1 text-[11px] text-zinc-400">{stat.sub}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </ScrollFocusSection>
 
@@ -457,6 +504,7 @@ export function LandingView() {
                 tag: 'Chống MEV & Lộ giá',
                 icon: Lock,
                 accent: 'text-sky-400 border-sky-500/30 bg-sky-500/10',
+                glow: 'border-sky-400/70 bg-sky-500/5 shadow-[0_14px_36px_-12px_rgba(56,189,248,0.35)]',
                 desc: 'Ở pha Commit, thành viên chỉ gửi mã băm keccak256 của mức chiết khấu + Salt ngẫu nhiên. Đến pha Reveal mới mở khóa đối chiếu, loại bỏ hoàn toàn tình trạng nhìn trộm giá để trả cao hơn 1 đồng.',
               },
               {
@@ -465,6 +513,7 @@ export function LandingView() {
                 tag: 'Lãi Kép 6.50% APY',
                 icon: TrendingUp,
                 accent: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
+                glow: 'border-emerald-400/70 bg-emerald-500/5 shadow-[0_14px_36px_-12px_rgba(52,211,153,0.35)]',
                 desc: 'Toàn bộ tài sản thế chấp và vốn chờ giải ngân tự động sinh lời trong AvaHuiYieldVault. Khi kết thúc chu kỳ, lợi nhuận được thu hoạch và chia đều cộng hưởng vào thưởng chiết khấu.',
               },
               {
@@ -473,6 +522,7 @@ export function LandingView() {
                 tag: '1-Human-1-Slot',
                 icon: ShieldCheck,
                 accent: 'text-amber-400 border-amber-500/30 bg-amber-500/10',
+                glow: 'border-amber-400/70 bg-amber-500/5 shadow-[0_14px_36px_-12px_rgba(251,191,36,0.35)]',
                 desc: 'Tích hợp Team1AttestationVerifier phát hành identityNullifier duy nhất cho mỗi cá nhân thật, ngăn chặn kẻ xấu tạo nhiều ví ảo thông đồng thâu tóm dây hụi.',
               },
               {
@@ -481,27 +531,35 @@ export function LandingView() {
                 tag: 'Nhóm Riêng Tư Bảo Mật',
                 icon: Share2,
                 accent: 'text-avalanche-red border-avalanche-red/30 bg-avalanche-red/10',
+                glow: 'border-avalanche-red/80 bg-avalanche-red/5 shadow-[0_14px_36px_-12px_rgba(232,65,66,0.4)]',
                 desc: 'Tạo dây hụi riêng tư cho bạn bè, đồng nghiệp hoặc hội nhóm Builders với mã mời băm trên Smart Contract. Gửi 1 đường dẫn ?invite= để tham gia và kiểm chứng tức thì.',
               },
-            ].map((card) => {
+            ].map((card, idx) => {
               const Icon = card.icon;
+              const isHighlighted = activeModuleIdx === idx;
               return (
                 <div
                   key={card.num}
-                  className="group rounded-none border border-zinc-800 bg-surface-card p-6 transition duration-300 hover:-translate-y-1 hover:border-zinc-600"
+                  onMouseEnter={() => setHoveredModule(idx)}
+                  onMouseLeave={() => setHoveredModule(null)}
+                  className={`group rounded-none border p-6 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                    isHighlighted
+                      ? `-translate-y-2 scale-[1.015] opacity-100 ${card.glow}`
+                      : 'translate-y-0 scale-100 border-zinc-800 bg-surface-card opacity-75 hover:opacity-100'
+                  }`}
                 >
                   <div className="flex items-start justify-between gap-4">
-                    <div className={`flex h-11 w-11 items-center justify-center rounded-none border ${card.accent}`}>
+                    <div className={`flex h-11 w-11 items-center justify-center rounded-none border transition-transform duration-500 ${card.accent} ${isHighlighted ? 'scale-110' : ''}`}>
                       <Icon className="h-5 w-5" />
                     </div>
-                    <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-zinc-500">
+                    <span className={`font-mono text-[11px] font-bold uppercase tracking-wider transition-colors ${isHighlighted ? 'text-white' : 'text-zinc-500'}`}>
                       MODULE // {card.num}
                     </span>
                   </div>
                   <div className="mt-4 inline-block border border-zinc-700 bg-zinc-900 px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-zinc-300">
                     {card.tag}
                   </div>
-                  <h3 className="mt-2.5 font-mono text-lg font-extrabold text-white group-hover:text-avalanche-red transition-colors">
+                  <h3 className={`mt-2.5 font-mono text-lg font-extrabold transition-colors ${isHighlighted ? 'text-white' : 'text-zinc-200'}`}>
                     {card.title}
                   </h3>
                   <p className="mt-2 text-sm leading-relaxed text-zinc-400">
@@ -566,18 +624,31 @@ export function LandingView() {
               icon: Sparkles,
               desc: 'Đấu giá kín, nhận Payout sớm hoặc chờ cuối kỳ rút 100% Thế chấp + Chiết khấu + Lãi 6.5%.',
             },
-          ].map((item) => {
+          ].map((item, idx) => {
             const Icon = item.icon;
+            const isHighlighted = activeStepIdx === idx;
             return (
               <div
                 key={item.step}
-                className="rounded-none border border-zinc-800 bg-surface-card p-5 space-y-3 transition duration-300 hover:-translate-y-1 hover:border-avalanche-red/60"
+                onMouseEnter={() => setHoveredStep(idx)}
+                onMouseLeave={() => setHoveredStep(null)}
+                className={`relative rounded-none border p-5 space-y-3 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                  isHighlighted
+                    ? '-translate-y-2.5 scale-[1.02] border-avalanche-red bg-avalanche-red/10 shadow-[0_14px_38px_-10px_rgba(232,65,66,0.45)] opacity-100'
+                    : 'translate-y-0 scale-100 border-zinc-800 bg-surface-card opacity-75 hover:opacity-100'
+                }`}
               >
+                <span
+                  aria-hidden="true"
+                  className={`absolute left-0 right-0 top-0 h-[2px] bg-avalanche-red transition-opacity duration-500 ${
+                    isHighlighted ? 'opacity-100' : 'opacity-0'
+                  }`}
+                />
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-avalanche-red">
+                  <span className={`text-[11px] font-bold ${isHighlighted ? 'text-white' : 'text-avalanche-red'}`}>
                     {item.step}
                   </span>
-                  <Icon className="h-4 w-4 text-zinc-400" />
+                  <Icon className={`h-4 w-4 transition-colors ${isHighlighted ? 'text-avalanche-red' : 'text-zinc-400'}`} />
                 </div>
                 <h3 className="text-sm font-extrabold uppercase text-white">
                   {item.title}
