@@ -1,0 +1,4 @@
+# Serve dynamic circle detail URLs (/circles/<id>) from the static shell outside /circles/*
+# to avoid Cloudflare _redirects self-matching loop errors. /circles/create resolves to its physical file first.
+/circles/*  /circle-detail.html  200
+

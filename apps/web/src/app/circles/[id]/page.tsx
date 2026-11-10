@@ -1,5 +1,9 @@
 import React from 'react';
-import { CircleDetailView } from '@/features/circles/components/CircleDetailView';
+import { CircleDetailClient } from './CircleDetailClient';
+
+export function generateStaticParams() {
+  return [{ id: 'detail' }];
+}
 
 interface CircleDetailPageProps {
   params: {
@@ -8,5 +12,5 @@ interface CircleDetailPageProps {
 }
 
 export default function CircleDetailPage({ params }: CircleDetailPageProps) {
-  return <CircleDetailView circleId={params.id} />;
+  return <CircleDetailClient fallbackId={params.id} />;
 }
