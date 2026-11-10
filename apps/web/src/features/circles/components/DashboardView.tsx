@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAvaHuiState } from '@/hooks/useAvaHuiMockQuery';
 import {
@@ -57,7 +57,7 @@ export function DashboardView() {
       )
   );
 
-  const actionItems = useMemo(() => {
+  const actionItems = (() => {
     const items: Array<{
       id: string;
       circleId: string;
@@ -120,7 +120,7 @@ export function DashboardView() {
     }
 
     return items;
-  }, [myCircles, currentUser.walletAddress]);
+  })();
 
   const filteredMyCircles = myCircles.filter((c) => {
     if (activeTab === 'ACTIVE') return c.status === CircleStatus.Active;

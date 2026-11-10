@@ -41,6 +41,8 @@ export function CircleDetailView({ circleId }: CircleDetailViewProps) {
   const currentUser =
     state?.users.find((u) => u.id === state.currentUserId) || state?.users[0];
 
+  const { data: liveTxs } = useMyTransactionsQuery(circle?.id);
+
   if (!circle || !currentUser) {
     if (!isLoadingLive && !isLoadingState) {
       return (
@@ -63,8 +65,6 @@ export function CircleDetailView({ circleId }: CircleDetailViewProps) {
       </div>
     );
   }
-
-  const { data: liveTxs } = useMyTransactionsQuery(circle?.id);
 
   const mockCircleTxs = (state?.transactions || []).filter(
     (t) =>
