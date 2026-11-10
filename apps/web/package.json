@@ -5,6 +5,7 @@
   "description": "AvaHui Next.js Frontend (Feature-based Architecture)",
   "scripts": {
     "dev": "next dev -p 3000",
+    "prebuild": "pnpm --filter @avahui/shared build && pnpm --filter @avahui/blockchain build",
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "next lint"
