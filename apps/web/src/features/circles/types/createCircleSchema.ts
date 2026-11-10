@@ -44,6 +44,10 @@ export const createCircleSchema = z
       .min(30, 'Thời gian ân hạn tối thiểu 30 giây'),
     minBidUsdc: z.number().min(0),
     maxBidUsdc: z.number().min(0),
+    isSealedBid: z.boolean().optional(),
+    enableYieldVault: z.boolean().optional(),
+    isPrivateInvite: z.boolean().optional(),
+    requireTeam1Attestation: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {
     const basePot = data.maxMembers * data.contributionAmountUsdc;

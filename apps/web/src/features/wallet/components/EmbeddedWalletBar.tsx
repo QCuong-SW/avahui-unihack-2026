@@ -1,9 +1,13 @@
 'use client';
 
 import React from 'react';
-import { useAvaHuiState } from '@/hooks/useAvaHuiMockQuery';
+import {
+  useAvaHuiState,
+  useSwapAvaxToUsdcMutation,
+} from '@/hooks/useAvaHuiMockQuery';
 import { useAuthSession } from '@/lib/auth/useAuthSession';
 import { useTokenOperations } from '@/hooks/useTokenOperations';
+import { useTxLifecycle } from '@/features/transactions/hooks/useTxLifecycle';
 import { formatUsdc } from '@/lib/utils';
 import { HoverHint } from '@/components/ui/HoverHint';
 import { NetworkStatus } from '@/components/wallet/NetworkStatus';
@@ -11,6 +15,7 @@ import { WalletInfo } from '@/components/wallet/WalletInfo';
 import { AccountMenu } from '@/components/layout/AccountMenu';
 import {
   AlertTriangle,
+  ArrowLeftRight,
   Coins,
   Fuel,
   Loader2,
@@ -20,6 +25,8 @@ export function EmbeddedWalletBar() {
   const { data: state } = useAvaHuiState();
   const { data: session } = useAuthSession();
   const { requestFaucet, isOperating } = useTokenOperations();
+  const swapMutation = useSwapAvaxToUsdcMutation();
+  const { runTransaction } = useTxLifecycle();
 
   if (!state) return null;
 
@@ -30,6 +37,16 @@ export function EmbeddedWalletBar() {
 
   const handleFaucet = async () => {
     await requestFaucet(1000);
+  };
+
+  const handleSwap = async () => {
+    await runTransaction({
+      title: 'Swap AVAX → mUSDC (Fuji DEX)',
+      description: 'Swapping 0.05 AVAX for +250.00 mUSDC via Trader Joe Router',
+      action: async () => {
+        return await swapMutation.mutateAsync(0.05);
+      },
+    });
   };
 
   return (
@@ -71,6 +88,21 @@ export function EmbeddedWalletBar() {
             <span>{formatUsdc(currentUser.usdcBalance)}</span>
             <span className="hidden sm:inline"> mUSDC</span>
           </div>
+        </HoverHint>
+
+        <HoverHint
+          position="bottom"
+          hint="Swap nhanh 0.05 AVAX → +250 mUSDC qua Trader Joe Fuji"
+        >
+          <button
+            type="button"
+            disabled={swapMutation.isPending}
+            onClick={handleSwap}
+            className="hidden sm:inline-flex items-center gap-1 rounded-none border border-zinc-700 bg-zinc-800 px-2 py-1 font-mono text-xs font-bold uppercase text-sky-300 transition hover:border-sky-400 hover:text-white active:scale-95 mr-0.5"
+          >
+            <ArrowLeftRight className="h-3 w-3 text-sky-400" />
+            <span>Swap</span>
+          </button>
         </HoverHint>
 
         <HoverHint

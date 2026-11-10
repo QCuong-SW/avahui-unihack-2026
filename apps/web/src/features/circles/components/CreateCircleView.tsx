@@ -65,6 +65,10 @@ export function CreateCircleView() {
       gracePeriodSeconds: CIRCLE_CONSTRAINTS.DEFAULT_GRACE_PERIOD_SECONDS,
       minBidUsdc: 2,
       maxBidUsdc: 35,
+      isSealedBid: true,
+      enableYieldVault: true,
+      isPrivateInvite: false,
+      requireTeam1Attestation: true,
     },
   });
 
@@ -413,6 +417,50 @@ export function CreateCircleView() {
                 {...register('gracePeriodSeconds', { valueAsNumber: true })}
                 className="mt-1 w-full rounded-none border border-zinc-700 bg-zinc-900 px-3 py-1.5 font-mono text-xs text-white"
               />
+            </div>
+          </div>
+
+          {/* V2 Protocol Security & DeFi Yield Options */}
+          <div className="space-y-2.5 rounded-none border border-emerald-500/30 bg-emerald-500/5 p-3.5 font-mono">
+            <div className="text-xs font-bold uppercase tracking-wider text-emerald-300">
+              V2 Security &amp; DeFi Yield Modules
+            </div>
+            <div className="grid gap-2.5 sm:grid-cols-2 text-xs">
+              <label className="flex cursor-pointer items-center gap-2 rounded-none border border-zinc-800 bg-zinc-900/80 px-3 py-2 text-zinc-200 hover:border-zinc-700">
+                <input
+                  type="checkbox"
+                  {...register('isSealedBid')}
+                  className="h-3.5 w-3.5 accent-avalanche-red"
+                />
+                <span>Sealed-Bid (Commit-Reveal)</span>
+              </label>
+
+              <label className="flex cursor-pointer items-center gap-2 rounded-none border border-zinc-800 bg-zinc-900/80 px-3 py-2 text-zinc-200 hover:border-zinc-700">
+                <input
+                  type="checkbox"
+                  {...register('enableYieldVault')}
+                  className="h-3.5 w-3.5 accent-emerald-500"
+                />
+                <span>ERC-4626 Yield Vault (6.5% APY)</span>
+              </label>
+
+              <label className="flex cursor-pointer items-center gap-2 rounded-none border border-zinc-800 bg-zinc-900/80 px-3 py-2 text-zinc-200 hover:border-zinc-700">
+                <input
+                  type="checkbox"
+                  {...register('requireTeam1Attestation')}
+                  className="h-3.5 w-3.5 accent-amber-500"
+                />
+                <span>Team1 Anti-Sybil (1-Human-1-Slot)</span>
+              </label>
+
+              <label className="flex cursor-pointer items-center gap-2 rounded-none border border-zinc-800 bg-zinc-900/80 px-3 py-2 text-zinc-200 hover:border-zinc-700">
+                <input
+                  type="checkbox"
+                  {...register('isPrivateInvite')}
+                  className="h-3.5 w-3.5 accent-sky-500"
+                />
+                <span>Invite-Only Link Gate</span>
+              </label>
             </div>
           </div>
         </div>

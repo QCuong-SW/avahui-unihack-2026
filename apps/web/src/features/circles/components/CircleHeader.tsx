@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import {
   AllocationMode,
@@ -12,14 +12,19 @@ import { frontendEnv } from '@/config/env';
 import { HoverHint } from '@/components/ui/HoverHint';
 import {
   ArrowLeft,
+  Check,
   Clock,
   Coins,
+  Copy,
   ExternalLink,
   Gavel,
   Layers,
   Lock,
   Repeat,
+  Share2,
+  ShieldCheck,
   Sparkles,
+  TrendingUp,
   Users,
 } from 'lucide-react';
 
@@ -28,8 +33,26 @@ interface CircleHeaderProps {
 }
 
 export function CircleHeader({ circle }: CircleHeaderProps) {
+  const [copiedInvite, setCopiedInvite] = useState(false);
+  const [showInviteBox, setShowInviteBox] = useState(false);
+
   const basePot =
     parseFloat(circle.contributionAmountFormatted) * circle.maxMembers;
+  const inviteCode =
+    circle.inviteCode || `AVAHUI-${circle.id.slice(-4).toUpperCase()}`;
+
+  const getInviteUrl = () => {
+    if (typeof window === 'undefined') {
+      return `http://localhost:3000/circles/${circle.id}?invite=${inviteCode}`;
+    }
+    return `${window.location.origin}/circles/${circle.id}?invite=${inviteCode}`;
+  };
+
+  const handleCopyInvite = () => {
+    navigator.clipboard.writeText(getInviteUrl());
+    setCopiedInvite(true);
+    setTimeout(() => setCopiedInvite(false), 2000);
+  };
 
   return (
     <section className="rounded-none border border-zinc-800 bg-surface-card p-4 sm:p-6 shadow-xl">
@@ -43,20 +66,65 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
           <span>Circles</span>
         </Link>
 
-        {circle.contractAddress && (
-          <HoverHint hint="Mở hợp đồng thông minh trên Snowtrace Fuji Explorer">
-            <a
-              href={`${frontendEnv.explorerUrl}/address/${circle.contractAddress}`}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-none border border-zinc-800 bg-zinc-900 px-2.5 py-1 font-mono text-xs text-zinc-300 transition hover:border-avalanche-red hover:text-white"
+        <div className="flex flex-wrap items-center gap-2">
+          <HoverHint hint="Mời thành viên tham gia dây hụi qua đường dẫn có mã xác thực On-Chain (Invite Code)">
+            <button
+              type="button"
+              onClick={() => setShowInviteBox((prev) => !prev)}
+              className="inline-flex items-center gap-1.5 rounded-none border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 font-mono text-xs font-bold uppercase tracking-wider text-emerald-300 transition hover:bg-emerald-500 hover:text-zinc-950"
             >
-              <span>{shortenAddress(circle.contractAddress, 6)}</span>
-              <ExternalLink className="h-3.5 w-3.5 text-avalanche-red" />
-            </a>
+              <Share2 className="h-3.5 w-3.5" />
+              <span>Invite Link</span>
+            </button>
           </HoverHint>
-        )}
+
+          {circle.contractAddress && (
+            <HoverHint hint="Mở hợp đồng thông minh trên Snowtrace Fuji Explorer">
+              <a
+                href={`${frontendEnv.explorerUrl}/address/${circle.contractAddress}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-none border border-zinc-800 bg-zinc-900 px-2.5 py-1 font-mono text-xs text-zinc-300 transition hover:border-avalanche-red hover:text-white"
+              >
+                <span>{shortenAddress(circle.contractAddress, 6)}</span>
+                <ExternalLink className="h-3.5 w-3.5 text-avalanche-red" />
+              </a>
+            </HoverHint>
+          )}
+        </div>
       </div>
+
+      {/* Expandable Invite Link Drawer */}
+      {showInviteBox && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-none border border-emerald-500/40 bg-emerald-500/10 px-3.5 py-2.5 font-mono text-xs animate-fade-in">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-bold uppercase text-emerald-300">
+              Invite Code:
+            </span>
+            <span className="rounded-none border border-emerald-500/40 bg-zinc-950 px-2 py-0.5 font-bold text-white">
+              {inviteCode}
+            </span>
+            <span className="text-zinc-300 break-all">{getInviteUrl()}</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleCopyInvite}
+            className="inline-flex items-center gap-1.5 rounded-none border border-emerald-400 bg-emerald-500 px-3 py-1 font-mono text-xs font-bold uppercase text-zinc-950 transition hover:bg-emerald-400"
+          >
+            {copiedInvite ? (
+              <>
+                <Check className="h-3.5 w-3.5" />
+                <span>Đã sao chép!</span>
+              </>
+            ) : (
+              <>
+                <Copy className="h-3.5 w-3.5" />
+                <span>Copy Link</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* Title & Status Badges */}
       <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
@@ -124,6 +192,33 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
               <span>{circle.roundDurationSeconds}s</span>
             </span>
           </HoverHint>
+
+          {circle.allocationMode === AllocationMode.BIDDING && (
+            <HoverHint hint="Đấu giá kín 2 pha Commit-Reveal bằng mã băm keccak256 chống nhìn trộm trên Mempool">
+              <span className="inline-flex items-center gap-1 rounded-none border border-sky-500/40 bg-sky-500/10 px-2.5 py-1 font-mono text-xs font-bold uppercase text-sky-300">
+                <Lock className="h-3.5 w-3.5 text-sky-400" />
+                <span>Sealed-Bid</span>
+              </span>
+            </HoverHint>
+          )}
+
+          {circle.enableYieldVault !== false && (
+            <HoverHint hint="Tài sản thế chấp và quỹ chưa giải ngân tự động sinh lãi 6.50% APY trong ERC-4626 Vault">
+              <span className="inline-flex items-center gap-1 rounded-none border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 font-mono text-xs font-bold uppercase text-emerald-300">
+                <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
+                <span>6.5% APY Vault</span>
+              </span>
+            </HoverHint>
+          )}
+
+          {circle.requireTeam1Attestation !== false && (
+            <HoverHint hint="Bảo vệ chống Sybil bằng chứng thực định danh Team1 (1-Human-1-Slot)">
+              <span className="inline-flex items-center gap-1 rounded-none border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 font-mono text-xs font-bold uppercase text-amber-300">
+                <ShieldCheck className="h-3.5 w-3.5 text-amber-400" />
+                <span>Team1 Verified</span>
+              </span>
+            </HoverHint>
+          )}
         </div>
       </div>
 

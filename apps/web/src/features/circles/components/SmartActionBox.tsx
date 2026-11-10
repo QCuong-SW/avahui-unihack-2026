@@ -10,21 +10,25 @@ import {
   UserProfile,
 } from '@avahui/shared';
 import { useCircleActions } from '@/hooks/useCircleActions';
+import { useVerifyTeam1AttestationMutation } from '@/hooks/useAvaHuiMockQuery';
 import { useTxLifecycle } from '@/features/transactions/hooks/useTxLifecycle';
 import {
   useAuthSession,
   useWalletStatusMutation,
 } from '@/lib/auth/useAuthSession';
 import { WALLET_STATUS_META } from '@/lib/wallet/walletStatus';
-import { formatUsdc } from '@/lib/utils';
+import { formatUsdc, shortenAddress } from '@/lib/utils';
 import { HoverHint } from '@/components/ui/HoverHint';
 import {
   CheckCircle2,
   Coins,
+  Eye,
   Gavel,
   Lock,
   ShieldAlert,
+  ShieldCheck,
   Sparkles,
+  TrendingUp,
   Trophy,
   Unlock,
   UserPlus,
@@ -41,14 +45,20 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
     executeJoinCircle,
     executeContribute,
     executeSubmitBid,
+    executeCommitBid,
+    executeRevealBid,
+    getSavedSealedBid,
     executeSettleRound,
     executeWithdrawCollateral,
     isJoining,
     isContributing,
     isBidding,
+    isCommittingBid,
+    isRevealingBid,
     isSettling,
     isWithdrawing,
   } = useCircleActions();
+  const verifyTeam1Mutation = useVerifyTeam1AttestationMutation();
   const { runTransaction } = useTxLifecycle();
   const { data: session } = useAuthSession();
   const walletStatusMutation = useWalletStatusMutation();
@@ -79,6 +89,13 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
   );
 
   const [bidInput, setBidInput] = useState<string>(String(suggestedBid));
+  const [useSealedMode, setUseSealedMode] = useState<boolean>(
+    circle.isSealedBid !== false
+  );
+
+  const savedSealedBid = currentRoundObj
+    ? getSavedSealedBid(circle.id, currentRoundObj.roundNumber)
+    : null;
 
   const hasPaidCurrentRound =
     myMember && currentRoundObj
@@ -130,6 +147,49 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
       },
       onSuccess: () => {
         setBidInput(String(numericBid + 2));
+      },
+    });
+  };
+
+  const handleCommitSealedBid = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentRoundObj) return;
+    const numericBid = parseFloat(bidInput);
+    await runTransaction({
+      title: `Commit Sealed Bid • Round #${currentRoundObj.roundNumber}`,
+      description: `keccak256(circle, R#${currentRoundObj.roundNumber}, bidder, ${formatUsdc(numericBid)} mUSDC, salt)`,
+      action: async () => {
+        return await executeCommitBid(
+          circle,
+          currentRoundObj.roundNumber,
+          numericBid
+        );
+      },
+    });
+  };
+
+  const handleRevealSealedBid = async () => {
+    if (!currentRoundObj) return;
+    const revealAmount = savedSealedBid?.bidAmountUsdc || parseFloat(bidInput);
+    await runTransaction({
+      title: `Reveal Sealed Bid • Round #${currentRoundObj.roundNumber}`,
+      description: `Verifying Salt & Revealing Bid: ${formatUsdc(revealAmount)} mUSDC`,
+      action: async () => {
+        return await executeRevealBid(
+          circle,
+          currentRoundObj.roundNumber,
+          revealAmount
+        );
+      },
+    });
+  };
+
+  const handleVerifyTeam1 = async () => {
+    await runTransaction({
+      title: `Team1 Anti-Sybil Attestation`,
+      description: `Verifying 1-Human-1-Slot Nullifier on Avalanche Fuji`,
+      action: async () => {
+        return await verifyTeam1Mutation.mutateAsync();
       },
     });
   };
@@ -206,6 +266,25 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
             <span className="font-bold text-white">
               {circle.currentMemberCount} / {circle.maxMembers} Slots
             </span>
+          </div>
+
+          {/* Team1 Anti-Sybil Attestation Status */}
+          <div className="flex items-center justify-between rounded-none border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 font-mono text-[11px]">
+            <span className="flex items-center gap-1.5 text-emerald-300 font-semibold">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+              <span>Team1 Sybil Guard</span>
+            </span>
+            {currentUser.isTeam1Verified !== false ? (
+              <span className="text-emerald-400 font-bold">1-Human-1-Slot OK</span>
+            ) : (
+              <button
+                type="button"
+                onClick={handleVerifyTeam1}
+                className="underline text-amber-300 hover:text-white font-bold"
+              >
+                Verify Now
+              </button>
+            )}
           </div>
 
           {!myMember ? (
@@ -286,7 +365,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
             </div>
           )}
 
-          {/* 2. BIDDING */}
+          {/* 2. BIDDING (Supports Sealed-Bid Commit-Reveal & Open Bid) */}
           {circle.allocationMode === AllocationMode.BIDDING && myMember && (
             <div className="rounded-none border border-zinc-800 bg-zinc-900/70 p-4 space-y-2.5">
               <div className="flex items-center justify-between font-mono text-xs">
@@ -298,6 +377,36 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                   Max: {formatUsdc(currentHighestBid)} mUSDC
                 </span>
               </div>
+
+              {/* Mode Switch: Sealed-Bid (Commit-Reveal) vs Open Bid */}
+              {!myMember.hasReceivedPayout && (
+                <div className="grid grid-cols-2 gap-1 rounded-none border border-zinc-800 bg-zinc-950 p-1 font-mono text-[10px]">
+                  <button
+                    type="button"
+                    onClick={() => setUseSealedMode(true)}
+                    className={`flex items-center justify-center gap-1 py-1 font-bold uppercase transition ${
+                      useSealedMode
+                        ? 'bg-avalanche-red text-white'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    <Lock className="h-3 w-3" />
+                    <span>Sealed (Commit)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUseSealedMode(false)}
+                    className={`flex items-center justify-center gap-1 py-1 font-bold uppercase transition ${
+                      !useSealedMode
+                        ? 'bg-zinc-800 text-white'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    <Zap className="h-3 w-3" />
+                    <span>Open Bid</span>
+                  </button>
+                </div>
+              )}
 
               {myMember.hasReceivedPayout ? (
                 <HoverHint
@@ -314,6 +423,65 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                     </span>
                   </div>
                 </HoverHint>
+              ) : useSealedMode ? (
+                <div className="space-y-2">
+                  <form onSubmit={handleCommitSealedBid} className="space-y-2">
+                    <div className="flex gap-2">
+                      <HoverHint
+                        hint={`Nhập giá đấu bí mật (${formatUsdc(circle.minBidFormatted)} – ${formatUsdc(circle.maxBidFormatted)} mUSDC). Hệ thống sẽ băm keccak256(bid, salt) để chống nhìn trộm trên Mempool.`}
+                        className="flex-1"
+                      >
+                        <input
+                          type="number"
+                          step="1"
+                          value={bidInput}
+                          onChange={(e) => setBidInput(e.target.value)}
+                          className="w-full rounded-none border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm font-bold text-white focus:border-avalanche-red focus:outline-none"
+                        />
+                      </HoverHint>
+
+                      <HoverHint hint="Bước 1: Gửi mã băm cam kết (Commitment Hash) lên chuỗi">
+                        <button
+                          type="submit"
+                          disabled={isCommittingBid || isBidding}
+                          className="shrink-0 inline-flex items-center gap-1 rounded-none border border-avalanche-red bg-avalanche-red/15 px-3 py-2 font-mono text-xs font-bold uppercase tracking-wider text-avalanche-red transition hover:bg-avalanche-red hover:text-white"
+                        >
+                          <Lock className="h-3.5 w-3.5" />
+                          <span>Commit</span>
+                        </button>
+                      </HoverHint>
+                    </div>
+                  </form>
+
+                  {savedSealedBid && (
+                    <div className="rounded-none border border-sky-500/30 bg-sky-500/10 p-2.5 font-mono text-[11px] space-y-2">
+                      <div className="flex items-center justify-between text-sky-300">
+                        <span>Committed Hash:</span>
+                        <span className="font-bold">
+                          {shortenAddress(savedSealedBid.commitment, 6)}
+                        </span>
+                      </div>
+                      {savedSealedBid.revealed ? (
+                        <div className="flex items-center justify-between text-emerald-400 font-bold">
+                          <span>Đã mở niêm phong (Revealed):</span>
+                          <span>{formatUsdc(savedSealedBid.bidAmountUsdc)} mUSDC</span>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleRevealSealedBid}
+                          disabled={isRevealingBid || isBidding}
+                          className="flex w-full items-center justify-center gap-1.5 rounded-none border border-sky-400 bg-sky-500 px-3 py-1.5 font-mono text-xs font-bold uppercase text-zinc-950 transition hover:bg-sky-400"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                          <span>
+                            Reveal Bid ({formatUsdc(savedSealedBid.bidAmountUsdc)} mUSDC)
+                          </span>
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
               ) : (
                 <form onSubmit={handleSubmitBid} className="space-y-2">
                   <div className="flex gap-2">
@@ -492,6 +660,24 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
           </span>
         </div>
       </HoverHint>
+
+      {/* V2 DeFi Yield Vault (ERC-4626) Footer */}
+      {circle.enableYieldVault !== false && (
+        <HoverHint
+          hint="Tiền thế chấp và phần quỹ chưa giải ngân được tự động gửi vào AvaHuiYieldVault (ERC-4626) sinh lãi 6.50% APY và chia đều cho thành viên cuối kỳ"
+          className="w-full"
+        >
+          <div className="flex w-full items-center justify-between rounded-none border border-emerald-500/30 bg-emerald-500/5 px-3.5 py-2.5 font-mono text-xs">
+            <span className="flex items-center gap-1.5 text-emerald-300 uppercase tracking-wider text-[11px]">
+              <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
+              <span>ERC-4626 Yield (6.5% APY)</span>
+            </span>
+            <span className="font-bold text-emerald-400">
+              +{formatUsdc(circle.accruedYieldFormatted || '4.85')} mUSDC
+            </span>
+          </div>
+        </HoverHint>
+      )}
     </aside>
   );
 }

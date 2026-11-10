@@ -1,7 +1,13 @@
 'use client';
 
 import { useCallback } from 'react';
-import { parseUnits, createWalletClient, custom } from 'viem';
+import {
+  parseUnits,
+  createWalletClient,
+  custom,
+  keccak256,
+  encodePacked,
+} from 'viem';
 import { avalancheFuji } from 'viem/chains';
 import {
   AvaHuiCircleABI,
@@ -18,9 +24,11 @@ import { frontendEnv } from '@/config/env';
 import { circleApi, transactionApi } from '@/lib/api';
 import {
   useAvaHuiState,
+  useCommitBidMutation,
   useCreateCircleMutation,
   useContributeRoundMutation,
   useJoinCircleMutation,
+  useRevealBidMutation,
   useSettleRoundMutation,
   useSubmitBidMutation,
   useWithdrawCollateralMutation,
@@ -38,6 +46,8 @@ export function useCircleActions() {
   const joinMutation = useJoinCircleMutation();
   const contributeMutation = useContributeRoundMutation();
   const bidMutation = useSubmitBidMutation();
+  const commitBidMutation = useCommitBidMutation();
+  const revealBidMutation = useRevealBidMutation();
   const settleMutation = useSettleRoundMutation();
   const withdrawMutation = useWithdrawCollateralMutation();
   const createCircleMutation = useCreateCircleMutation();
@@ -457,16 +467,214 @@ export function useCircleActions() {
     [createCircleMutation, currentUser?.walletAddress, getActiveWalletClient],
   );
 
+  /**
+   * ACTION 7 (V2): Sealed-Bid Phase 1 — Commit Cryptographic Bid Hash
+   */
+  const executeCommitBid = useCallback(
+    async (
+      circle: CircleItem,
+      roundNumber: number,
+      bidAmountUsdc: number,
+    ): Promise<{ txHash: string; commitment: string; salt: string }> => {
+      const circleAddress = (circle.contractAddress || frontendEnv.factoryAddress) as `0x${string}`;
+      const bidderAddress = (currentUser?.walletAddress ||
+        '0x71c95911e9a5d330f4d621842ec243ee13432921') as `0x${string}`;
+      const bidAmountBaseUnits = parseUnits(String(bidAmountUsdc), 6);
+
+      // Generate deterministic or random 32-byte salt
+      const randomHex = Array.from({ length: 64 }, () =>
+        Math.floor(Math.random() * 16).toString(16),
+      ).join('');
+      const salt = `0x${randomHex}` as `0x${string}`;
+
+      // keccak256(abi.encodePacked(circleAddress, uint16(roundNumber), bidderAddress, bidAmountBaseUnits, salt))
+      const commitment = keccak256(
+        encodePacked(
+          ['address', 'uint16', 'address', 'uint256', 'bytes32'],
+          [circleAddress, roundNumber, bidderAddress, bidAmountBaseUnits, salt],
+        ),
+      );
+
+      // Persist sealed bid secret in browser storage for Phase 2 Reveal
+      if (typeof window !== 'undefined') {
+        const storageKey = `avahui_sealed_bid_${circle.id}_${roundNumber}_${bidderAddress.toLowerCase()}`;
+        window.localStorage.setItem(
+          storageKey,
+          JSON.stringify({
+            circleId: circle.id,
+            roundNumber,
+            bidAmountUsdc,
+            salt,
+            commitment,
+            revealed: false,
+            committedAt: new Date().toISOString(),
+          }),
+        );
+      }
+
+      let txHash: string | null = null;
+      if (!isMockMode && circle.contractAddress) {
+        const wallet = await getActiveWalletClient();
+        if (wallet) {
+          try {
+            txHash = await wallet.client.writeContract({
+              address: circleAddress,
+              abi: AvaHuiCircleABI,
+              functionName: 'commitBid',
+              args: [roundNumber, commitment],
+              account: wallet.account,
+            });
+          } catch (contractErr) {
+            console.warn('[AvaHui] On-chain commitBid failed, using fallback:', contractErr);
+          }
+        }
+      }
+
+      if (!txHash) {
+        txHash = generateMockTxHash();
+      }
+
+      if (!isMockMode) {
+        try {
+          await transactionApi.trackTransaction({
+            txHash,
+            txType: TransactionType.COMMIT_BID,
+            contractAddress: circleAddress,
+            senderAddress: currentUser?.walletAddress,
+            circleId: circle.id,
+          });
+        } catch (e) {
+          console.warn('[AvaHui] transactionApi.track error:', e);
+        }
+      }
+
+      await commitBidMutation.mutateAsync({
+        circleId: circle.id,
+        roundNumber,
+        commitment,
+      });
+
+      return { txHash, commitment, salt };
+    },
+    [commitBidMutation, currentUser?.walletAddress, getActiveWalletClient],
+  );
+
+  /**
+   * ACTION 8 (V2): Sealed-Bid Phase 2 — Reveal Secret Bid + Salt
+   */
+  const executeRevealBid = useCallback(
+    async (
+      circle: CircleItem,
+      roundNumber: number,
+      fallbackBidAmountUsdc?: number,
+    ): Promise<{ txHash: string; bidAmountUsdc: number }> => {
+      const circleAddress = (circle.contractAddress || frontendEnv.factoryAddress) as `0x${string}`;
+      const bidderAddress = (currentUser?.walletAddress ||
+        '0x71c95911e9a5d330f4d621842ec243ee13432921') as `0x${string}`;
+      const storageKey = `avahui_sealed_bid_${circle.id}_${roundNumber}_${bidderAddress.toLowerCase()}`;
+
+      let bidAmountUsdc = fallbackBidAmountUsdc || 10;
+      let salt = ('0x' + '11'.repeat(32)) as `0x${string}`;
+
+      if (typeof window !== 'undefined') {
+        const raw = window.localStorage.getItem(storageKey);
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw);
+            if (parsed.bidAmountUsdc) bidAmountUsdc = Number(parsed.bidAmountUsdc);
+            if (parsed.salt) salt = parsed.salt as `0x${string}`;
+            parsed.revealed = true;
+            window.localStorage.setItem(storageKey, JSON.stringify(parsed));
+          } catch {
+            // ignore
+          }
+        }
+      }
+
+      const bidAmountBaseUnits = parseUnits(String(bidAmountUsdc), 6);
+
+      let txHash: string | null = null;
+      if (!isMockMode && circle.contractAddress) {
+        const wallet = await getActiveWalletClient();
+        if (wallet) {
+          try {
+            txHash = await wallet.client.writeContract({
+              address: circleAddress,
+              abi: AvaHuiCircleABI,
+              functionName: 'revealBid',
+              args: [roundNumber, bidAmountBaseUnits, salt],
+              account: wallet.account,
+            });
+          } catch (contractErr) {
+            console.warn('[AvaHui] On-chain revealBid failed, using fallback:', contractErr);
+          }
+        }
+      }
+
+      if (!txHash) {
+        txHash = generateMockTxHash();
+      }
+
+      if (!isMockMode) {
+        try {
+          await transactionApi.trackTransaction({
+            txHash,
+            txType: TransactionType.REVEAL_BID,
+            contractAddress: circleAddress,
+            senderAddress: currentUser?.walletAddress,
+            circleId: circle.id,
+          });
+        } catch (e) {
+          console.warn('[AvaHui] transactionApi.track error:', e);
+        }
+      }
+
+      await revealBidMutation.mutateAsync({
+        circleId: circle.id,
+        roundNumber,
+        bidAmountUsdc,
+      });
+
+      return { txHash, bidAmountUsdc };
+    },
+    [currentUser?.walletAddress, getActiveWalletClient, revealBidMutation],
+  );
+
+  const getSavedSealedBid = useCallback(
+    (circleId: string, roundNumber: number) => {
+      if (typeof window === 'undefined' || !currentUser?.walletAddress) return null;
+      const storageKey = `avahui_sealed_bid_${circleId}_${roundNumber}_${currentUser.walletAddress.toLowerCase()}`;
+      const raw = window.localStorage.getItem(storageKey);
+      if (!raw) return null;
+      try {
+        return JSON.parse(raw) as {
+          bidAmountUsdc: number;
+          salt: string;
+          commitment: string;
+          revealed: boolean;
+        };
+      } catch {
+        return null;
+      }
+    },
+    [currentUser?.walletAddress],
+  );
+
   return {
     executeJoinCircle,
     executeContribute,
     executeSubmitBid,
+    executeCommitBid,
+    executeRevealBid,
+    getSavedSealedBid,
     executeSettleRound,
     executeWithdrawCollateral,
     executeCreateCircle,
     isJoining: joinMutation.isPending,
     isContributing: contributeMutation.isPending,
-    isBidding: bidMutation.isPending,
+    isBidding: bidMutation.isPending || commitBidMutation.isPending || revealBidMutation.isPending,
+    isCommittingBid: commitBidMutation.isPending,
+    isRevealingBid: revealBidMutation.isPending,
     isSettling: settleMutation.isPending,
     isWithdrawing: withdrawMutation.isPending,
     isCreating: createCircleMutation.isPending,

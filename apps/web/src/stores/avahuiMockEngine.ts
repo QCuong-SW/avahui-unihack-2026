@@ -37,10 +37,29 @@ export interface AvaHuiMockState {
 }
 
 function getInitialState(): AvaHuiMockState {
+  const users: UserProfile[] = (JSON.parse(JSON.stringify(MOCK_DEMO_USERS)) as UserProfile[]).map(
+    (u, idx) => ({
+      ...u,
+      isTeam1Verified: true,
+      identityNullifier: `0x999900001111222233334444555566667777888899990000111122223333000${idx + 1}`,
+    })
+  );
+  const circles: CircleItem[] = (JSON.parse(JSON.stringify(MOCK_CIRCLES)) as CircleItem[]).map(
+    (c, idx) => ({
+      ...c,
+      isSealedBid: c.allocationMode === AllocationMode.BIDDING,
+      enableYieldVault: true,
+      yieldApyBps: 650,
+      accruedYieldFormatted: ((idx + 1) * 3.25).toFixed(2),
+      isPrivateInvite: false,
+      inviteCode: `AVAHUI-${c.id.slice(-4).toUpperCase()}`,
+      requireTeam1Attestation: true,
+    })
+  );
   return {
     currentUserId: MOCK_DEMO_USERS[0].id,
-    users: JSON.parse(JSON.stringify(MOCK_DEMO_USERS)),
-    circles: JSON.parse(JSON.stringify(MOCK_CIRCLES)),
+    users,
+    circles,
     transactions: JSON.parse(JSON.stringify(MOCK_TRANSACTIONS)),
     notifications: JSON.parse(JSON.stringify(MOCK_NOTIFICATIONS)),
   };
@@ -181,6 +200,13 @@ export function mockCreateCircle(input: CreateCircleFormInput): {
     maxBidFormatted: input.maxBidUsdc.toFixed(2),
     totalDiscountPool: '0',
     totalDiscountPoolFormatted: '0.00',
+    isSealedBid: input.isSealedBid ?? (input.allocationMode === AllocationMode.BIDDING),
+    enableYieldVault: input.enableYieldVault ?? true,
+    yieldApyBps: (input.enableYieldVault ?? true) ? 650 : 0,
+    accruedYieldFormatted: (input.enableYieldVault ?? true) ? (collateralUsdc * 0.015).toFixed(2) : '0.00',
+    isPrivateInvite: input.isPrivateInvite ?? false,
+    inviteCode: input.inviteCode || `AVAHUI-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+    requireTeam1Attestation: input.requireTeam1Attestation ?? true,
     createdAt: nowIso,
     members: [
       {
@@ -839,3 +865,163 @@ export function mockUpdateUserProfile(displayName: string): AvaHuiMockState {
 
   return saveMockState(state);
 }
+
+export function mockCommitBid(
+  circleId: string,
+  roundNumber: number,
+  commitment: string
+): {
+  state: AvaHuiMockState;
+  txHash: string;
+} {
+  const state = loadMockState();
+  const user = state.users.find((u) => u.id === state.currentUserId);
+  if (!user) throw new Error('Không tìm thấy tài khoản hiện tại.');
+
+  const circle = state.circles.find((c) => c.id === circleId);
+  if (!circle) throw new Error('Không tìm thấy dây hụi.');
+
+  const round = circle.rounds.find(
+    (r) => r.roundNumber === roundNumber && r.status === RoundStatus.Open
+  );
+  if (!round) {
+    throw new Error(`Vòng #${roundNumber} không mở đấu giá.`);
+  }
+
+  const txHash = generateMockTxHash();
+  const nowIso = new Date().toISOString();
+
+  if (!round.commitments) {
+    round.commitments = [];
+  }
+  const existingIdx = round.commitments.findIndex(
+    (c) => c.bidderAddress.toLowerCase() === user.walletAddress.toLowerCase()
+  );
+  const commitItem = {
+    bidderAddress: user.walletAddress,
+    bidderName: user.displayName,
+    commitment,
+    isRevealed: false,
+    committedAt: nowIso,
+    txHash,
+  };
+  if (existingIdx >= 0) {
+    round.commitments[existingIdx] = commitItem;
+  } else {
+    round.commitments.push(commitItem);
+  }
+
+  state.transactions.unshift({
+    id: `tx_${Date.now()}`,
+    chainId: 43113,
+    txHash,
+    senderAddress: user.walletAddress,
+    senderName: user.displayName,
+    contractAddress: circle.contractAddress,
+    circleId: circle.id,
+    circleName: circle.name,
+    txType: TransactionType.COMMIT_BID,
+    status: TransactionStatus.CONFIRMED,
+    blockNumber: 38510000 + state.transactions.length,
+    amountFormatted: `Sealed Hash ${commitment.slice(0, 10)}... (R#${roundNumber})`,
+    createdAt: nowIso,
+  });
+
+  return { state: saveMockState(state), txHash };
+}
+
+export function mockRevealBid(
+  circleId: string,
+  roundNumber: number,
+  bidAmountUsdc: number
+): {
+  state: AvaHuiMockState;
+  txHash: string;
+} {
+  const res = mockSubmitBid(circleId, roundNumber, bidAmountUsdc);
+  const state = res.state;
+  const user = state.users.find((u) => u.id === state.currentUserId);
+  const circle = state.circles.find((c) => c.id === circleId);
+  const round = circle?.rounds.find((r) => r.roundNumber === roundNumber);
+
+  if (round?.commitments && user) {
+    round.commitments.forEach((c) => {
+      if (c.bidderAddress.toLowerCase() === user.walletAddress.toLowerCase()) {
+        c.isRevealed = true;
+      }
+    });
+  }
+
+  if (state.transactions[0] && state.transactions[0].txHash === res.txHash) {
+    state.transactions[0].txType = TransactionType.REVEAL_BID;
+    state.transactions[0].amountFormatted = `Revealed Bid ${bidAmountUsdc.toFixed(2)} mUSDC (R#${roundNumber})`;
+  }
+
+  return { state: saveMockState(state), txHash: res.txHash };
+}
+
+export function mockSwapAvaxToUsdc(avaxAmount: number = 0.05): {
+  state: AvaHuiMockState;
+  txHash: string;
+  usdcReceived: number;
+} {
+  const state = loadMockState();
+  const user = state.users.find((u) => u.id === state.currentUserId);
+  if (!user) throw new Error('User not found');
+
+  const currentAvax = parseFloat(user.avaxBalance) || 0.5;
+  const usdcReceived = Math.round(avaxAmount * 5000); // Demo Swap Rate: 0.05 AVAX -> 250 mUSDC
+  user.avaxBalance = Math.max(0.05, currentAvax - avaxAmount).toFixed(3);
+  user.usdcBalance = (parseFloat(user.usdcBalance) + usdcReceived).toFixed(2);
+
+  const txHash = generateMockTxHash();
+  state.transactions.unshift({
+    id: `tx_${Date.now()}`,
+    chainId: 43113,
+    txHash,
+    senderAddress: user.walletAddress,
+    senderName: user.displayName,
+    contractAddress: '0x60aE616a2155Ee3d9A68541Ba4544862310933d4', // Trader Joe Router Fuji
+    txType: TransactionType.SWAP_TOKEN,
+    status: TransactionStatus.CONFIRMED,
+    blockNumber: 38510000 + state.transactions.length,
+    amountFormatted: `${avaxAmount} AVAX → +${usdcReceived.toFixed(2)} mUSDC`,
+    createdAt: new Date().toISOString(),
+  });
+
+  return { state: saveMockState(state), txHash, usdcReceived };
+}
+
+export function mockVerifyTeam1Attestation(): {
+  state: AvaHuiMockState;
+  txHash: string;
+  nullifier: string;
+} {
+  const state = loadMockState();
+  const user = state.users.find((u) => u.id === state.currentUserId);
+  if (!user) throw new Error('User not found');
+
+  const nullifier =
+    user.identityNullifier ||
+    `0x9999${user.walletAddress.slice(2).toLowerCase().padEnd(60, 'a')}`;
+  user.isTeam1Verified = true;
+  user.identityNullifier = nullifier;
+
+  const txHash = generateMockTxHash();
+  state.transactions.unshift({
+    id: `tx_${Date.now()}`,
+    chainId: 43113,
+    txHash,
+    senderAddress: user.walletAddress,
+    senderName: user.displayName,
+    contractAddress: '0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0',
+    txType: TransactionType.VERIFY_ATTESTATION,
+    status: TransactionStatus.CONFIRMED,
+    blockNumber: 38510000 + state.transactions.length,
+    amountFormatted: `Team1 Sybil Nullifier ${nullifier.slice(0, 10)}...`,
+    createdAt: new Date().toISOString(),
+  });
+
+  return { state: saveMockState(state), txHash, nullifier };
+}
+

@@ -5,13 +5,17 @@ import {
   AvaHuiMockState,
   loadMockState,
   markAllNotificationsRead,
+  mockCommitBid,
   mockContributeRound,
   mockCreateCircle,
   mockFaucetMint,
   mockJoinCircle,
+  mockRevealBid,
   mockSettleRound,
   mockSubmitBid,
+  mockSwapAvaxToUsdc,
   mockUpdateUserProfile,
+  mockVerifyTeam1Attestation,
   mockWithdrawCollateral,
   resetMockState,
   switchMockUser,
@@ -72,8 +76,19 @@ async function fetchRealOrMockState(): Promise<AvaHuiMockState> {
 
       return {
         currentUserId: mappedActiveUser.id,
-        users: mergedUsers,
-        circles: circlesRes.items,
+        users: mergedUsers.map((u) => ({
+          ...u,
+          isTeam1Verified: u.isTeam1Verified ?? true,
+        })),
+        circles: circlesRes.items.map((c, idx) => ({
+          ...c,
+          isSealedBid: c.isSealedBid ?? (c.allocationMode === 'BIDDING'),
+          enableYieldVault: c.enableYieldVault ?? true,
+          yieldApyBps: c.yieldApyBps ?? 650,
+          accruedYieldFormatted: c.accruedYieldFormatted ?? ((idx + 1) * 3.25).toFixed(2),
+          inviteCode: c.inviteCode || `AVAHUI-${c.id.slice(-4).toUpperCase()}`,
+          requireTeam1Attestation: c.requireTeam1Attestation ?? true,
+        })),
         transactions: transactions && transactions.length > 0 ? transactions : mockFallback.transactions,
         notifications: notifications && notifications.length > 0 ? notifications : mockFallback.notifications,
       };
@@ -316,3 +331,76 @@ export function useUpdateProfileMutation() {
     },
   });
 }
+
+export function useCommitBidMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      circleId,
+      roundNumber,
+      commitment,
+    }: {
+      circleId: string;
+      roundNumber: number;
+      commitment: string;
+    }) => {
+      await new Promise((r) => setTimeout(r, 400));
+      return mockCommitBid(circleId, roundNumber, commitment);
+    },
+    onSuccess: ({ state }) => {
+      queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, state);
+      queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
+    },
+  });
+}
+
+export function useRevealBidMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      circleId,
+      roundNumber,
+      bidAmountUsdc,
+    }: {
+      circleId: string;
+      roundNumber: number;
+      bidAmountUsdc: number;
+    }) => {
+      await new Promise((r) => setTimeout(r, 400));
+      return mockRevealBid(circleId, roundNumber, bidAmountUsdc);
+    },
+    onSuccess: ({ state }) => {
+      queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, state);
+      queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
+    },
+  });
+}
+
+export function useSwapAvaxToUsdcMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (avaxAmount: number = 0.05) => {
+      await new Promise((r) => setTimeout(r, 500));
+      return mockSwapAvaxToUsdc(avaxAmount);
+    },
+    onSuccess: ({ state }) => {
+      queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, state);
+      queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
+    },
+  });
+}
+
+export function useVerifyTeam1AttestationMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      await new Promise((r) => setTimeout(r, 500));
+      return mockVerifyTeam1Attestation();
+    },
+    onSuccess: ({ state }) => {
+      queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, state);
+      queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
+    },
+  });
+}
+

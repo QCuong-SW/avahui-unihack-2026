@@ -4,7 +4,9 @@ import React, { useEffect, useState } from 'react';
 import {
   useAvaHuiState,
   useResetDemoData,
+  useSwapAvaxToUsdcMutation,
   useUpdateProfileMutation,
+  useVerifyTeam1AttestationMutation,
 } from '@/hooks/useAvaHuiMockQuery';
 import { useTokenOperations } from '@/hooks/useTokenOperations';
 import { useTxLifecycle } from '@/features/transactions/hooks/useTxLifecycle';
@@ -12,6 +14,7 @@ import { formatUsdc, shortenAddress } from '@/lib/utils';
 import { frontendEnv } from '@/config/env';
 import { HoverHint } from '@/components/ui/HoverHint';
 import {
+  ArrowLeftRight,
   Check,
   CheckCircle2,
   Coins,
@@ -21,6 +24,7 @@ import {
   KeyRound,
   RefreshCw,
   Save,
+  ShieldCheck,
   UserCircle,
   Wallet,
 } from 'lucide-react';
@@ -30,6 +34,9 @@ export function ProfileView() {
   const { data: state, isLoading } = useAvaHuiState();
   const updateProfileMutation = useUpdateProfileMutation();
   const { requestFaucet, isOperating: isFaucetOperating } = useTokenOperations();
+  const swapMutation = useSwapAvaxToUsdcMutation();
+  const verifyTeam1Mutation = useVerifyTeam1AttestationMutation();
+  const { runTransaction } = useTxLifecycle();
   const resetMutation = useResetDemoData();
 
   const [displayName, setDisplayName] = useState('');
@@ -247,6 +254,58 @@ export function ProfileView() {
                 </div>
               </div>
             </HoverHint>
+          </div>
+
+          {/* V2 Team1 Anti-Sybil Attestation & 1-Click DEX Swap */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-none border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 font-mono text-xs">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-emerald-400" />
+              <div>
+                <div className="font-bold uppercase text-emerald-300">
+                  Team1 Anti-Sybil Attestation
+                </div>
+                <div className="text-[11px] text-zinc-400">
+                  Nullifier:{' '}
+                  {shortenAddress(
+                    currentUser.identityNullifier ||
+                      '0x9999000011112222333344445555666677778888999900001111222233330001',
+                    6
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  runTransaction({
+                    title: 'Team1 Sybil Attestation Verification',
+                    description: 'Registering 1-Human-1-Slot Nullifier on Avalanche Fuji',
+                    action: () => verifyTeam1Mutation.mutateAsync(),
+                  })
+                }
+                className="inline-flex items-center gap-1 rounded-none border border-emerald-500/40 bg-emerald-500/15 px-3 py-1.5 font-mono text-xs font-bold uppercase text-emerald-300 hover:bg-emerald-500 hover:text-zinc-950"
+              >
+                <ShieldCheck className="h-3.5 w-3.5" />
+                <span>Re-Verify</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  runTransaction({
+                    title: 'Swap AVAX → mUSDC',
+                    description: '0.05 AVAX → +250.00 mUSDC',
+                    action: () => swapMutation.mutateAsync(0.05),
+                  })
+                }
+                className="inline-flex items-center gap-1 rounded-none border border-sky-500/40 bg-sky-500/15 px-3 py-1.5 font-mono text-xs font-bold uppercase text-sky-300 hover:bg-sky-500 hover:text-zinc-950"
+              >
+                <ArrowLeftRight className="h-3.5 w-3.5" />
+                <span>Swap 0.05 AVAX</span>
+              </button>
+            </div>
           </div>
         </section>
       </div>
