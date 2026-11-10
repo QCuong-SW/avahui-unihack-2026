@@ -37,7 +37,7 @@ function compileContracts() {
     'interfaces/IYieldVault.sol',
     'interfaces/IAvaHuiFactory.sol',
     'interfaces/IAvaHuiCircle.sol',
-    'libraries/ReentrancyGuard.sol',
+    'libraries/SecurityLib.sol',
     'mocks/MockUSDC.sol',
     'mocks/AvaHuiYieldVault.sol',
     'verifiers/Team1AttestationVerifier.sol',
@@ -56,6 +56,7 @@ function compileContracts() {
     language: 'Solidity',
     sources,
     settings: {
+      evmVersion: 'paris',
       optimizer: { enabled: true, runs: 200 },
       viaIR: true,
       outputSelection: {
@@ -174,6 +175,7 @@ async function main() {
   const verifierHash = await walletClient.deployContract({
     abi: artifacts.Team1AttestationVerifier.abi,
     bytecode: `0x${artifacts.Team1AttestationVerifier.evm.bytecode.object}`,
+    args: [account.address],
   });
   const verifierReceipt = await publicClient.waitForTransactionReceipt({
     hash: verifierHash,
@@ -202,13 +204,49 @@ async function main() {
   await publicClient.waitForTransactionReceipt({ hash: linkHash });
   console.log(`   ✓ Default V2 modules linked (tx=${linkHash})`);
 
+  console.log('7. Minting 10,000 mUSDC & Seeding Live On-Chain Circle...');
+  const mintHash = await walletClient.writeContract({
+    address: usdcAddress,
+    abi: artifacts.MockUSDC.abi,
+    functionName: 'mint',
+    args: [account.address, 10000000000n], // 10,000 mUSDC
+  });
+  await publicClient.waitForTransactionReceipt({ hash: mintHash });
+
+  const createCircleHash = await walletClient.writeContract({
+    address: factoryAddress,
+    abi: artifacts.AvaHuiFactory.abi,
+    functionName: 'createCircle',
+    args: [
+      {
+        metadataId: 'meta_live_onchain_01',
+        name: 'Hụi Builders UniHack 2026 — Live On-Chain',
+        token: usdcAddress,
+        allocationMode: 1, // BIDDING
+        maxMembers: 5,
+        contributionAmount: 100000000n, // 100 mUSDC
+        collateralAmount: 100000000n,   // 100 mUSDC
+        roundDuration: 180n,
+        biddingDuration: 120n,
+        gracePeriod: 60n,
+        startDeadline: BigInt(Math.floor(Date.now() / 1000) + 7 * 86400),
+        minBid: 2000000n,
+        maxBid: 40000000n,
+      },
+    ],
+  });
+  await publicClient.waitForTransactionReceipt({ hash: createCircleHash });
+  console.log(`   ✓ Initial Live Circle deployed on-chain (tx=${createCircleHash})`);
+
   // Auto-update .env files
+  updateEnvVar(API_ENV_PATH, 'AVALANCHE_RPC_URL', FUJI_RPC);
   updateEnvVar(API_ENV_PATH, 'USDC_TOKEN_ADDRESS', usdcAddress);
   updateEnvVar(API_ENV_PATH, 'ROSCA_FACTORY_ADDRESS', factoryAddress);
   updateEnvVar(API_ENV_PATH, 'YIELD_VAULT_ADDRESS', vaultAddress);
   updateEnvVar(API_ENV_PATH, 'SYBIL_VERIFIER_ADDRESS', verifierAddress);
-  updateEnvVar(API_ENV_PATH, 'INDEXER_START_BLOCK', String(factoryReceipt.blockNumber));
+  updateEnvVar(API_ENV_PATH, 'INDEXER_START_BLOCK', '0');
 
+  updateEnvVar(WEB_ENV_PATH, 'NEXT_PUBLIC_AVALANCHE_RPC_URL', FUJI_RPC);
   updateEnvVar(WEB_ENV_PATH, 'NEXT_PUBLIC_USDC_TOKEN_ADDRESS', usdcAddress);
   updateEnvVar(WEB_ENV_PATH, 'NEXT_PUBLIC_ROSCA_FACTORY_ADDRESS', factoryAddress);
   updateEnvVar(WEB_ENV_PATH, 'NEXT_PUBLIC_YIELD_VAULT_ADDRESS', vaultAddress);

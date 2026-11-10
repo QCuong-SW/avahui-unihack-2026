@@ -27,7 +27,7 @@ contract DeployFujiScript {
         vm.startBroadcast(deployerPrivateKey);
         MockUSDC usdc = new MockUSDC();
         AvaHuiYieldVault yieldVault = new AvaHuiYieldVault(address(usdc));
-        Team1AttestationVerifier sybilVerifier = new Team1AttestationVerifier();
+        Team1AttestationVerifier sybilVerifier = new Team1AttestationVerifier(msg.sender);
         AvaHuiFactory factory = new AvaHuiFactory();
         factory.setDefaultModules(address(yieldVault), address(sybilVerifier));
         vm.stopBroadcast();
