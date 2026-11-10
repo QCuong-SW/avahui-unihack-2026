@@ -3,20 +3,22 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAuthSession } from '@/lib/auth/useAuthSession';
-import { AvahuiLogo } from '@/components/ui/AvahuiLogo';
+import {
+  ScrollFocusSection,
+  scrollToLandingSection,
+  useActiveLandingSection,
+} from '@/components/ui/ScrollFocusSection';
 import {
   ArrowRight,
   CheckCircle2,
   Coins,
   Compass,
   Eye,
-  Gavel,
   KeyRound,
   Layers,
   Lock,
   LogIn,
   Share2,
-  ShieldAlert,
   ShieldCheck,
   Sparkles,
   Terminal,
@@ -76,32 +78,81 @@ const TERMINAL_DEMOS: Record<
   },
 };
 
+const RAIL_SECTIONS = [
+  { id: 'hero', code: '00', label: 'Tổng quan' },
+  { id: 'metrics', code: '01', label: 'Bảo chứng' },
+  { id: 'co-che', code: '02', label: 'Cơ chế' },
+  { id: 'bao-mat', code: '03', label: 'Bảo mật V2' },
+  { id: 'lo-trinh', code: '04', label: 'Lộ trình' },
+  { id: 'bat-dau', code: '05', label: 'Khởi chạy' },
+];
+
 export function LandingView() {
   const { data: session } = useAuthSession();
   const [activeTab, setActiveTab] = useState<TerminalTab>('ESCROW');
+  const activeSection = useActiveLandingSection('hero');
 
   const isAuthenticated = Boolean(session?.isAuthenticated);
   const currentDemo = TERMINAL_DEMOS[activeTab];
 
   return (
-    <div className="relative overflow-hidden bg-surface-bg text-zinc-100">
+    <div className="relative overflow-x-clip bg-surface-bg text-zinc-100">
       {/* Ambient Avalanche Crimson Backdrop Glow */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute -top-40 left-1/2 h-[540px] w-[960px] -translate-x-1/2 rounded-full bg-avalanche-red/15 blur-[140px]"
+        className="pointer-events-none fixed -top-40 left-1/2 h-[540px] w-[960px] -translate-x-1/2 rounded-full bg-avalanche-red/12 blur-[140px]"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute top-[520px] -right-32 h-[420px] w-[420px] rounded-full bg-emerald-500/10 blur-[120px]"
+        className="pointer-events-none fixed bottom-0 -right-32 h-[420px] w-[420px] rounded-full bg-emerald-500/10 blur-[120px]"
       />
 
+      {/* Floating Right Focus Rail Indicator */}
+      <aside
+        aria-label="Section Progress"
+        className="fixed right-5 top-1/2 z-30 hidden -translate-y-1/2 flex-col items-end gap-2.5 xl:flex"
+      >
+        {RAIL_SECTIONS.map((sec) => {
+          const isActive = activeSection === sec.id;
+          return (
+            <button
+              key={sec.id}
+              type="button"
+              onClick={() => scrollToLandingSection(sec.id)}
+              className="group flex items-center gap-2.5 font-mono text-[10px] uppercase tracking-wider"
+            >
+              <span
+                className={`transition-all duration-300 ${
+                  isActive
+                    ? 'translate-x-0 font-bold text-white opacity-100'
+                    : 'translate-x-2 text-zinc-500 opacity-0 group-hover:translate-x-0 group-hover:opacity-100'
+                }`}
+              >
+                {sec.code} // {sec.label}
+              </span>
+              <span
+                className={`block h-[3px] transition-all duration-300 ${
+                  isActive
+                    ? 'w-7 bg-avalanche-red shadow-[0_0_10px_rgba(232,65,66,0.95)]'
+                    : 'w-3 bg-zinc-700 group-hover:w-5 group-hover:bg-zinc-400'
+                }`}
+              />
+            </button>
+          );
+        })}
+      </aside>
+
       {/* ================================================================= */}
-      {/* SECTION 1: HERO SECTION (Above the Fold)                           */}
+      {/* SECTION 0: HERO SECTION (Above the Fold)                          */}
       {/* ================================================================= */}
-      <section className="relative border-b border-zinc-800/80">
-        <div className="mx-auto grid max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-12 lg:py-24">
+      <ScrollFocusSection
+        id="hero"
+        initialFocused
+        className="relative min-h-[82vh] flex items-center border-b border-zinc-800/80"
+      >
+        <div className="mx-auto grid w-full max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-12 lg:py-20">
           {/* Left Column: High-Impact Messaging & CTAs */}
-          <div className="space-y-6 lg:col-span-7 animate-fade-up">
+          <div className="space-y-6 lg:col-span-7">
             <div className="inline-flex items-center gap-2 rounded-none border border-avalanche-red/40 bg-avalanche-red/10 px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-avalanche-red">
               <span className="h-2 w-2 animate-pulse bg-emerald-400" />
               <span>Trustless On-Chain ROSCA • Avalanche C-Chain (43113)</span>
@@ -164,7 +215,7 @@ export function LandingView() {
           </div>
 
           {/* Right Column: Interactive Live Protocol Terminal */}
-          <div className="lg:col-span-5 animate-fade-up animation-delay-100">
+          <div className="lg:col-span-5">
             <div className="rounded-none border border-zinc-800 bg-surface-card shadow-2xl shadow-black/80">
               {/* Terminal Top Bar */}
               <div className="flex items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 py-3 font-mono text-[11px]">
@@ -209,8 +260,8 @@ export function LandingView() {
                 })}
               </div>
 
-              {/* Dynamic Terminal Body */}
-              <div className="space-y-4 p-5 font-mono">
+              {/* Dynamic Terminal Body with Smooth Tab Exit/Enter Transition */}
+              <div key={activeTab} className="space-y-4 p-5 font-mono animate-tab-enter">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-avalanche-red">
                     {currentDemo.badge}
@@ -260,12 +311,15 @@ export function LandingView() {
             </div>
           </div>
         </div>
-      </section>
+      </ScrollFocusSection>
 
       {/* ================================================================= */}
-      {/* SECTION 2: 4 TRUSTED METRICS STRIP                                */}
+      {/* SECTION 1: 4 TRUSTED METRICS STRIP                                */}
       {/* ================================================================= */}
-      <section className="border-b border-zinc-800 bg-zinc-950/70">
+      <ScrollFocusSection
+        id="metrics"
+        className="border-b border-zinc-800 bg-zinc-950/70"
+      >
         <div className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-y divide-zinc-800 sm:divide-y-0 lg:grid-cols-4 font-mono">
           {[
             {
@@ -304,12 +358,15 @@ export function LandingView() {
             </div>
           ))}
         </div>
-      </section>
+      </ScrollFocusSection>
 
       {/* ================================================================= */}
-      {/* SECTION 3: TRADITIONAL VS AVAHUI COMPARISON MATRIX                */}
+      {/* SECTION 2: TRADITIONAL VS AVAHUI COMPARISON MATRIX                */}
       {/* ================================================================= */}
-      <section id="co-che" className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
+      <ScrollFocusSection
+        id="co-che"
+        className="mx-auto max-w-7xl px-4 py-20 sm:px-6"
+      >
         <div className="mb-10 max-w-2xl space-y-2">
           <div className="font-mono text-xs font-bold uppercase tracking-widest text-avalanche-red">
             01 // Giải Quyết Bài Toán Ngàn Đời
@@ -373,13 +430,16 @@ export function LandingView() {
             </ul>
           </div>
         </div>
-      </section>
+      </ScrollFocusSection>
 
       {/* ================================================================= */}
-      {/* SECTION 4: 4 SECURITY & DEFI PILLARS (BENTO GRID)                 */}
+      {/* SECTION 3: 4 SECURITY & DEFI PILLARS (BENTO GRID)                 */}
       {/* ================================================================= */}
-      <section id="bao-mat" className="border-y border-zinc-800 bg-zinc-950/60">
-        <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
+      <ScrollFocusSection
+        id="bao-mat"
+        className="border-y border-zinc-800 bg-zinc-950/60"
+      >
+        <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6">
           <div className="mb-10 max-w-2xl space-y-2">
             <div className="font-mono text-xs font-bold uppercase tracking-widest text-avalanche-red">
               02 // Kiến Trúc Bảo Mật &amp; DeFi V2
@@ -428,7 +488,7 @@ export function LandingView() {
               return (
                 <div
                   key={card.num}
-                  className="group rounded-none border border-zinc-800 bg-surface-card p-6 transition hover:border-zinc-600"
+                  className="group rounded-none border border-zinc-800 bg-surface-card p-6 transition duration-300 hover:-translate-y-1 hover:border-zinc-600"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className={`flex h-11 w-11 items-center justify-center rounded-none border ${card.accent}`}>
@@ -452,12 +512,15 @@ export function LandingView() {
             })}
           </div>
         </div>
-      </section>
+      </ScrollFocusSection>
 
       {/* ================================================================= */}
-      {/* SECTION 5: 4-STEP USER JOURNEY                                    */}
+      {/* SECTION 4: 4-STEP USER JOURNEY                                    */}
       {/* ================================================================= */}
-      <section id="lo-trinh" className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
+      <ScrollFocusSection
+        id="lo-trinh"
+        className="mx-auto max-w-7xl px-4 py-20 sm:px-6"
+      >
         <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
           <div className="max-w-2xl space-y-2">
             <div className="font-mono text-xs font-bold uppercase tracking-widest text-avalanche-red">
@@ -508,7 +571,7 @@ export function LandingView() {
             return (
               <div
                 key={item.step}
-                className="rounded-none border border-zinc-800 bg-surface-card p-5 space-y-3 hover:border-avalanche-red/60 transition"
+                className="rounded-none border border-zinc-800 bg-surface-card p-5 space-y-3 transition duration-300 hover:-translate-y-1 hover:border-avalanche-red/60"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold text-avalanche-red">
@@ -526,13 +589,16 @@ export function LandingView() {
             );
           })}
         </div>
-      </section>
+      </ScrollFocusSection>
 
       {/* ================================================================= */}
-      {/* SECTION 6: BOTTOM FINAL CTA BANNER                                */}
+      {/* SECTION 5: BOTTOM FINAL CTA BANNER                                */}
       {/* ================================================================= */}
-      <section className="border-t border-zinc-800 bg-gradient-to-b from-surface-card to-zinc-950">
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-4 py-14 text-center sm:px-6 lg:flex-row lg:text-left">
+      <ScrollFocusSection
+        id="bat-dau"
+        className="border-t border-zinc-800 bg-gradient-to-b from-surface-card to-zinc-950"
+      >
+        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-4 py-16 text-center sm:px-6 lg:flex-row lg:text-left">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-widest text-emerald-400">
               <Zap className="h-3.5 w-3.5" />
@@ -564,7 +630,7 @@ export function LandingView() {
             </Link>
           </div>
         </div>
-      </section>
+      </ScrollFocusSection>
     </div>
   );
 }

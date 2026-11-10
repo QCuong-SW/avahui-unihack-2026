@@ -135,7 +135,10 @@ export function CircleDetailView({ circleId }: CircleDetailViewProps) {
             })}
           </div>
 
-          <div className="rounded-none border border-zinc-800 bg-surface-card p-4 sm:p-5 animate-fade-up">
+          <div
+            key={activeTab}
+            className="rounded-none border border-zinc-800 bg-surface-card p-4 sm:p-5 animate-tab-enter"
+          >
             {activeTab === 'CURRENT_ROUND' && (
               <CurrentRoundTab
                 circle={circle}

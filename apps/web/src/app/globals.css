@@ -6,6 +6,10 @@
   color-scheme: dark;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background-color: #09090b;
   color: #fafafa;
@@ -45,6 +49,72 @@ body {
 }
 .animation-delay-300 {
   animation-delay: 300ms;
+}
+
+/* Route & Tab Enter / Focus Exit Animations */
+@keyframes avahuiPageEnter {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0) scale(0.988);
+    filter: blur(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0px);
+  }
+}
+
+@keyframes avahuiTabEnter {
+  0% {
+    opacity: 0;
+    transform: translate3d(12px, 0, 0);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+    filter: blur(0px);
+  }
+}
+
+@keyframes avahuiSweepBeam {
+  0% {
+    transform: translateX(-100%);
+    opacity: 1;
+  }
+  70% {
+    transform: translateX(0%);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.animate-page-enter {
+  animation: avahuiPageEnter 460ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity, filter;
+}
+
+.animate-tab-enter {
+  animation: avahuiTabEnter 340ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity, filter;
+}
+
+.animate-sweep-beam {
+  animation: avahuiSweepBeam 550ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-page-enter,
+  .animate-tab-enter,
+  .animate-sweep-beam {
+    animation: none !important;
+    transform: none !important;
+    filter: none !important;
+  }
 }
 
 /* Touch device active state enhancement */

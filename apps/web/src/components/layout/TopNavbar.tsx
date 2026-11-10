@@ -7,6 +7,10 @@ import { EmbeddedWalletBar } from '@/features/wallet/components/EmbeddedWalletBa
 import { NotificationPopover } from './NotificationPopover';
 import { AvahuiLogo } from '@/components/ui/AvahuiLogo';
 import {
+  scrollToLandingSection,
+  useActiveLandingSection,
+} from '@/components/ui/ScrollFocusSection';
+import {
   Compass,
   LayoutDashboard,
   LogIn,
@@ -22,8 +26,15 @@ const NAV_ITEMS = [
   { href: '/profile', label: 'Profile', icon: UserCircle },
 ];
 
+const LANDING_NAV_ITEMS = [
+  { id: 'co-che', label: 'Cơ chế' },
+  { id: 'bao-mat', label: 'Bảo mật V2' },
+  { id: 'lo-trinh', label: 'Lộ trình' },
+];
+
 export function TopNavbar() {
   const pathname = usePathname() || '/';
+  const activeLandingSection = useActiveLandingSection('hero');
 
   // Dedicated Marketing/Product Navbar for the public Landing Page (`/`)
   if (pathname === '/') {
@@ -33,6 +44,7 @@ export function TopNavbar() {
           <div className="flex items-center gap-6">
             <Link
               href="/"
+              onClick={() => scrollToLandingSection('hero')}
               className="flex items-center gap-2.5 transition-transform hover:scale-[1.02] active:scale-95"
             >
               <AvahuiLogo size={34} roundedClass="rounded-none" />
@@ -46,17 +58,34 @@ export function TopNavbar() {
               </div>
             </Link>
 
-            <nav className="hidden items-center gap-5 font-mono text-xs font-bold uppercase tracking-wider text-zinc-400 md:flex">
-              <a href="#co-che" className="transition hover:text-white">
-                Cơ chế
-              </a>
-              <a href="#bao-mat" className="transition hover:text-white">
-                Bảo mật V2
-              </a>
-              <a href="#lo-trinh" className="transition hover:text-white">
-                Lộ trình
-              </a>
-              <Link href="/circles" className="transition hover:text-emerald-400">
+            <nav className="hidden items-center gap-5 font-mono text-xs font-bold uppercase tracking-wider md:flex">
+              {LANDING_NAV_ITEMS.map((item) => {
+                const isActive = activeLandingSection === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => scrollToLandingSection(item.id)}
+                    className={`relative py-1 transition-all duration-300 ${
+                      isActive
+                        ? 'text-white'
+                        : 'text-zinc-500 hover:text-zinc-200'
+                    }`}
+                  >
+                    <span>{item.label}</span>
+                    <span
+                      className={`absolute bottom-0 left-0 right-0 h-[2px] bg-avalanche-red shadow-[0_0_8px_rgba(232,65,66,0.9)] transition-all duration-300 ${
+                        isActive ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0'
+                      }`}
+                    />
+                  </button>
+                );
+              })}
+
+              <Link
+                href="/circles"
+                className="relative py-1 text-zinc-400 transition-colors hover:text-emerald-400"
+              >
                 Dây hụi Live
               </Link>
             </nav>
