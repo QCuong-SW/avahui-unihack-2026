@@ -5,6 +5,7 @@ import {
   AvaHuiMockState,
   loadMockState,
   markAllNotificationsRead,
+  mockBindRealWallet,
   mockCommitBid,
   mockContributeRound,
   mockCreateCircle,
@@ -403,4 +404,82 @@ export function useVerifyTeam1AttestationMutation() {
     },
   });
 }
+
+export function useConnectBrowserWalletMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      if (typeof window === 'undefined' || !(window as any).ethereum) {
+        throw new Error(
+          'Không tìm thấy ví trình duyệt (Core Wallet / MetaMask). Vui lòng cài đặt tiện ích mở rộng trước!'
+        );
+      }
+      const eth = (window as any).ethereum;
+      const accounts: string[] = await eth.request({
+        method: 'eth_requestAccounts',
+      });
+      if (!accounts || accounts.length === 0) {
+        throw new Error('Người dùng đã từ chối kết nối ví.');
+      }
+      const address = accounts[0];
+
+      // Auto-switch or add Avalanche Fuji Testnet (43113 / 0xa869)
+      try {
+        await eth.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0xa869' }],
+        });
+      } catch (switchErr: any) {
+        if (switchErr?.code === 4902) {
+          await eth.request({
+            method: 'wallet_addEthereumChain',
+            params: [
+              {
+                chainId: '0xa869',
+                chainName: 'Avalanche Fuji Testnet',
+                nativeCurrency: {
+                  name: 'Avalanche',
+                  symbol: 'AVAX',
+                  decimals: 18,
+                },
+                rpcUrls: ['https://api.avax-test.network/ext/bc/C/rpc'],
+                blockExplorerUrls: ['https://testnet.snowtrace.io/'],
+              },
+            ],
+          });
+        }
+      }
+
+      // Query native AVAX balance on Fuji
+      let avaxFormatted: string | undefined = undefined;
+      try {
+        const hexBal: string = await eth.request({
+          method: 'eth_getBalance',
+          params: [address, 'latest'],
+        });
+        const wei = BigInt(hexBal);
+        avaxFormatted = (Number(wei) / 1e18).toFixed(3);
+      } catch {
+        // ignore
+      }
+
+      const newState = mockBindRealWallet(address, avaxFormatted);
+
+      if (!isMockMode) {
+        try {
+          await authApi.syncUser({ walletAddress: address }, address);
+        } catch {
+          // ignore
+        }
+      }
+
+      return { state: newState, address };
+    },
+    onSuccess: ({ state }) => {
+      queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, state);
+      queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
+    },
+  });
+}
+
 

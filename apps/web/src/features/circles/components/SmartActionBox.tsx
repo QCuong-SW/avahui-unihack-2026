@@ -92,6 +92,14 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
   const [useSealedMode, setUseSealedMode] = useState<boolean>(
     circle.isSealedBid !== false
   );
+  const [inviteCodeInput, setInviteCodeInput] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const fromUrl = params.get('invite');
+      if (fromUrl) return fromUrl;
+    }
+    return circle.inviteCode || '';
+  });
 
   const savedSealedBid = currentRoundObj
     ? getSavedSealedBid(circle.id, currentRoundObj.roundNumber)
@@ -113,9 +121,11 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
   const handleJoinCircle = async () => {
     await runTransaction({
       title: `Join Circle & Lock Collateral`,
-      description: `Slot #${circle.currentMemberCount + 1} • ${formatUsdc(circle.collateralAmountFormatted)} mUSDC`,
+      description: `Slot #${circle.currentMemberCount + 1} • ${formatUsdc(circle.collateralAmountFormatted)} mUSDC${
+        inviteCodeInput ? ` • Invite: ${inviteCodeInput}` : ''
+      }`,
       action: async () => {
-        return await executeJoinCircle(circle);
+        return await executeJoinCircle(circle, inviteCodeInput || undefined);
       },
     });
   };
@@ -288,22 +298,37 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
           </div>
 
           {!myMember ? (
-            <HoverHint
-              hint={`Khóa ${formatUsdc(circle.collateralAmountFormatted)} mUSDC thế chấp và nhận vị trí Slot #${circle.currentMemberCount + 1}. Đủ ${circle.maxMembers} người sẽ tự động mở Vòng #1.`}
-              className="w-full"
-            >
-              <button
-                onClick={handleJoinCircle}
-                disabled={isJoining}
-                className="flex w-full items-center justify-center gap-2 rounded-none border border-avalanche-red bg-avalanche-red px-4 py-3 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-avalanche-red/25 transition hover:bg-avalanche-darkRed disabled:opacity-50"
+            <div className="space-y-2.5">
+              {(circle.isPrivateInvite || inviteCodeInput) && (
+                <div className="flex items-center justify-between gap-2 rounded-none border border-sky-500/30 bg-sky-500/5 px-3 py-2 font-mono text-[11px]">
+                  <span className="text-sky-300 font-semibold">Invite Code:</span>
+                  <input
+                    type="text"
+                    value={inviteCodeInput}
+                    onChange={(e) => setInviteCodeInput(e.target.value)}
+                    placeholder="AVAHUI-XXXX"
+                    className="w-32 rounded-none border border-zinc-700 bg-zinc-900 px-2 py-0.5 font-mono text-xs font-bold text-white focus:border-sky-400 focus:outline-none text-right"
+                  />
+                </div>
+              )}
+
+              <HoverHint
+                hint={`Khóa ${formatUsdc(circle.collateralAmountFormatted)} mUSDC thế chấp và nhận vị trí Slot #${circle.currentMemberCount + 1}. Đủ ${circle.maxMembers} người sẽ tự động mở Vòng #1.`}
+                className="w-full"
               >
-                <UserPlus className="h-4 w-4" />
-                <span>
-                  Tham gia • Khóa {formatUsdc(circle.collateralAmountFormatted)}{' '}
-                  mUSDC
-                </span>
-              </button>
-            </HoverHint>
+                <button
+                  onClick={handleJoinCircle}
+                  disabled={isJoining}
+                  className="flex w-full items-center justify-center gap-2 rounded-none border border-avalanche-red bg-avalanche-red px-4 py-3 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-avalanche-red/25 transition hover:bg-avalanche-darkRed disabled:opacity-50"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  <span>
+                    Tham gia • Khóa {formatUsdc(circle.collateralAmountFormatted)}{' '}
+                    mUSDC
+                  </span>
+                </button>
+              </HoverHint>
+            </div>
           ) : (
             <HoverHint
               hint="Đổi sang tài khoản thành viên khác ở góc phải Navbar để thêm cho đủ số lượng kích hoạt vòng hụi"

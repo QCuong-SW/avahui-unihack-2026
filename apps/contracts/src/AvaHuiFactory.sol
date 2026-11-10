@@ -8,6 +8,9 @@ contract AvaHuiFactory is IAvaHuiFactory {
     address[] private _allCircles;
     mapping(address => bool) public override isCircle;
 
+    address public defaultYieldVault;
+    address public defaultAttestationVerifier;
+
     error InvalidTokenAddress();
     error InvalidAllocationMode();
     error InvalidMemberCount();
@@ -16,6 +19,11 @@ contract AvaHuiFactory is IAvaHuiFactory {
     error InvalidDurations();
     error InvalidStartDeadline();
     error InvalidBidBounds();
+
+    function setDefaultModules(address _yieldVault, address _attestationVerifier) external {
+        defaultYieldVault = _yieldVault;
+        defaultAttestationVerifier = _attestationVerifier;
+    }
 
     function createCircle(CreateCircleParams calldata params)
         external
@@ -42,6 +50,13 @@ contract AvaHuiFactory is IAvaHuiFactory {
 
         AvaHuiCircle newCircle = new AvaHuiCircle(msg.sender, params);
         circleAddress = address(newCircle);
+
+        if (defaultYieldVault != address(0)) {
+            newCircle.setYieldVault(defaultYieldVault);
+        }
+        if (defaultAttestationVerifier != address(0)) {
+            newCircle.configureSecurity(bytes32(0), false, defaultAttestationVerifier);
+        }
 
         _allCircles.push(circleAddress);
         isCircle[circleAddress] = true;

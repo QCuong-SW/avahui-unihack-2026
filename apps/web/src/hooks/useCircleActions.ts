@@ -74,10 +74,10 @@ export function useCircleActions() {
   }, []);
 
   /**
-   * ACTION 1: Join Circle & Lock Collateral
+   * ACTION 1: Join Circle & Lock Collateral (Supports V1 joinCircle & V2 joinCircleProtected)
    */
   const executeJoinCircle = useCallback(
-    async (circle: CircleItem): Promise<{ txHash: string }> => {
+    async (circle: CircleItem, inviteCode?: string): Promise<{ txHash: string }> => {
       const circleAddress = (circle.contractAddress || frontendEnv.factoryAddress) as `0x${string}`;
       const collateralBaseUnits = parseUnits(circle.collateralAmountFormatted || '100', 6);
 
@@ -102,12 +102,24 @@ export function useCircleActions() {
         const wallet = await getActiveWalletClient();
         if (wallet) {
           try {
-            txHash = await wallet.client.writeContract({
-              address: circleAddress,
-              abi: AvaHuiCircleABI,
-              functionName: 'joinCircle',
-              account: wallet.account,
-            });
+            if (inviteCode || circle.isPrivateInvite) {
+              const nullifier = (currentUser?.identityNullifier ||
+                `0x9999${wallet.account.slice(2).toLowerCase().padEnd(60, 'a')}`) as `0x${string}`;
+              txHash = await wallet.client.writeContract({
+                address: circleAddress,
+                abi: AvaHuiCircleABI,
+                functionName: 'joinCircleProtected',
+                args: [inviteCode || circle.inviteCode || '', nullifier],
+                account: wallet.account,
+              });
+            } else {
+              txHash = await wallet.client.writeContract({
+                address: circleAddress,
+                abi: AvaHuiCircleABI,
+                functionName: 'joinCircle',
+                account: wallet.account,
+              });
+            }
           } catch (contractErr) {
             console.warn('[AvaHui] On-chain joinCircle failed, using fallback:', contractErr);
           }

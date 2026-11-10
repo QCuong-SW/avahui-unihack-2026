@@ -1025,3 +1025,23 @@ export function mockVerifyTeam1Attestation(): {
   return { state: saveMockState(state), txHash, nullifier };
 }
 
+export function mockBindRealWallet(
+  walletAddress: string,
+  avaxBalance?: string,
+  usdcBalance?: string
+): AvaHuiMockState {
+  const state = loadMockState();
+  const user = state.users.find((u) => u.id === state.currentUserId);
+  if (!user) return state;
+
+  user.walletAddress = walletAddress;
+  if (avaxBalance !== undefined) {
+    user.avaxBalance = avaxBalance;
+  }
+  if (usdcBalance !== undefined && parseFloat(usdcBalance) > 0) {
+    user.usdcBalance = usdcBalance;
+  }
+  return saveMockState(state);
+}
+
+
