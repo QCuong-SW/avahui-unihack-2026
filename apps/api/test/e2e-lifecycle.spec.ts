@@ -610,4 +610,115 @@ describe('Track B / Stage 5 — End-to-End Circle Lifecycle & Indexer Synchroniz
     expect(reindexedCreate).toBe(false);
     expect(reindexedComplete).toBe(false);
   });
+
+  it('indexes V2 security & yield events (BidCommitted, BidRevealed, YieldHarvested, SybilAttestationVerified)', async () => {
+    // 1. Create Circle & Activate
+    await indexerService.processDecodedEvent({
+      chainId: CHAIN_ID,
+      txHash: '0xa200000100000000000000000000000000000000000000000000000000000001',
+      logIndex: 0,
+      blockNumber: 38500200n,
+      blockTimestamp: new Date('2026-11-08T11:00:00Z'),
+      contractAddress: FACTORY_ADDRESS,
+      eventName: 'CircleCreated',
+      args: {
+        circleAddress: CIRCLE_ADDRESS,
+        creator: USERS[0].address,
+        metadataId: 'meta_unihack_v2_security',
+        name: 'Hụi V2 Security & Yield',
+        token: TOKEN_ADDRESS,
+        allocationMode: 1,
+        maxMembers: 5,
+        contributionAmount: 100000000n,
+        collateralAmount: 100000000n,
+      },
+    });
+
+    await indexerService.processDecodedEvent({
+      chainId: CHAIN_ID,
+      txHash: '0xa200000200000000000000000000000000000000000000000000000000000002',
+      logIndex: 0,
+      blockNumber: 38500201n,
+      blockTimestamp: new Date('2026-11-08T11:01:00Z'),
+      contractAddress: CIRCLE_ADDRESS,
+      eventName: 'CircleActivated',
+      args: {
+        circleAddress: CIRCLE_ADDRESS,
+        firstRoundNumber: 1,
+        startTime: 1794135660n,
+      },
+    });
+
+    // 2. Index SybilAttestationVerified
+    const sybilRes = await indexerService.processDecodedEvent({
+      chainId: CHAIN_ID,
+      txHash: '0xa200000300000000000000000000000000000000000000000000000000000003',
+      logIndex: 0,
+      blockNumber: 38500202n,
+      blockTimestamp: new Date('2026-11-08T11:02:00Z'),
+      contractAddress: CIRCLE_ADDRESS,
+      eventName: 'SybilAttestationVerified',
+      args: {
+        circleAddress: CIRCLE_ADDRESS,
+        member: USERS[1].address,
+        identityNullifier: '0x9999000011112222333344445555666677778888999900001111222233334444',
+      },
+    });
+    expect(sybilRes).toBe(true);
+
+    // 3. Index BidCommitted
+    const commitRes = await indexerService.processDecodedEvent({
+      chainId: CHAIN_ID,
+      txHash: '0xa200000400000000000000000000000000000000000000000000000000000004',
+      logIndex: 0,
+      blockNumber: 38500203n,
+      blockTimestamp: new Date('2026-11-08T11:03:00Z'),
+      contractAddress: CIRCLE_ADDRESS,
+      eventName: 'BidCommitted',
+      args: {
+        circleAddress: CIRCLE_ADDRESS,
+        roundNumber: 1,
+        bidder: USERS[1].address,
+        commitment: '0xabcdef0011112222333344445555666677778888999900001111222233334444',
+      },
+    });
+    expect(commitRes).toBe(true);
+
+    // 4. Index BidRevealed -> updates round bid
+    const revealRes = await indexerService.processDecodedEvent({
+      chainId: CHAIN_ID,
+      txHash: '0xa200000500000000000000000000000000000000000000000000000000000005',
+      logIndex: 0,
+      blockNumber: 38500204n,
+      blockTimestamp: new Date('2026-11-08T11:04:00Z'),
+      contractAddress: CIRCLE_ADDRESS,
+      eventName: 'BidRevealed',
+      args: {
+        circleAddress: CIRCLE_ADDRESS,
+        roundNumber: 1,
+        bidder: USERS[1].address,
+        bidAmount: 22000000n, // 22 USDC
+      },
+    });
+    expect(revealRes).toBe(true);
+
+    // 5. Index YieldHarvested -> adds DeFi yield into totalDiscountPool
+    const yieldRes = await indexerService.processDecodedEvent({
+      chainId: CHAIN_ID,
+      txHash: '0xa200000600000000000000000000000000000000000000000000000000000006',
+      logIndex: 0,
+      blockNumber: 38500205n,
+      blockTimestamp: new Date('2026-11-08T11:05:00Z'),
+      contractAddress: CIRCLE_ADDRESS,
+      eventName: 'YieldHarvested',
+      args: {
+        circleAddress: CIRCLE_ADDRESS,
+        yieldAmount: 6500000n, // 6.50 USDC yield
+      },
+    });
+    expect(yieldRes).toBe(true);
+
+    const circle = Array.from(dbCircles.values())[0];
+    expect(circle.totalDiscountPool).toBe('6500000');
+  });
 });

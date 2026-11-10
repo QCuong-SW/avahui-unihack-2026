@@ -19,10 +19,14 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+RUN pnpm --filter @avahui/api exec prisma generate
+RUN pnpm --filter @avahui/shared build
+RUN pnpm --filter @avahui/blockchain build
 RUN pnpm --filter @avahui/api build
 
 FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+COPY --from=builder /app ./
 EXPOSE 3001
 CMD ["pnpm", "--filter", "@avahui/api", "start:prod"]

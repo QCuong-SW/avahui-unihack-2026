@@ -38,11 +38,20 @@ describe('Track B — Smart Contracts Compilation, ABI Parity, REST API & Indexe
         'interfaces/IAvaHuiCircle.sol': {
           content: readSoliditySource('interfaces/IAvaHuiCircle.sol'),
         },
+        'interfaces/IYieldVault.sol': {
+          content: readSoliditySource('interfaces/IYieldVault.sol'),
+        },
         'libraries/SecurityLib.sol': {
           content: readSoliditySource('libraries/SecurityLib.sol'),
         },
         'mocks/MockUSDC.sol': {
           content: readSoliditySource('mocks/MockUSDC.sol'),
+        },
+        'mocks/AvaHuiYieldVault.sol': {
+          content: readSoliditySource('mocks/AvaHuiYieldVault.sol'),
+        },
+        'verifiers/Team1AttestationVerifier.sol': {
+          content: readSoliditySource('verifiers/Team1AttestationVerifier.sol'),
         },
         'AvaHuiCircle.sol': {
           content: readSoliditySource('AvaHuiCircle.sol'),
