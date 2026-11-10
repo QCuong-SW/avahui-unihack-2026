@@ -31,11 +31,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4">
           <div className="flex items-center gap-2">
             <AvahuiLogo size={22} roundedClass="rounded-none" />
-            <span className="font-semibold text-zinc-300">Avahui Protocol</span>
+            <span className="font-semibold text-zinc-300">Avahui</span>
           </div>
-          <span className="font-semibold text-avalanche-red">
-            AVALANCHE UNIHACK 2026
-          </span>
         </div>
       </footer>
       <MobileBottomNav />

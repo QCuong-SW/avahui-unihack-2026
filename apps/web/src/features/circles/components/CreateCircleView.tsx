@@ -51,7 +51,7 @@ export function CreateCircleView() {
   } = useForm<CreateCircleFormValues>({
     resolver: zodResolver(createCircleSchema),
     defaultValues: {
-      name: 'Hụi Builders UniHack 2026 — Kỳ 5 Người',
+      name: 'Hụi Nhóm Avahui — Kỳ 5 Người',
       description:
         'Dây hụi xoay vòng minh bạch trên Avalanche Fuji. Đóng góp đúng hạn, bảo vệ 100% bằng tài sản thế chấp mUSDC.',
       allocationMode: AllocationMode.BIDDING,
@@ -90,7 +90,7 @@ export function CreateCircleView() {
 
   const applyPreset = (preset: 'BIDDING_DEMO' | 'FIXED_DEMO') => {
     if (preset === 'BIDDING_DEMO') {
-      setValue('name', 'Hụi Đầu Tư Web3 UniHack — Đấu Giá Nhanh');
+      setValue('name', 'Hụi Đầu Tư Nhóm — Đấu Giá Nhanh');
       setValue(
         'description',
         'Dây hụi 5 người chế độ Đấu giá chiết khấu (Discount Bidding). Mỗi vòng 3 phút.'

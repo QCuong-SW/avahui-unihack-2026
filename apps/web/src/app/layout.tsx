@@ -3,9 +3,9 @@ import './globals.css';
 import { AppProviders } from './providers';
 
 export const metadata: Metadata = {
-  title: 'Avahui — On-Chain ROSCA Platform on Avalanche | UniHack 2026',
+  title: 'Avahui — Hụi On-Chain Minh Bạch Trên Avalanche',
   description:
-    'Trustless On-Chain ROSCA (Hụi) Platform on Avalanche Fuji with Embedded Wallets & Collateral Protection. Built for Avalanche UniHack 2026.',
+    'Nền tảng Hụi / Họ tự động trên Blockchain Avalanche với ví bảo mật, tiền cọc tự bù và bỏ thăm kín.',
   icons: {
     icon: '/avahui-logo.jpg',
     shortcut: '/avahui-logo.jpg',

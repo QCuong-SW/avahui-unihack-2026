@@ -134,7 +134,7 @@ async function fetchRealOrMockState(): Promise<AvaHuiMockState> {
             : userProfile.id,
           email: userProfile.email || fallbackUser?.email || 'builder@avahui.io',
           displayName:
-            userProfile.displayName || fallbackUser?.displayName || 'UniHack Builder',
+            userProfile.displayName || fallbackUser?.displayName || 'Avahui Member',
           avatarUrl: userProfile.avatarUrl || undefined,
           walletAddress: resolvedWallet,
           avaxBalance:
