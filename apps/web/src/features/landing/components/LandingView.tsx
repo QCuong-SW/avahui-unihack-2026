@@ -50,7 +50,7 @@ const TERMINAL_DEMOS: Record<
       { label: 'Gross Pot / Vòng', value: '500.00 mUSDC giải ngân tức thì', tone: 'emerald' },
       { label: 'Chủ hụi giữ tiền', value: 'KHÔNG TỒN TẠI (Smart Contract giữ 100%)', tone: 'red' },
     ],
-    codeSnippet: 'AvaHuiCircle(0xDe4e...45B0).joinCircleProtected(inviteCode, nullifier)',
+    codeSnippet: 'AvaHuiCircle.joinCircleProtected(inviteCode, nullifier)',
   },
   SEALED_BID: {
     badge: 'COMMIT-REVEAL PRIVACY',
@@ -181,14 +181,14 @@ export function LandingView() {
                 KHÔNG CHỦ HỤI.
               </span>
               <span className="block text-zinc-200">
-                KHÔNG BAO GIỜ VỠ NỢ.
+                KHÔNG VỠ NỢ.
               </span>
             </h1>
 
             <p className="max-w-2xl text-base leading-relaxed text-zinc-300 sm:text-lg">
               <strong className="text-white">Avahui Protocol</strong> chuyển hóa mô hình{' '}
               <em>Hụi / Họ (ROSCA)</em> truyền thống lên Smart Contract bất biến.
-              Bảo vệ 100% quỹ thành viên bằng <span className="text-amber-300 font-semibold">Thế chấp Auto-Slash</span>,{' '}
+              Bảo chứng kỳ đóng bằng <span className="text-amber-300 font-semibold">Thế chấp Auto-Slash</span>,{' '}
               <span className="text-sky-300 font-semibold">Đấu giá kín Commit-Reveal</span> chống lộ giá,{' '}
               <span className="text-emerald-400 font-semibold">Lãi kép DeFi 6.5% APY</span> và{' '}
               <span className="text-white font-semibold">Chống Sybil Team1</span>.
@@ -465,8 +465,8 @@ export function LandingView() {
             <ul className="space-y-3 text-sm text-zinc-200">
               {[
                 'Smart Contract độc lập giữ quỹ (Factory Pattern) — không ai có quyền rút ngang quỹ chung.',
-                'Bắt buộc khóa thế chấp 100%–300% mUSDC; trễ hạn sẽ tự động Auto-Slash đắp đủ 100% kỳ.',
-                'Đấu giá kín 2 pha Commit-Reveal dùng hàm băm keccak256 — tuyệt đối chống lộ giá trên Mempool.',
+                'Bắt buộc khóa thế chấp 100%–300% mUSDC; trễ hạn sẽ tự động Auto-Slash đắp đủ kỳ góp.',
+                'Đấu giá kín 2 pha Commit-Reveal dùng hàm băm keccak256 — giữ bí mật giá đấu trên Mempool.',
                 'Vốn thế chấp nhàn rỗi tự động gửi vào ERC-4626 Yield Vault (6.50% APY) chia đều cuối kỳ.',
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2.5">
