@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useAuthSession } from '@/lib/auth/useAuthSession';
 import {
@@ -91,6 +92,7 @@ export function LandingView() {
   const { data: session } = useAuthSession();
   const [activeTab, setActiveTab] = useState<TerminalTab>('ESCROW');
   const activeSection = useActiveLandingSection('hero');
+  const [mounted, setMounted] = useState(false);
 
   // Sequential 2-second spotlight cycle across 4-item grids (pauses when user hovers an item)
   const [spotlightIndex, setSpotlightIndex] = useState(0);
@@ -99,6 +101,7 @@ export function LandingView() {
   const [hoveredStep, setHoveredStep] = useState<number | null>(null);
 
   useEffect(() => {
+    setMounted(true);
     const timer = setInterval(() => {
       setSpotlightIndex((prev) => (prev + 1) % 4);
     }, 2000);
@@ -112,6 +115,44 @@ export function LandingView() {
   const isAuthenticated = Boolean(session?.isAuthenticated);
   const currentDemo = TERMINAL_DEMOS[activeTab];
 
+  // Portaled straight to document.body so CSS transitions/transforms never trap position:fixed
+  const floatingRail = (
+    <aside
+      aria-label="Section Progress"
+      className="pointer-events-none fixed right-4 top-1/2 z-40 hidden -translate-y-1/2 flex-col items-end gap-2.5 lg:flex xl:right-6"
+    >
+      {RAIL_SECTIONS.map((sec) => {
+        const isActive = activeSection === sec.id;
+        return (
+          <button
+            key={sec.id}
+            type="button"
+            onClick={() => scrollToLandingSection(sec.id)}
+            aria-label={`Đi tới phần ${sec.code} ${sec.label}`}
+            className="group pointer-events-none flex items-center gap-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wider"
+          >
+            <span
+              className={`border px-2 py-0.5 backdrop-blur-md transition-all duration-300 ${
+                isActive
+                  ? 'pointer-events-auto translate-x-0 border-zinc-700/80 bg-zinc-950/90 font-bold text-white opacity-100 shadow-lg shadow-black/60'
+                  : 'pointer-events-none translate-x-2 border-zinc-800/70 bg-zinc-950/85 text-zinc-400 opacity-0 group-hover:pointer-events-auto group-hover:translate-x-0 group-hover:opacity-100'
+              }`}
+            >
+              {sec.code} // {sec.label}
+            </span>
+            <span
+              className={`pointer-events-auto block h-[3px] cursor-pointer transition-all duration-300 ${
+                isActive
+                  ? 'w-7 bg-avalanche-red shadow-[0_0_10px_rgba(232,65,66,0.95)]'
+                  : 'w-3.5 bg-zinc-700 group-hover:w-5 group-hover:bg-zinc-400'
+              }`}
+            />
+          </button>
+        );
+      })}
+    </aside>
+  );
+
   return (
     <div className="relative overflow-x-clip bg-surface-bg text-zinc-100">
       {/* Ambient Avalanche Crimson Backdrop Glow */}
@@ -124,40 +165,8 @@ export function LandingView() {
         className="pointer-events-none fixed bottom-0 -right-32 h-[420px] w-[420px] rounded-full bg-emerald-500/10 blur-[120px]"
       />
 
-      {/* Floating Right Focus Rail Indicator */}
-      <aside
-        aria-label="Section Progress"
-        className="fixed right-5 top-1/2 z-30 hidden -translate-y-1/2 flex-col items-end gap-2.5 xl:flex"
-      >
-        {RAIL_SECTIONS.map((sec) => {
-          const isActive = activeSection === sec.id;
-          return (
-            <button
-              key={sec.id}
-              type="button"
-              onClick={() => scrollToLandingSection(sec.id)}
-              className="group flex items-center gap-2.5 font-mono text-[10px] uppercase tracking-wider"
-            >
-              <span
-                className={`transition-all duration-300 ${
-                  isActive
-                    ? 'translate-x-0 font-bold text-white opacity-100'
-                    : 'translate-x-2 text-zinc-500 opacity-0 group-hover:translate-x-0 group-hover:opacity-100'
-                }`}
-              >
-                {sec.code} // {sec.label}
-              </span>
-              <span
-                className={`block h-[3px] transition-all duration-300 ${
-                  isActive
-                    ? 'w-7 bg-avalanche-red shadow-[0_0_10px_rgba(232,65,66,0.95)]'
-                    : 'w-3 bg-zinc-700 group-hover:w-5 group-hover:bg-zinc-400'
-                }`}
-              />
-            </button>
-          );
-        })}
-      </aside>
+      {/* Pinned Floating Right Focus Rail Portal */}
+      {mounted ? createPortal(floatingRail, document.body) : null}
 
       {/* ================================================================= */}
       {/* SECTION 0: HERO SECTION (Above the Fold)                          */}

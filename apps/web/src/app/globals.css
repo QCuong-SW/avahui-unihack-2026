@@ -55,13 +55,13 @@ body {
 @keyframes avahuiPageEnter {
   0% {
     opacity: 0;
-    transform: translate3d(0, 16px, 0) scale(0.988);
-    filter: blur(6px);
+    transform: translate3d(0, 14px, 0) scale(0.99);
+    filter: blur(5px);
   }
   100% {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-    filter: blur(0px);
+    transform: none;
+    filter: none;
   }
 }
 
@@ -94,8 +94,7 @@ body {
 }
 
 .animate-page-enter {
-  animation: avahuiPageEnter 460ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  will-change: transform, opacity, filter;
+  animation: avahuiPageEnter 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .animate-tab-enter {

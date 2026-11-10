@@ -11,9 +11,14 @@ import { usePathname } from 'next/navigation';
 export function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || '/';
   const [beamKey, setBeamKey] = useState(0);
+  const [isEntering, setIsEntering] = useState(true);
 
   useEffect(() => {
     setBeamKey((prev) => prev + 1);
+    setIsEntering(true);
+    // Guarantee transform/filter class is cleared so child position:fixed elements stay viewport-pinned
+    const timer = window.setTimeout(() => setIsEntering(false), 480);
+    return () => window.clearTimeout(timer);
   }, [pathname]);
 
   return (
@@ -28,7 +33,11 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      <div key={pathname} className="animate-page-enter">
+      <div
+        key={pathname}
+        onAnimationEnd={() => setIsEntering(false)}
+        className={isEntering ? 'animate-page-enter' : undefined}
+      >
         {children}
       </div>
     </>
