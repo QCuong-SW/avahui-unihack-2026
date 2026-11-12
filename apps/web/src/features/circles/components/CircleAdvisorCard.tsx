@@ -4,6 +4,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AllocationMode, CircleItem } from '@avahui/shared';
 import { aiApi, CircleAdvisorDto } from '@/lib/api';
+import { TOUR_SANDBOX_CIRCLE_ID } from '@/features/guide/context/InteractiveTourContext';
 import { Sparkles, ShieldCheck, TrendingUp, Gavel } from 'lucide-react';
 
 const isMockMode = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
@@ -65,7 +66,9 @@ export function CircleAdvisorCard({ circle }: { circle: CircleItem }) {
   const { data } = useQuery<CircleAdvisorDto>({
     queryKey: ['avahui', 'ai-advisor', circle.id, inviteCode],
     queryFn: async () => {
-      if (isMockMode) return buildLocalFallbackAdvisor(circle);
+      if (isMockMode || circle.id === TOUR_SANDBOX_CIRCLE_ID) {
+        return buildLocalFallbackAdvisor(circle);
+      }
       return await aiApi.getCircleAdvisor(circle.id, inviteCode);
     },
     staleTime: 15_000,

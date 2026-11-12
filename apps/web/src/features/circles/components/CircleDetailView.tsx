@@ -15,6 +15,10 @@ import { MembersCollateralTab } from '@/features/members/components/MembersColla
 import { RoundsHistoryTab } from '@/features/payouts/components/RoundsHistoryTab';
 import { CircleTransactionsTab } from '@/features/transactions/components/CircleTransactionsTab';
 import { HoverHint } from '@/components/ui/HoverHint';
+import {
+  TOUR_SANDBOX_CIRCLE_ID,
+  useInteractiveTour,
+} from '@/features/guide/context/InteractiveTourContext';
 import { Activity, History, Layers, Users } from 'lucide-react';
 
 interface CircleDetailViewProps {
@@ -24,25 +28,41 @@ interface CircleDetailViewProps {
 type DetailTabKey = 'CURRENT_ROUND' | 'MEMBERS' | 'ROUNDS_HISTORY' | 'TX_LOGS';
 
 export function CircleDetailView({ circleId }: CircleDetailViewProps) {
-  const { data: liveCircle, isLoading: isLoadingLive } = useCircleDetailQuery(circleId);
+  const tour = useInteractiveTour();
+  const isTourSandbox = circleId === TOUR_SANDBOX_CIRCLE_ID;
+  const { data: liveCircle, isLoading: isLoadingLive } = useCircleDetailQuery(
+    isTourSandbox ? '' : circleId,
+  );
   const { data: state, isLoading: isLoadingState } = useAvaHuiState();
   const [activeTab, setActiveTab] = useState<DetailTabKey>('CURRENT_ROUND');
 
-  const circle =
-    liveCircle ||
-    state?.circles.find(
-      (c) =>
-        c.id === circleId ||
-        c.metadataId === circleId ||
-        (Boolean(c.contractAddress) &&
-          Boolean(circleId) &&
-          c.contractAddress?.toLowerCase() === circleId.toLowerCase()),
-    );
+  const circle = isTourSandbox
+    ? tour.sandboxCircle
+    : liveCircle ||
+      state?.circles.find(
+        (c) =>
+          c.id === circleId ||
+          c.metadataId === circleId ||
+          (Boolean(c.contractAddress) &&
+            Boolean(circleId) &&
+            c.contractAddress?.toLowerCase() === circleId.toLowerCase()),
+      );
 
-  const currentUser =
+  const rawUser =
     state?.users.find((u) => u.id === state.currentUserId) || state?.users[0];
+  const currentUser =
+    isTourSandbox && rawUser
+      ? {
+          ...rawUser,
+          usdcBalance: tour.sandboxUsdcBalance,
+          avaxBalance: tour.sandboxAvaxBalance,
+          isTeam1Verified: true,
+        }
+      : rawUser;
 
-  const { data: liveTxs } = useMyTransactionsQuery(circle?.id);
+  const { data: liveTxs } = useMyTransactionsQuery(
+    isTourSandbox ? undefined : circle?.id,
+  );
 
   if (!circle || !currentUser) {
     if (!isLoadingLive && !isLoadingState) {

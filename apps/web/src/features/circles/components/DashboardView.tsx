@@ -11,7 +11,7 @@ import {
 import { computeWithdrawBreakdown, formatUsdc } from '@/lib/utils';
 import { CircleCard } from './CircleCard';
 import { HoverHint } from '@/components/ui/HoverHint';
-import { dispatchOpenBeginnerSandbox } from '@/features/guide/components/BeginnerSandboxGuide';
+import { useInteractiveTour } from '@/features/guide/context/InteractiveTourContext';
 import {
   AlertCircle,
   ArrowRight,
@@ -33,6 +33,7 @@ const QUICKSTART_STORAGE_KEY = 'avahui_hide_quickstart_v1';
 
 export function DashboardView() {
   const { data: state, isLoading } = useAvaHuiState();
+  const tour = useInteractiveTour();
   const [activeTab, setActiveTab] = useState<MyCircleTab>('ALL');
   const [quickstartDismissed, setQuickstartDismissed] = useState(false);
 
@@ -157,11 +158,11 @@ export function DashboardView() {
         <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
           <button
             type="button"
-            onClick={() => dispatchOpenBeginnerSandbox()}
+            onClick={() => tour.startTour()}
             className="inline-flex items-center gap-1.5 rounded-none border border-amber-500/40 bg-amber-500/10 px-3 sm:px-3.5 py-1.5 sm:py-2 font-mono text-xs font-bold uppercase tracking-wider text-amber-200 transition hover:bg-amber-500 hover:text-zinc-950 active:scale-95"
           >
             <Play className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            <span>Tập thử UI</span>
+            <span>Hướng dẫn trực tiếp</span>
           </button>
 
           <Link
@@ -291,7 +292,10 @@ export function DashboardView() {
         )}
 
       {/* 2. Four Financial Stat Cards (Squared, 2 cols on mobile, 4 on desktop) */}
-      <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      <section
+        data-tour="dashboard-stats"
+        className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4"
+      >
         <HoverHint
           hint="Tổng số dây hụi bạn đang tham gia"
           className="w-full animate-fade-up"

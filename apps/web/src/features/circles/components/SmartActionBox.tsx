@@ -26,6 +26,10 @@ import {
 } from '@/lib/utils';
 import { HoverHint } from '@/components/ui/HoverHint';
 import {
+  TOUR_SANDBOX_CIRCLE_ID,
+  useInteractiveTour,
+} from '@/features/guide/context/InteractiveTourContext';
+import {
   Check,
   CheckCircle2,
   Coins,
@@ -76,6 +80,8 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
   const { runTransaction } = useTxLifecycle();
   const { data: session } = useAuthSession();
   const walletStatusMutation = useWalletStatusMutation();
+  const tour = useInteractiveTour();
+  const isTourSandbox = circle.id === TOUR_SANDBOX_CIRCLE_ID;
 
   const walletStatus = session?.walletStatus || 'WALLET_CONNECTED_READY';
   const walletMeta = WALLET_STATUS_META[walletStatus];
@@ -126,7 +132,9 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
     return circle.inviteCode || '';
   });
 
-  const savedSealedBid = currentRoundObj
+  const savedSealedBid = isTourSandbox
+    ? tour.sandboxSavedSealedBid
+    : currentRoundObj
     ? getSavedSealedBid(circle.id, currentRoundObj.roundNumber)
     : null;
 
@@ -145,6 +153,13 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
   const isPaused = Boolean(circle.isPaused);
 
   const handleJoinCircle = async () => {
+    if (isTourSandbox) {
+      tour.performSandboxJoin(
+        currentUser.walletAddress,
+        currentUser.displayName || 'Bạn (Tài khoản tập)',
+      );
+      return;
+    }
     await runTransaction({
       title: `Tham gia dây & Khóa thế chấp`,
       description: `Vị trí #${circle.currentMemberCount + 1} • ${formatUsdc(circle.collateralAmountFormatted)} mUSDC${
@@ -158,6 +173,13 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
 
   const handleContribute = async () => {
     if (!currentRoundObj) return;
+    if (isTourSandbox) {
+      tour.performSandboxContribute(
+        currentUser.walletAddress,
+        currentUser.displayName || 'Bạn (Tài khoản tập)',
+      );
+      return;
+    }
     await runTransaction({
       title: `Đóng hụi Kỳ #${currentRoundObj.roundNumber}`,
       description: `${formatUsdc(circle.contributionAmountFormatted)} mUSDC • ${circle.name}`,
@@ -191,6 +213,10 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
     e.preventDefault();
     if (!currentRoundObj) return;
     const numericBid = parseFloat(bidInput);
+    if (isTourSandbox) {
+      tour.performSandboxCommitBid(numericBid);
+      return;
+    }
     await runTransaction({
       title: `Niêm phong giá đấu kín • Kỳ #${currentRoundObj.roundNumber}`,
       description: `Mã băm bảo mật keccak256 cho mức giá ${formatUsdc(numericBid)} mUSDC`,
@@ -206,6 +232,13 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
 
   const handleRevealSealedBid = async () => {
     if (!currentRoundObj) return;
+    if (isTourSandbox) {
+      tour.performSandboxRevealBid(
+        currentUser.walletAddress,
+        currentUser.displayName || 'Bạn (Tài khoản tập)',
+      );
+      return;
+    }
     const revealAmount = savedSealedBid?.bidAmountUsdc || parseFloat(bidInput);
     await runTransaction({
       title: `Mở niêm phong giá đấu • Kỳ #${currentRoundObj.roundNumber}`,
@@ -293,6 +326,13 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
 
   const handleSettleRound = async () => {
     if (!currentRoundObj) return;
+    if (isTourSandbox) {
+      tour.performSandboxSettleRound(
+        currentUser.walletAddress,
+        currentUser.displayName || 'Bạn (Tài khoản tập)',
+      );
+      return;
+    }
     const willSlash = unpaidMembersCount > 0;
     await runTransaction({
       title: willSlash
@@ -318,6 +358,10 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
 
   const handleWithdrawCollateral = async () => {
     if (!myMember) return;
+    if (isTourSandbox) {
+      tour.performSandboxWithdraw(currentUser.walletAddress);
+      return;
+    }
 
     await runTransaction({
       title: `Rút Thế chấp & Tiền thưởng`,
@@ -334,7 +378,10 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
   );
 
   return (
-    <aside className="sticky top-24 space-y-4 rounded-none border border-zinc-800 bg-surface-card p-4 sm:p-5 shadow-2xl">
+    <aside
+      data-tour="action-console"
+      className="sticky top-24 space-y-4 rounded-none border border-zinc-800 bg-surface-card p-4 sm:p-5 shadow-2xl"
+    >
       <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
         <h2 className="font-mono text-xs font-bold uppercase tracking-wider text-white">Bảng Thao Tác</h2>
         <span

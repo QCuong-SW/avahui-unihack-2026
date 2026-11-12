@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { ROSCA_GLOSSARY_ITEMS } from '@/lib/constants/glossary';
-import { dispatchOpenBeginnerSandbox } from './BeginnerSandboxGuide';
+import { useInteractiveTour } from '@/features/guide/context/InteractiveTourContext';
 import {
   AlertTriangle,
   ArrowRight,
@@ -107,6 +107,7 @@ const FAQS = [
 ];
 
 export function HowItWorksView() {
+  const tour = useInteractiveTour();
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header Banner */}
@@ -129,11 +130,11 @@ export function HowItWorksView() {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => dispatchOpenBeginnerSandbox()}
+              onClick={() => tour.startTour()}
               className="inline-flex items-center gap-1.5 rounded-none border border-amber-500/60 bg-amber-500/15 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-amber-200 transition hover:bg-amber-500 hover:text-zinc-950"
             >
               <Play className="h-3.5 w-3.5" />
-              <span>Thực hành Mô phỏng (UI Giả lập)</span>
+              <span>Bắt đầu Hướng dẫn trực tiếp trên UI</span>
             </button>
             <Link
               href="/circles"

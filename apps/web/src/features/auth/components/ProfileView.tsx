@@ -190,7 +190,10 @@ export function ProfileView() {
           </form>
 
           {/* On-Chain ROSCA Credit Score */}
-          <div className="rounded-none border border-zinc-800 bg-zinc-900/70 p-3.5 font-mono text-xs space-y-2.5">
+          <div
+            data-tour="profile-credit-score"
+            className="rounded-none border border-zinc-800 bg-zinc-900/70 p-3.5 font-mono text-xs space-y-2.5"
+          >
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
                 Điểm Tín Nhiệm Hụi

@@ -5,10 +5,12 @@ import Link from 'next/link';
 import { useAvaHuiState } from '@/hooks/useAvaHuiMockQuery';
 import { AllocationMode, CircleStatus } from '@avahui/shared';
 import { CircleCard } from './CircleCard';
+import { useInteractiveTour } from '@/features/guide/context/InteractiveTourContext';
 import { Filter, PlusCircle, Search } from 'lucide-react';
 
 export function ExploreCirclesView() {
   const { data: state, isLoading } = useAvaHuiState();
+  const tour = useInteractiveTour();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -25,7 +27,11 @@ export function ExploreCirclesView() {
   const currentUser =
     state.users.find((u) => u.id === state.currentUserId) || state.users[0];
 
-  const filteredCircles = state.circles.filter((circle) => {
+  const allCircles = tour.isTourActive
+    ? [tour.sandboxCircle, ...state.circles]
+    : state.circles;
+
+  const filteredCircles = allCircles.filter((circle) => {
     const matchesSearch =
       circle.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       Boolean(circle.contractAddress?.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -56,7 +62,10 @@ export function ExploreCirclesView() {
       </div>
 
       {/* Compact Responsive Filter Bar */}
-      <div className="grid gap-3 rounded-none border border-zinc-800 bg-surface-card p-3 sm:p-3.5 md:grid-cols-12 animate-fade-in">
+      <div
+        data-tour="explore-filters"
+        className="grid gap-3 rounded-none border border-zinc-800 bg-surface-card p-3 sm:p-3.5 md:grid-cols-12 animate-fade-in"
+      >
         <div className="relative md:col-span-5">
           <Search className="absolute left-3.5 top-2.5 h-4 w-4 text-zinc-500" />
           <input

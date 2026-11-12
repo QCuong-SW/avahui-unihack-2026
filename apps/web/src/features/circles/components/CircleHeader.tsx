@@ -67,7 +67,10 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
   };
 
   return (
-    <section className="rounded-none border border-zinc-800 bg-surface-card p-4 sm:p-6 shadow-xl">
+    <section
+      data-tour="circle-header-summary"
+      className="rounded-none border border-zinc-800 bg-surface-card p-4 sm:p-6 shadow-xl"
+    >
       {/* Top Row: Back & Explorer */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-3.5">
         <Link

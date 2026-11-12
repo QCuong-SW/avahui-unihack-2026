@@ -15,6 +15,7 @@ import { HoverHint } from '@/components/ui/HoverHint';
 import { NetworkStatus } from '@/components/wallet/NetworkStatus';
 import { WalletInfo } from '@/components/wallet/WalletInfo';
 import { AccountMenu } from '@/components/layout/AccountMenu';
+import { useInteractiveTour } from '@/features/guide/context/InteractiveTourContext';
 import { frontendEnv } from '@/config/env';
 import {
   AlertTriangle,
@@ -28,6 +29,7 @@ export function EmbeddedWalletBar() {
   const queryClient = useQueryClient();
   const { data: state } = useAvaHuiState();
   const { data: session } = useAuthSession();
+  const tour = useInteractiveTour();
   const { requestFaucet, isOperating } = useTokenOperations();
   const swapMutation = useSwapAvaxToUsdcMutation();
   const { runTransaction } = useTxLifecycle();
@@ -42,10 +44,20 @@ export function EmbeddedWalletBar() {
 
   const currentUser =
     state.users.find((u) => u.id === state.currentUserId) || state.users[0];
-  const isLowGas = parseFloat(currentUser.avaxBalance) < 0.02;
+  const effectiveAvax = tour.isTourActive
+    ? tour.sandboxAvaxBalance
+    : currentUser.avaxBalance;
+  const effectiveUsdc = tour.isTourActive
+    ? tour.sandboxUsdcBalance
+    : currentUser.usdcBalance;
+  const isLowGas = parseFloat(effectiveAvax) < 0.02;
   const walletStatus = session?.walletStatus || 'WALLET_CONNECTED_READY';
 
   const handleFaucet = async () => {
+    if (tour.isTourActive) {
+      tour.performSandboxFaucet();
+      return;
+    }
     await requestFaucet(1000);
   };
 
@@ -99,11 +111,12 @@ export function EmbeddedWalletBar() {
             ) : (
               <Fuel className="h-3.5 w-3.5 text-zinc-400" />
             )}
-            <span>{currentUser.avaxBalance} AVAX</span>
+            <span>{effectiveAvax} AVAX</span>
           </div>
         </HoverHint>
 
         {!frontendEnv.useMock &&
+          !tour.isTourActive &&
           Boolean(currentUser.walletAddress) &&
           parseFloat(currentUser.avaxBalance) < 0.015 && (
             <HoverHint
@@ -128,10 +141,13 @@ export function EmbeddedWalletBar() {
       </div>
 
       {/* 3. mUSDC Balance + Faucet Button (Responsive) */}
-      <div className="flex items-center rounded-none border border-zinc-800 bg-zinc-900/90 p-0.5">
+      <div
+        data-tour="wallet-faucet-bar"
+        className="flex items-center rounded-none border border-zinc-800 bg-zinc-900/90 p-0.5"
+      >
         <HoverHint position="bottom" hint="Số dư token đóng hụi hiện khả dụng">
           <div className="px-2 sm:px-2.5 py-1 font-mono text-xs font-bold text-emerald-400">
-            <span>{formatUsdc(currentUser.usdcBalance)}</span>
+            <span>{formatUsdc(effectiveUsdc)}</span>
             <span className="hidden sm:inline"> mUSDC</span>
           </div>
         </HoverHint>
