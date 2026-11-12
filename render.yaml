@@ -23,6 +23,8 @@ services:
         sync: false
       - key: PRIVY_APP_SECRET
         sync: false
+      - key: BOOTSTRAP_ADMIN_EMAILS
+        value: cuongquang2006@gmail.com
       - key: CHAIN_ID
         value: "43113"
       - key: AVALANCHE_RPC_URL
@@ -47,9 +49,12 @@ services:
         sync: false
       - key: INDEXER_ENABLED
         value: "true"
+      - key: INDEXER_START_BLOCK
+        value: "60899861"
       - key: INDEXER_POLL_INTERVAL_MS
         value: "1500"
       - key: INDEXER_CONFIRMATION_BLOCKS
         value: "0"
       - key: AI_ENABLED
         value: "false"
+
