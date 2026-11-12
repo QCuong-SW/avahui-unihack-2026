@@ -8,7 +8,7 @@ import {
   MemberStatus,
   RoundStatus,
 } from '@avahui/shared';
-import { formatUsdc } from '@/lib/utils';
+import { computeWithdrawBreakdown, formatUsdc } from '@/lib/utils';
 import { CircleCard } from './CircleCard';
 import { HoverHint } from '@/components/ui/HoverHint';
 import {
@@ -104,17 +104,16 @@ export function DashboardView() {
         circle.status === CircleStatus.Completed &&
         me.status !== MemberStatus.Withdrawn
       ) {
-        const bonusPerMember =
-          parseFloat(circle.totalDiscountPoolFormatted) / circle.maxMembers;
-        const totalClaimable =
-          parseFloat(me.lockedCollateralFormatted) + bonusPerMember;
+        const { collateralUsdc, discountBonusUsdc, yieldBonusUsdc, totalClaimableUsdc } =
+          computeWithdrawBreakdown(circle, me);
+        const totalBonus = discountBonusUsdc + yieldBonusUsdc;
         items.push({
           id: `${circle.id}_withdraw`,
           circleId: circle.id,
           type: 'WITHDRAW_READY',
           title: `${circle.name} • Rút Thế chấp`,
-          hint: `Gốc ${formatUsdc(me.lockedCollateralFormatted)} + Lời ${formatUsdc(bonusPerMember)} mUSDC`,
-          amountLabel: `+${formatUsdc(totalClaimable)} mUSDC`,
+          hint: `Gốc ${formatUsdc(collateralUsdc)} + Lời & Yield ${formatUsdc(totalBonus)} mUSDC`,
+          amountLabel: `+${formatUsdc(totalClaimableUsdc)} mUSDC`,
         });
       }
     }

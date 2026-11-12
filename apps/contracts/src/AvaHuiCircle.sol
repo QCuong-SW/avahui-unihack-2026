@@ -81,6 +81,7 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
     bool public requireAttestation;
     address public attestationVerifier;
     bool public override paused;
+    bool public sealedBidOnly;
 
     mapping(uint8 => address) public slotToMember;
     mapping(address => MemberInfo) public members;
@@ -119,6 +120,8 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
     error ConfigLockedAfterJoin();
     error InvalidVerifier();
     error BidAlreadyCommitted();
+    error SealedBidOnly();
+    error CommitWindowClosed();
 
     modifier whenNotPaused() {
         if (paused) revert ContractPaused();
@@ -184,6 +187,13 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
         if (status != STATUS_RECRUITING) revert InvalidStatus();
         if (currentMemberCount > 0) revert ConfigLockedAfterJoin();
         yieldVault = IYieldVault(_vault);
+    }
+
+    function setSealedBidOnly(bool _sealedBidOnly) external {
+        if (msg.sender != creator && msg.sender != factory) revert UnauthorizedCaller();
+        if (status != STATUS_RECRUITING) revert InvalidStatus();
+        if (currentMemberCount > 0) revert ConfigLockedAfterJoin();
+        sealedBidOnly = _sealedBidOnly;
     }
 
     function configureSecurity(
@@ -294,6 +304,7 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
     function submitBid(uint8 roundNumber, uint256 bidAmount) external override nonReentrant whenNotPaused {
         if (status != STATUS_ACTIVE) revert InvalidStatus();
         if (allocationMode != MODE_BIDDING) revert BiddingNotEnabled();
+        if (sealedBidOnly) revert SealedBidOnly();
         if (roundNumber != currentRound) revert InvalidRound();
 
         MemberInfo storage member = members[msg.sender];
@@ -321,6 +332,14 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
         return keccak256(abi.encodePacked(address(this), roundNumber, bidder, bidAmount, salt));
     }
 
+    function getCommitDeadline(uint8 roundNumber) public view returns (uint256) {
+        RoundInfo storage round = rounds[roundNumber];
+        if (biddingDuration < 3 || round.biddingDeadline <= round.startTime) {
+            return round.biddingDeadline;
+        }
+        return round.startTime + (biddingDuration * 2) / 3;
+    }
+
     function commitBid(uint8 roundNumber, bytes32 commitment) external override nonReentrant whenNotPaused {
         if (status != STATUS_ACTIVE) revert InvalidStatus();
         if (allocationMode != MODE_BIDDING) revert BiddingNotEnabled();
@@ -336,7 +355,7 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
 
         RoundInfo storage round = rounds[roundNumber];
         if (round.status != ROUND_OPEN) revert InvalidRound();
-        if (block.timestamp > round.biddingDeadline) revert BiddingWindowClosed();
+        if (block.timestamp > getCommitDeadline(roundNumber)) revert CommitWindowClosed();
 
         bidCommitments[roundNumber][msg.sender] = BidCommitment({
             commitment: commitment,
@@ -399,27 +418,35 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
             revert SettlementConditionsNotMet();
         }
 
-        // Auto-cover missing contributions by slashing collateral
-        if (!allContributed) {
+        // Auto-cover missing contributions by slashing collateral (graceful shortfall if collateral exhausted)
+        uint256 collectedForRound = 0;
+        if (allContributed) {
+            collectedForRound = uint256(maxMembers) * contributionAmount;
+        } else {
             for (uint8 i = 1; i <= maxMembers; i++) {
                 address mAddr = slotToMember[i];
-                if (!hasContributed[roundNumber][mAddr]) {
+                if (hasContributed[roundNumber][mAddr]) {
+                    collectedForRound += contributionAmount;
+                } else {
                     MemberInfo storage mInfo = members[mAddr];
-                    if (mInfo.lockedCollateral < contributionAmount) {
-                        revert InsufficientCollateralToSlash(mAddr);
-                    }
-                    mInfo.lockedCollateral -= contributionAmount;
+                    uint256 slashAmount = mInfo.lockedCollateral >= contributionAmount
+                        ? contributionAmount
+                        : mInfo.lockedCollateral;
+                    mInfo.lockedCollateral -= slashAmount;
                     mInfo.defaultCount += 1;
                     hasContributed[roundNumber][mAddr] = true;
                     round.contributionsCount += 1;
+                    collectedForRound += slashAmount;
 
-                    emit CollateralSlashed(
-                        address(this),
-                        roundNumber,
-                        mAddr,
-                        contributionAmount,
-                        mInfo.lockedCollateral
-                    );
+                    if (slashAmount > 0) {
+                        emit CollateralSlashed(
+                            address(this),
+                            roundNumber,
+                            mAddr,
+                            slashAmount,
+                            mInfo.lockedCollateral
+                        );
+                    }
                 }
             }
         }
@@ -446,7 +473,10 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
             }
         }
 
-        uint256 grossPot = uint256(maxMembers) * contributionAmount;
+        uint256 grossPot = collectedForRound;
+        if (winningBid > grossPot) {
+            winningBid = grossPot;
+        }
         uint256 netPayout = grossPot - winningBid;
 
         totalDiscountPool += winningBid;
@@ -664,8 +694,23 @@ contract AvaHuiCircle is IAvaHuiCircle, ReentrancyGuard {
             }
             try yieldVault.harvestYield(address(this)) returns (uint256 harvested) {
                 if (harvested > 0) {
-                    totalYieldEarned += harvested;
-                    emit YieldHarvested(address(this), harvested, block.timestamp);
+                    uint256 netYield = harvested;
+                    (bool feeOk, bytes memory feeData) = factory.staticcall(
+                        abi.encodeWithSignature("getProtocolFeeConfig()")
+                    );
+                    if (feeOk && feeData.length == 64) {
+                        (address treasury, uint16 feeBps) = abi.decode(feeData, (address, uint16));
+                        if (treasury != address(0) && feeBps > 0 && feeBps <= 500) {
+                            uint256 feeAmount = (harvested * feeBps) / 10_000;
+                            if (feeAmount > 0 && feeAmount <= harvested) {
+                                netYield = harvested - feeAmount;
+                                token.safeTransfer(treasury, feeAmount);
+                                emit ProtocolYieldFeePaid(address(this), treasury, feeAmount);
+                            }
+                        }
+                    }
+                    totalYieldEarned += netYield;
+                    emit YieldHarvested(address(this), netYield, block.timestamp);
                 }
             } catch {}
         }

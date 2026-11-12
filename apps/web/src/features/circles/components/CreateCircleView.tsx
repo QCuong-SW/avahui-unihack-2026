@@ -69,7 +69,7 @@ export function CreateCircleView() {
       enableYieldVault: true,
       isPrivateInvite: false,
       inviteCode: 'AVAHUI-VIP-2026',
-      requireTeam1Attestation: true,
+      requireTeam1Attestation: false,
     },
   });
 
@@ -88,6 +88,9 @@ export function CreateCircleView() {
     (watchedValues.collateralMultiplier || 1);
   const userUsdcBal = parseFloat(currentUser.usdcBalance);
   const hasEnoughCollateral = userUsdcBal >= requiredCollateralUsdc;
+  const team1Blocked =
+    Boolean(watchedValues.requireTeam1Attestation) &&
+    !Boolean(currentUser.isTeam1Verified);
 
   const applyPreset = (preset: 'BIDDING_DEMO' | 'FIXED_DEMO') => {
     if (preset === 'BIDDING_DEMO') {
@@ -335,6 +338,11 @@ export function CreateCircleView() {
                 <option value={2}>2x (200%)</option>
                 <option value={3}>3x (300%)</option>
               </select>
+              {watchedValues.collateralMultiplier === 1 && (
+                <p className="mt-1 text-[10px] text-amber-400/90 leading-snug">
+                  1x chỉ bù tối đa 1 kỳ trễ hạn; khuyến nghị 2x–3x cho nhóm công khai.
+                </p>
+              )}
             </div>
           </div>
 
@@ -464,6 +472,20 @@ export function CreateCircleView() {
               </label>
             </div>
 
+            {team1Blocked && (
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-none border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-200">
+                <span>
+                  Tài khoản của bạn chưa xác thực Team1 nên không thể tự join Slot #1 khi bật tùy chọn này.
+                </span>
+                <Link
+                  href="/profile"
+                  className="font-bold text-amber-300 underline hover:text-white"
+                >
+                  Xác thực Team1 tại /profile →
+                </Link>
+              </div>
+            )}
+
             {watchedValues.isPrivateInvite && (
               <div className="mt-2 space-y-1 rounded-none border border-sky-500/30 bg-sky-500/5 p-3">
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-sky-300">
@@ -564,7 +586,7 @@ export function CreateCircleView() {
           >
             <button
               type="submit"
-              disabled={isSubmitting || isCreating || !hasEnoughCollateral}
+              disabled={isSubmitting || isCreating || !hasEnoughCollateral || team1Blocked}
               className="flex w-full items-center justify-center gap-2 rounded-none bg-avalanche-red px-5 py-3.5 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-xl shadow-avalanche-red/25 transition hover:bg-avalanche-darkRed disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Rocket className="h-4 w-4" />

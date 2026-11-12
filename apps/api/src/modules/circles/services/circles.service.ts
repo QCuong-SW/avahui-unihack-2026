@@ -487,6 +487,8 @@ export class CirclesService {
         wonRoundNumber: m.wonRoundNumber,
         defaultCount: m.defaultCount,
         status: m.status,
+        team1Verified: Boolean(m.user?.team1Verified),
+        trustTier: m.user?.trustTier ?? 0,
         joinTxHash: m.joinTxHash,
         joinedAt: m.joinedAt?.toISOString(),
       })),

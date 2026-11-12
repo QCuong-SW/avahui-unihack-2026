@@ -10,6 +10,7 @@ import {
   Crown,
   Lock,
   ShieldAlert,
+  ShieldCheck,
   UserPlus,
 } from 'lucide-react';
 
@@ -109,6 +110,17 @@ export function MembersCollateralTab({
                       <HoverHint hint="Người khởi tạo dây hụi" side="top">
                         <span className="inline-flex items-center rounded-none bg-amber-500/20 p-1 text-amber-300">
                           <Crown className="h-3 w-3" />
+                        </span>
+                      </HoverHint>
+                    )}
+                    {member.team1Verified && (
+                      <HoverHint
+                        hint={`Đã xác thực Team1 (Tier ${member.trustTier || 1})`}
+                        side="top"
+                      >
+                        <span className="inline-flex items-center gap-0.5 rounded-none border border-emerald-500/30 bg-emerald-500/15 px-1.5 py-0.5 font-mono text-[10px] font-bold text-emerald-300">
+                          <ShieldCheck className="h-3 w-3" />
+                          <span>T{member.trustTier || 1}</span>
                         </span>
                       </HoverHint>
                     )}

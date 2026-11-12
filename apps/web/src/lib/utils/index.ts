@@ -71,3 +71,36 @@ export function getSavedCreatorInviteCode(
   }
   return undefined;
 }
+
+/**
+ * Computes withdrawable collateral, discount pool share, and ERC-4626 yield share
+ * matching `AvaHuiCircle.withdrawCollateral()`.
+ */
+export function computeWithdrawBreakdown(
+  circle: {
+    status?: string;
+    maxMembers: number;
+    totalDiscountPoolFormatted?: string;
+    accruedYieldFormatted?: string;
+  },
+  member: {
+    lockedCollateralFormatted?: string;
+  },
+) {
+  const collateralUsdc = parseFloat(member.lockedCollateralFormatted || '0') || 0;
+  const membersCount = Math.max(1, circle.maxMembers || 1);
+  const isCompleted = circle.status === 'COMPLETED';
+  const discountBonusUsdc = isCompleted
+    ? (parseFloat(circle.totalDiscountPoolFormatted || '0') || 0) / membersCount
+    : 0;
+  const yieldBonusUsdc = isCompleted
+    ? (parseFloat(circle.accruedYieldFormatted || '0') || 0) / membersCount
+    : 0;
+
+  return {
+    collateralUsdc,
+    discountBonusUsdc,
+    yieldBonusUsdc,
+    totalClaimableUsdc: collateralUsdc + discountBonusUsdc + yieldBonusUsdc,
+  };
+}

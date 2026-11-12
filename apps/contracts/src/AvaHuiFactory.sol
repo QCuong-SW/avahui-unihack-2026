@@ -12,10 +12,12 @@ contract AvaHuiFactory is IAvaHuiFactory {
     address public override guardian;
     address public defaultYieldVault;
     address public defaultAttestationVerifier;
+    uint16 public protocolFeeBps;
 
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
     event GuardianUpdated(address indexed previousGuardian, address indexed newGuardian);
     event DefaultModulesUpdated(address indexed yieldVault, address indexed attestationVerifier);
+    event ProtocolFeeUpdated(uint16 feeBps);
 
     error Unauthorized();
     error InvalidAddress();
@@ -27,6 +29,7 @@ contract AvaHuiFactory is IAvaHuiFactory {
     error InvalidDurations();
     error InvalidStartDeadline();
     error InvalidBidBounds();
+    error InvalidProtocolFee();
 
     modifier onlyOwner() {
         if (msg.sender != owner) revert Unauthorized();
@@ -58,6 +61,16 @@ contract AvaHuiFactory is IAvaHuiFactory {
         defaultYieldVault = _yieldVault;
         defaultAttestationVerifier = _attestationVerifier;
         emit DefaultModulesUpdated(_yieldVault, _attestationVerifier);
+    }
+
+    function setProtocolFeeBps(uint16 _protocolFeeBps) external onlyOwner {
+        if (_protocolFeeBps > 500) revert InvalidProtocolFee();
+        protocolFeeBps = _protocolFeeBps;
+        emit ProtocolFeeUpdated(_protocolFeeBps);
+    }
+
+    function getProtocolFeeConfig() external view returns (address treasury, uint16 feeBps) {
+        return (owner, protocolFeeBps);
     }
 
     function createCircle(CreateCircleParams calldata params)

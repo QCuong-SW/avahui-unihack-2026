@@ -189,6 +189,52 @@ export function ProfileView() {
             </div>
           </form>
 
+          {/* On-Chain ROSCA Credit Score */}
+          <div className="rounded-none border border-zinc-800 bg-zinc-900/70 p-3.5 font-mono text-xs space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+                Điểm Tín Nhiệm Hụi
+              </span>
+              <span
+                className={`rounded-none border px-2 py-0.5 text-[10px] font-bold uppercase ${
+                  currentUser.stats?.creditTier === 'EXPERT'
+                    ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
+                    : currentUser.stats?.creditTier === 'TRUSTED'
+                      ? 'border-sky-500/40 bg-sky-500/15 text-sky-300'
+                      : 'border-zinc-700 bg-zinc-800 text-zinc-300'
+                }`}
+              >
+                {currentUser.stats?.creditTier === 'EXPERT'
+                  ? 'UY TÍN CAO'
+                  : currentUser.stats?.creditTier === 'TRUSTED'
+                    ? 'TIN CẬY'
+                    : 'MỚI'}{' '}
+                • {currentUser.stats?.creditScore ?? (isTeam1Verified ? 600 : 500)}/1000
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 text-center text-[11px]">
+              <div className="rounded-none border border-zinc-800 bg-zinc-950/70 p-2">
+                <div className="text-[10px] text-zinc-500 uppercase">Đúng hạn</div>
+                <div className="mt-0.5 font-bold text-emerald-400">
+                  {currentUser.stats?.onTimePaymentsCount ?? 0}
+                </div>
+              </div>
+              <div className="rounded-none border border-zinc-800 bg-zinc-950/70 p-2">
+                <div className="text-[10px] text-zinc-500 uppercase">Hoàn thành</div>
+                <div className="mt-0.5 font-bold text-white">
+                  {currentUser.stats?.completedCirclesCount ?? 0}
+                </div>
+              </div>
+              <div className="rounded-none border border-zinc-800 bg-zinc-950/70 p-2">
+                <div className="text-[10px] text-zinc-500 uppercase">Trễ hạn</div>
+                <div className="mt-0.5 font-bold text-rose-400">
+                  {currentUser.stats?.defaultCount ?? 0}
+                </div>
+              </div>
+            </div>
+          </div>
+
           {canShowDemoReset && (
             <div className="border-t border-zinc-800 pt-4">
               <HoverHint

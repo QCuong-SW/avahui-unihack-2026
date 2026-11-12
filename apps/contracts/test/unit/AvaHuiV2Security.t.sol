@@ -226,4 +226,62 @@ contract AvaHuiV2SecurityTest is TestBase {
         circle.withdrawCollateral();
         assertEq(usdc.balanceOf(users[0]), 1_000 * 1e6, "Member must recover full collateral while paused");
     }
+
+    function testSealedBidLockCommitWindowAndProtocolYieldFee() public {
+        // Configure sealedBidOnly + 5% (500 bps) fee strictly on yield
+        vm.expectRevert(AvaHuiFactory.InvalidProtocolFee.selector);
+        factory.setProtocolFeeBps(501);
+        factory.setProtocolFeeBps(500);
+
+        vm.prank(users[0]);
+        circle.setSealedBidOnly(true);
+
+        for (uint256 i = 0; i < 5; i++) {
+            bytes32 nullifier = keccak256(abi.encodePacked("TEAM1_V21_", i));
+            verifier.issueAttestation(users[i], nullifier, 2);
+            usdc.mint(users[i], 1_000 * 1e6);
+            vm.prank(users[i]);
+            usdc.approve(address(circle), type(uint256).max);
+            vm.prank(users[i]);
+            circle.joinCircleProtected(INVITE_CODE, nullifier);
+        }
+
+        // Open submitBid is blocked when sealedBidOnly is enabled
+        vm.prank(users[1]);
+        vm.expectRevert(AvaHuiCircle.SealedBidOnly.selector);
+        circle.submitBid(1, 10 * 1e6);
+
+        // users[1] commits inside the first 2/3 commit window (biddingDuration=180 => commitDeadline=+120s)
+        bytes32 salt1 = keccak256("v21_salt_1");
+        bytes32 commit1 = circle.computeBidCommitment(1, users[1], 15 * 1e6, salt1);
+        vm.prank(users[1]);
+        circle.commitBid(1, commit1);
+
+        // Move into the final 1/3 reveal-only window (+130s > +120s commitDeadline, <= +180s biddingDeadline)
+        vm.warp(block.timestamp + 130);
+
+        bytes32 commit2 = circle.computeBidCommitment(1, users[2], 20 * 1e6, keccak256("v21_salt_2"));
+        vm.prank(users[2]);
+        vm.expectRevert(AvaHuiCircle.CommitWindowClosed.selector);
+        circle.commitBid(1, commit2);
+
+        // users[1] reveals inside the reveal-only window
+        vm.prank(users[1]);
+        circle.revealBid(1, 15 * 1e6, salt1);
+
+        // Complete all 5 rounds over 30 days to accrue yield and collect 5% fee on yield only
+        uint256 treasuryBefore = usdc.balanceOf(address(this));
+        for (uint8 r = 1; r <= 5; r++) {
+            for (uint256 i = 0; i < 5; i++) {
+                vm.prank(users[i]);
+                circle.contribute(r);
+            }
+            vm.warp(block.timestamp + 6 days);
+            circle.settleRound(r);
+        }
+
+        uint256 treasuryEarned = usdc.balanceOf(address(this)) - treasuryBefore;
+        assertTrue(treasuryEarned > 0, "Treasury receives 5% fee on harvested yield");
+        assertTrue(circle.totalYieldEarned() > treasuryEarned, "Members keep 95% of harvested yield");
+    }
 }

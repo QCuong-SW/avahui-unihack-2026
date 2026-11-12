@@ -8,11 +8,18 @@ import {
   TransactionStatus,
 } from '../enums';
 
+export type RoscaCreditTier = 'NEW' | 'TRUSTED' | 'EXPERT';
+
 export interface UserStatsDto {
   activeCirclesCount: number;
   totalContributed: string;
   totalCollateralLocked: string;
   totalPayoutReceived: string;
+  completedCirclesCount?: number;
+  onTimePaymentsCount?: number;
+  defaultCount?: number;
+  creditScore?: number;
+  creditTier?: RoscaCreditTier;
 }
 export type UserStats = UserStatsDto;
 
@@ -79,6 +86,7 @@ export interface CircleMemberDto {
   status: MemberStatus;
   identityNullifier?: string;
   team1Verified?: boolean;
+  trustTier?: number;
   joinTxHash?: string;
   joinedAt?: string;
 }

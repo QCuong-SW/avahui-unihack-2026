@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   AllocationMode,
   CircleItem,
@@ -19,7 +19,11 @@ import {
   useWalletStatusMutation,
 } from '@/lib/auth/useAuthSession';
 import { WALLET_STATUS_META } from '@/lib/wallet/walletStatus';
-import { formatUsdc, shortenAddress } from '@/lib/utils';
+import {
+  computeWithdrawBreakdown,
+  formatUsdc,
+  shortenAddress,
+} from '@/lib/utils';
 import { HoverHint } from '@/components/ui/HoverHint';
 import {
   Check,
@@ -100,12 +104,14 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
   );
 
   const [bidInput, setBidInput] = useState<string>(String(suggestedBid));
-  const [useSealedMode, setUseSealedMode] = useState<boolean>(
-    circle.isSealedBid !== false
-  );
-  useEffect(() => {
-    setUseSealedMode(circle.isSealedBid !== false);
-  }, [circle.id, circle.isSealedBid]);
+  const useSealedMode = circle.isSealedBid !== false;
+  const grossPotUsdc =
+    (parseFloat(circle.contributionAmountFormatted || '0') || 0) *
+    (circle.maxMembers || 1);
+  const parsedBidNumeric = parseFloat(bidInput);
+  const estimatedBidPayout = Number.isFinite(parsedBidNumeric)
+    ? Math.max(0, grossPotUsdc - Math.max(0, parsedBidNumeric))
+    : grossPotUsdc;
   const [saltCopied, setSaltCopied] = useState(false);
   const [showSaltRecovery, setShowSaltRecovery] = useState(false);
   const [recoveryBidInput, setRecoveryBidInput] = useState(String(suggestedBid));
@@ -301,16 +307,21 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
     });
   };
 
+  const withdrawBreakdown = myMember
+    ? computeWithdrawBreakdown(circle, myMember)
+    : {
+        collateralUsdc: 0,
+        discountBonusUsdc: 0,
+        yieldBonusUsdc: 0,
+        totalClaimableUsdc: 0,
+      };
+
   const handleWithdrawCollateral = async () => {
     if (!myMember) return;
-    const bonusPerMember =
-      parseFloat(circle.totalDiscountPoolFormatted) / circle.maxMembers;
-    const totalClaim =
-      parseFloat(myMember.lockedCollateralFormatted) + bonusPerMember;
 
     await runTransaction({
       title: `Withdraw Collateral & Bonus`,
-      description: `+${formatUsdc(totalClaim)} mUSDC`,
+      description: `+${formatUsdc(withdrawBreakdown.totalClaimableUsdc)} mUSDC`,
       action: async () => {
         return await executeWithdrawCollateral(circle);
       },
@@ -552,33 +563,30 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                 </span>
               </div>
 
-              {/* Mode Switch: Sealed-Bid (Commit-Reveal) vs Open Bid */}
+              {/* Enforced Bidding Mode Indicator (Matches Circle Configuration) */}
               {!myMember.hasReceivedPayout && (
-                <div className="grid grid-cols-2 gap-1 rounded-none border border-zinc-800 bg-zinc-950 p-1 font-mono text-[10px]">
-                  <button
-                    type="button"
-                    onClick={() => setUseSealedMode(true)}
-                    className={`flex items-center justify-center gap-1 py-1 font-bold uppercase transition ${
-                      useSealedMode
-                        ? 'bg-avalanche-red text-white'
-                        : 'text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    <Lock className="h-3 w-3" />
-                    <span>Sealed (Commit)</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setUseSealedMode(false)}
-                    className={`flex items-center justify-center gap-1 py-1 font-bold uppercase transition ${
-                      !useSealedMode
-                        ? 'bg-zinc-800 text-white'
-                        : 'text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    <Zap className="h-3 w-3" />
-                    <span>Open Bid</span>
-                  </button>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between rounded-none border border-zinc-800 bg-zinc-950 px-2.5 py-1.5 font-mono text-[10px]">
+                    <span className="flex items-center gap-1 font-bold uppercase text-zinc-200">
+                      {useSealedMode ? (
+                        <>
+                          <Lock className="h-3 w-3 text-avalanche-red" />
+                          <span>Đấu giá Kín (Sealed-Bid Commit-Reveal)</span>
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="h-3 w-3 text-amber-400" />
+                          <span>Đấu giá Mở (Open Bid)</span>
+                        </>
+                      )}
+                    </span>
+                    <span className="text-emerald-400 font-bold">
+                      Thực nhận ≈ {formatUsdc(estimatedBidPayout)} mUSDC
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-zinc-400 leading-snug">
+                    Giá đấu là phần chiết khấu bạn nhường lại cho nhóm (Thực nhận = Tổng quỹ {formatUsdc(grossPotUsdc)} − Giá đấu).
+                  </p>
                 </div>
               )}
 
@@ -849,24 +857,28 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                   <div className="flex justify-between">
                     <span className="text-zinc-400">Thế chấp gốc:</span>
                     <span className="font-bold text-white">
-                      {formatUsdc(myMember.lockedCollateralFormatted)} mUSDC
+                      {formatUsdc(withdrawBreakdown.collateralUsdc)} mUSDC
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-zinc-400">Thưởng chiết khấu:</span>
                     <span className="font-bold text-emerald-400">
-                      +
-                      {formatUsdc(
-                        parseFloat(circle.totalDiscountPoolFormatted) /
-                          circle.maxMembers
-                      )}{' '}
-                      mUSDC
+                      +{formatUsdc(withdrawBreakdown.discountBonusUsdc)} mUSDC
                     </span>
                   </div>
+                  {(withdrawBreakdown.yieldBonusUsdc > 0 ||
+                    circle.enableYieldVault !== false) && (
+                    <div className="flex justify-between">
+                      <span className="text-zinc-400">Lãi Yield Vault (6.5%):</span>
+                      <span className="font-bold text-emerald-400">
+                        +{formatUsdc(withdrawBreakdown.yieldBonusUsdc)} mUSDC
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <HoverHint
-                  hint="Rút lại toàn bộ thế chấp còn dư và phần tiền thưởng chiết khấu được chia đều"
+                  hint="Rút lại toàn bộ thế chấp còn dư, tiền thưởng chiết khấu và lãi Yield Vault được chia đều"
                   className="w-full"
                 >
                   <button
@@ -876,13 +888,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                   >
                     <Unlock className="h-4 w-4" />
                     <span>
-                      Rút +
-                      {formatUsdc(
-                        parseFloat(myMember.lockedCollateralFormatted) +
-                          parseFloat(circle.totalDiscountPoolFormatted) /
-                            circle.maxMembers
-                      )}{' '}
-                      mUSDC
+                      Rút +{formatUsdc(withdrawBreakdown.totalClaimableUsdc)} mUSDC
                     </span>
                   </button>
                 </HoverHint>

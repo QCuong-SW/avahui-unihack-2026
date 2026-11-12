@@ -156,7 +156,10 @@ export class UsersService {
       }
     }
 
-    const stats = await this.computeDashboardStats(walletAddresses);
+    const stats = await this.computeDashboardStats(
+      walletAddresses,
+      user.team1Verified,
+    );
     const primaryAddress =
       user.wallets.find((w) => w.isPrimary)?.address ??
       user.wallets[0]?.address ??
@@ -198,17 +201,60 @@ export class UsersService {
     return this.getUserProfileById(profile.id, profile.walletAddress);
   }
 
-  private async computeDashboardStats(walletAddresses: string[]) {
+  /** Computes deterministic on-chain ROSCA credit score (0..1000) and tier from indexed history. */
+  computeRoscaCreditProfile(input: {
+    completedCirclesCount: number;
+    onTimePaymentsCount: number;
+    defaultCount: number;
+    team1Verified: boolean;
+  }): { creditScore: number; creditTier: 'NEW' | 'TRUSTED' | 'EXPERT' } {
+    const rawScore =
+      500 +
+      input.onTimePaymentsCount * 25 +
+      input.completedCirclesCount * 80 +
+      (input.team1Verified ? 100 : 0) -
+      input.defaultCount * 150;
+    const creditScore = Math.max(0, Math.min(1000, rawScore));
+    const creditTier =
+      creditScore >= 750
+        ? 'EXPERT'
+        : creditScore >= 600
+          ? 'TRUSTED'
+          : 'NEW';
+    return { creditScore, creditTier };
+  }
+
+  private async computeDashboardStats(
+    walletAddresses: string[],
+    team1Verified = false,
+  ) {
     if (walletAddresses.length === 0) {
+      const credit = this.computeRoscaCreditProfile({
+        completedCirclesCount: 0,
+        onTimePaymentsCount: 0,
+        defaultCount: 0,
+        team1Verified,
+      });
       return {
         activeCirclesCount: 0,
         totalContributed: '0.00',
         totalCollateralLocked: '0.00',
         totalPayoutReceived: '0.00',
+        completedCirclesCount: 0,
+        onTimePaymentsCount: 0,
+        defaultCount: 0,
+        ...credit,
       };
     }
 
-    const [activeCirclesCount, contribAgg, collateralAgg, payoutAgg] = await Promise.all([
+    const [
+      activeCirclesCount,
+      completedCirclesCount,
+      defaultAgg,
+      contribAgg,
+      collateralAgg,
+      payoutAgg,
+    ] = await Promise.all([
       this.prisma.circleMember.count({
         where: {
           memberAddress: { in: walletAddresses },
@@ -217,12 +263,30 @@ export class UsersService {
           },
         },
       }),
+      this.prisma.circleMember.count({
+        where: {
+          memberAddress: { in: walletAddresses },
+          defaultCount: 0,
+          circle: {
+            status: CircleStatus.COMPLETED,
+          },
+        },
+      }),
+      typeof this.prisma.circleMember?.aggregate === 'function'
+        ? this.prisma.circleMember.aggregate({
+            where: {
+              memberAddress: { in: walletAddresses },
+            },
+            _sum: { defaultCount: true },
+          })
+        : Promise.resolve({ _sum: { defaultCount: 0 } }),
       this.prisma.contribution.aggregate({
         where: {
           memberAddress: { in: walletAddresses },
           isFromCollateralSlash: false,
         },
         _sum: { amount: true },
+        _count: { _all: true },
       }),
       this.prisma.collateral.aggregate({
         where: {
@@ -239,11 +303,26 @@ export class UsersService {
       }),
     ]);
 
+    const onTimePaymentsCount = Number(
+      (contribAgg as { _count?: { _all?: number } })?._count?._all ?? 0,
+    );
+    const defaultCount = Number(defaultAgg?._sum?.defaultCount ?? 0);
+    const credit = this.computeRoscaCreditProfile({
+      completedCirclesCount,
+      onTimePaymentsCount,
+      defaultCount,
+      team1Verified,
+    });
+
     return {
       activeCirclesCount,
       totalContributed: formatUsdcUnits(contribAgg._sum.amount ?? 0),
       totalCollateralLocked: formatUsdcUnits(collateralAgg._sum.currentLockedAmount ?? 0),
       totalPayoutReceived: formatUsdcUnits(payoutAgg._sum.netAmount ?? 0),
+      completedCirclesCount,
+      onTimePaymentsCount,
+      defaultCount,
+      ...credit,
     };
   }
 }

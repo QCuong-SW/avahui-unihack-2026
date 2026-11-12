@@ -110,6 +110,12 @@ interface IAvaHuiCircle {
         uint256 timestamp
     );
 
+    event ProtocolYieldFeePaid(
+        address indexed circleAddress,
+        address indexed treasury,
+        uint256 feeAmount
+    );
+
     // --- WRITE FUNCTIONS CHO FRONTEND ---
     function joinCircle() external;
     function joinCircleProtected(string calldata inviteCode, bytes32 identityNullifier) external;

@@ -82,5 +82,56 @@ contract AvaHuiSlashingTest is TestBase {
         assertEq(remainingCollat, 100 * 1e6, "Defaulted member collateral slashed from 200 to 100 mUSDC");
         assertEq(defaultCount, 1, "Default count incremented to 1");
     }
+
+    function testOneXCollateralDoesNotDeadlockOnRepeatDefault() public {
+        IAvaHuiFactory.CreateCircleParams memory params = IAvaHuiFactory.CreateCircleParams({
+            metadataId: "meta_1x_graceful",
+            name: "1x Collateral Anti-Deadlock Circle",
+            token: address(usdc),
+            allocationMode: 0, // FIXED
+            maxMembers: 5,
+            contributionAmount: CONTRIBUTION,
+            collateralAmount: CONTRIBUTION, // 1x collateral
+            roundDuration: 300,
+            biddingDuration: 0,
+            gracePeriod: 60,
+            startDeadline: block.timestamp + 3600,
+            minBid: 0,
+            maxBid: 0
+        });
+
+        vm.prank(users[0]);
+        AvaHuiCircle circle1x = AvaHuiCircle(factory.createCircle(params));
+
+        for (uint256 i = 0; i < 5; i++) {
+            vm.prank(users[i]);
+            usdc.approve(address(circle1x), type(uint256).max);
+            vm.prank(users[i]);
+            circle1x.joinCircle();
+        }
+
+        // Member 0 wins Round 1 (slot 1) then defaults Rounds 2..5!
+        for (uint8 r = 1; r <= 5; r++) {
+            uint256 startIdx = (r == 1) ? 0 : 1; // users[0] pays R1, skips R2..R5
+            for (uint256 i = startIdx; i < 5; i++) {
+                vm.prank(users[i]);
+                circle1x.contribute(r);
+            }
+            if (r > 1) {
+                vm.warp(block.timestamp + 361);
+            }
+            circle1x.settleRound(r);
+        }
+
+        assertEq(circle1x.status(), circle1x.STATUS_COMPLETED(), "Circle must complete all 5 rounds without deadlocking");
+
+        // Honest members still withdraw 100% of their 1x collateral
+        for (uint256 i = 1; i < 5; i++) {
+            uint256 balBefore = usdc.balanceOf(users[i]);
+            vm.prank(users[i]);
+            circle1x.withdrawCollateral();
+            assertEq(usdc.balanceOf(users[i]) - balBefore, CONTRIBUTION, "Honest member recovers 100% collateral");
+        }
+    }
 }
 
