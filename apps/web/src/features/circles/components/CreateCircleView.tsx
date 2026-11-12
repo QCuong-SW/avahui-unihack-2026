@@ -65,6 +65,10 @@ export function CreateCircleView() {
       gracePeriodSeconds: CIRCLE_CONSTRAINTS.DEFAULT_GRACE_PERIOD_SECONDS,
       minBidUsdc: 2,
       maxBidUsdc: 35,
+      isSealedBid: true,
+      isYieldEnabled: true,
+      isPrivateCircle: false,
+      requiresAttestation: true,
     },
   });
 
@@ -413,6 +417,76 @@ export function CreateCircleView() {
                 {...register('gracePeriodSeconds', { valueAsNumber: true })}
                 className="mt-1 w-full rounded-none border border-zinc-700 bg-zinc-900 px-3 py-1.5 font-mono text-xs text-white"
               />
+            </div>
+          </div>
+
+          {/* V2 Security & DeFi Expansion Module */}
+          <div className="space-y-3 rounded-none border border-emerald-500/30 bg-emerald-500/5 p-5">
+            <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
+              <span className="font-mono text-xs font-bold uppercase tracking-wider text-emerald-400">
+                4. V2 Security &amp; DeFi Expansion Modules
+              </span>
+              <span className="rounded-none border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-emerald-300">
+                Protocol V2
+              </span>
+            </div>
+
+            <div className="grid gap-2.5 sm:grid-cols-2 font-mono text-xs">
+              <label className="flex cursor-pointer items-start gap-2.5 rounded-none border border-zinc-800 bg-zinc-900/90 p-3 hover:border-emerald-500/40">
+                <input
+                  type="checkbox"
+                  {...register('isSealedBid')}
+                  className="mt-0.5 h-4 w-4 accent-emerald-500"
+                />
+                <div>
+                  <div className="font-bold text-white">Sealed-Bid (Commit-Reveal)</div>
+                  <div className="text-[11px] text-zinc-400">
+                    Đấu giá kín 2 pha bằng Keccak256 + Salt chống lộ giá &amp; MEV Sniping
+                  </div>
+                </div>
+              </label>
+
+              <label className="flex cursor-pointer items-start gap-2.5 rounded-none border border-zinc-800 bg-zinc-900/90 p-3 hover:border-emerald-500/40">
+                <input
+                  type="checkbox"
+                  {...register('isYieldEnabled')}
+                  className="mt-0.5 h-4 w-4 accent-emerald-500"
+                />
+                <div>
+                  <div className="font-bold text-emerald-400">ERC-4626 DeFi Yield (8% APY)</div>
+                  <div className="text-[11px] text-zinc-400">
+                    Tự động gửi thế chấp nhàn rỗi vào AvaHuiYieldVault sinh lời kép
+                  </div>
+                </div>
+              </label>
+
+              <label className="flex cursor-pointer items-start gap-2.5 rounded-none border border-zinc-800 bg-zinc-900/90 p-3 hover:border-emerald-500/40">
+                <input
+                  type="checkbox"
+                  {...register('requiresAttestation')}
+                  className="mt-0.5 h-4 w-4 accent-emerald-500"
+                />
+                <div>
+                  <div className="font-bold text-sky-400">Team1 Sybil Attestation</div>
+                  <div className="text-[11px] text-zinc-400">
+                    Bắt buộc xác thực định danh Unique Human Nullifier chống nhiều ví ảo
+                  </div>
+                </div>
+              </label>
+
+              <label className="flex cursor-pointer items-start gap-2.5 rounded-none border border-zinc-800 bg-zinc-900/90 p-3 hover:border-emerald-500/40">
+                <input
+                  type="checkbox"
+                  {...register('isPrivateCircle')}
+                  className="mt-0.5 h-4 w-4 accent-emerald-500"
+                />
+                <div>
+                  <div className="font-bold text-amber-300">Private Invite Voucher (EIP-712)</div>
+                  <div className="text-[11px] text-zinc-400">
+                    Chỉ cho phép tham gia qua Link mời chữ ký số dùng 1 lần từ Chủ hụi
+                  </div>
+                </div>
+              </label>
             </div>
           </div>
         </div>

@@ -9,7 +9,11 @@ import { publicClient } from '@/lib/wagmi/client';
 import { frontendEnv } from '@/config/env';
 import { transactionApi } from '@/lib/api';
 import { useTxLifecycle } from '@/features/transactions/hooks/useTxLifecycle';
-import { useAvaHuiState, useFaucetMint } from '@/hooks/useAvaHuiMockQuery';
+import {
+  useAvaHuiState,
+  useFaucetMint,
+  useSwapAvaxMutation,
+} from '@/hooks/useAvaHuiMockQuery';
 import { generateMockTxHash } from '@/lib/utils';
 
 declare global {
@@ -24,6 +28,7 @@ export function useTokenOperations() {
   const { data: state } = useAvaHuiState();
   const { runTransaction } = useTxLifecycle();
   const mockFaucetMutation = useFaucetMint();
+  const mockSwapMutation = useSwapAvaxMutation();
   const [isOperating, setIsOperating] = useState(false);
 
   const currentUser =
@@ -214,10 +219,35 @@ export function useTokenOperations() {
     [currentUser?.walletAddress, runTransaction],
   );
 
+  /**
+   * V2: 1-Click Swap AVAX -> mUSDC via MockAvaxUsdcSwap Adapter
+   */
+  const swapAvaxToUsdc = useCallback(
+    async (avaxAmount: number = 0.25) => {
+      const expectedUsdc = (avaxAmount * 40).toFixed(2);
+      return runTransaction({
+        title: `Quick Swap ${avaxAmount} AVAX -> +${expectedUsdc} mUSDC`,
+        description:
+          'Hoán đổi tức thì AVAX sang mUSDC trên Avalanche Fuji để khóa thế chấp',
+        action: async () => {
+          setIsOperating(true);
+          try {
+            const res = await mockSwapMutation.mutateAsync(avaxAmount);
+            return { txHash: res.txHash };
+          } finally {
+            setIsOperating(false);
+          }
+        },
+      });
+    },
+    [mockSwapMutation, runTransaction],
+  );
+
   return {
     getBalance,
     getAllowance,
     requestFaucet,
+    swapAvaxToUsdc,
     approveToken,
     isOperating,
   };

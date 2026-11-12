@@ -33,6 +33,10 @@ export interface UserProfileDto {
   avaxBalance?: string;
   usdcBalance?: string;
   usdcAllowance?: string;
+  isTeam1Verified?: boolean;
+  identityHash?: string | null;
+  trustTier?: number;
+  lastFaucetClaimAt?: string | null;
   stats: UserStatsDto;
 }
 
@@ -45,6 +49,10 @@ export interface UserProfile {
   avaxBalance: string;
   usdcBalance: string;
   usdcAllowance: string;
+  isTeam1Verified?: boolean;
+  identityHash?: string | null;
+  trustTier?: number;
+  lastFaucetClaimAt?: string | null;
   stats: UserStats;
 }
 
@@ -110,12 +118,23 @@ export interface PayoutDto {
   paidAt: string;
 }
 
+export interface BidCommitmentDto {
+  bidderAddress: string;
+  bidderName: string | null;
+  commitment: string;
+  committedAt: string;
+  revealed: boolean;
+  revealedAmountFormatted?: string;
+  txHash?: string;
+}
+
 export interface RoundDetailDto {
   id?: string;
   roundNumber: number;
   status: RoundStatus;
   startTime: string | null;
   contributionDeadline: string | null;
+  commitDeadline?: string | null;
   biddingDeadline: string | null;
   graceDeadline: string | null;
   winnerAddress: string | null;
@@ -131,6 +150,8 @@ export interface RoundDetailDto {
   contributionsCount: number;
   contributions: ContributionDto[];
   bids: BidDto[];
+  commitmentsCount?: number;
+  commitments?: BidCommitmentDto[];
   payout?: PayoutDto | null;
 }
 export type CircleRoundItem = RoundDetailDto;
@@ -167,6 +188,13 @@ export interface CircleDetailDto {
   maxBidFormatted: string;
   totalDiscountPool: string;
   totalDiscountPoolFormatted: string;
+  isSealedBid?: boolean;
+  isYieldEnabled?: boolean;
+  yieldApyBps?: number;
+  totalYieldEarned?: string;
+  totalYieldEarnedFormatted?: string;
+  isPrivateCircle?: boolean;
+  requiresAttestation?: boolean;
   creationTxHash?: string | null;
   createdAt: string;
   members: CircleMemberDto[];
@@ -187,6 +215,10 @@ export interface CreateCircleFormInput {
   gracePeriodSeconds: number;
   minBidUsdc: number;
   maxBidUsdc: number;
+  isSealedBid?: boolean;
+  isYieldEnabled?: boolean;
+  isPrivateCircle?: boolean;
+  requiresAttestation?: boolean;
 }
 
 export interface TransactionRecordDto {

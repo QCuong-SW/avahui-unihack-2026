@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 interface IAvaHuiCircle {
-    // --- EVENTS CHO BACKEND INDEXER ---
+    // --- EVENTS CHO BACKEND INDEXER (V1 CORE) ---
     event MemberJoined(
         address indexed circleAddress,
         address indexed member,
@@ -70,10 +70,49 @@ interface IAvaHuiCircle {
         uint256 timestamp
     );
 
-    // --- WRITE FUNCTIONS CHO FRONTEND ---
+    // --- EVENTS MỞ RỘNG (V2 SECURITY & DEFI) ---
+    event BidCommitted(
+        address indexed circleAddress,
+        uint8 indexed roundNumber,
+        address indexed bidder,
+        bytes32 commitment,
+        uint256 timestamp
+    );
+
+    event BidRevealed(
+        address indexed circleAddress,
+        uint8 indexed roundNumber,
+        address indexed bidder,
+        uint256 bidAmount,
+        uint256 timestamp
+    );
+
+    event YieldHarvested(
+        address indexed circleAddress,
+        address indexed member,
+        uint256 yieldAmount
+    );
+
+    event AttestationVerified(
+        address indexed circleAddress,
+        address indexed member,
+        bytes32 indexed identityHash,
+        uint8 trustTier
+    );
+
+    // --- WRITE FUNCTIONS (V1 + V2) ---
     function joinCircle() external;
+    function joinCircleWithVoucher(
+        uint256 nonce,
+        uint256 expiresAt,
+        bytes calldata inviteSignature,
+        bytes32 identityHash,
+        bytes calldata attestationSignature
+    ) external;
     function contribute(uint8 roundNumber) external;
     function submitBid(uint8 roundNumber, uint256 bidAmount) external;
+    function commitBid(uint8 roundNumber, bytes32 commitment) external;
+    function revealBid(uint8 roundNumber, uint256 bidAmount, bytes32 salt) external;
     function settleRound(uint8 roundNumber) external;
     function withdrawCollateral() external;
     function cancelExpiredCircle() external;
@@ -90,4 +129,3 @@ interface IAvaHuiCircle {
         uint256 totalDiscountPool
     );
 }
-

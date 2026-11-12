@@ -1,0 +1,56 @@
+export const AvaHuiYieldVaultABI = [
+  {
+    type: 'function',
+    name: 'asset',
+    inputs: [],
+    outputs: [{ name: '', type: 'address', internalType: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'deposit',
+    inputs: [
+      { name: 'assets', type: 'uint256', internalType: 'uint256' },
+      { name: 'receiver', type: 'address', internalType: 'address' },
+    ],
+    outputs: [{ name: 'shares', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'withdraw',
+    inputs: [
+      { name: 'assets', type: 'uint256', internalType: 'uint256' },
+      { name: 'receiver', type: 'address', internalType: 'address' },
+      { name: 'owner', type: 'address', internalType: 'address' },
+    ],
+    outputs: [{ name: 'shares', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'redeem',
+    inputs: [
+      { name: 'shares', type: 'uint256', internalType: 'uint256' },
+      { name: 'receiver', type: 'address', internalType: 'address' },
+      { name: 'owner', type: 'address', internalType: 'address' },
+    ],
+    outputs: [{ name: 'assets', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'previewRedeem',
+    inputs: [{ name: 'shares', type: 'uint256', internalType: 'uint256' }],
+    outputs: [{ name: 'assets', type: 'uint256', internalType: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'accrueDemoYield',
+    inputs: [{ name: 'bonusAssets', type: 'uint256', internalType: 'uint256' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+] as const;
+

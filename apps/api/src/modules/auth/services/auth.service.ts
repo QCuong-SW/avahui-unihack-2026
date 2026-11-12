@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { createHash } from 'crypto';
 import { PrismaService } from '../../../database/prisma.service';
 import { SyncAuthDto } from '../dto/sync-auth.dto';
 import { AuthenticatedUser } from '../../../common/decorators/current-user.decorator';
@@ -7,6 +8,8 @@ import { UsersService } from '../../users/services/users.service';
 
 @Injectable()
 export class AuthService {
+  private readonly faucetCooldownMap = new Map<string, number>();
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly usersService: UsersService,
@@ -71,6 +74,81 @@ export class AuthService {
     });
 
     return this.usersService.getUserProfileById(userId, walletAddress);
+  }
+
+  async issueTeam1Attestation(
+    authUser: AuthenticatedUser,
+    body: { walletAddress?: string; email?: string },
+  ) {
+    const subject = normalizeAddress(
+      body?.walletAddress ||
+        authUser.walletAddress ||
+        '0x71c95911e9a5d330f4d621842ec243ee13432921',
+    );
+    const uniqueHumanKey = (
+      body?.email ||
+      authUser.email ||
+      authUser.privyDid ||
+      subject
+    )
+      .trim()
+      .toLowerCase();
+
+    const identityHash =
+      '0x' +
+      createHash('sha256')
+        .update(`avahui:team1:identity:${uniqueHumanKey}`)
+        .digest('hex');
+
+    const attestationSig =
+      '0x' +
+      createHash('sha256')
+        .update(`avahui:team1:sig:${subject}:${identityHash}:2`)
+        .digest('hex');
+
+    const issuedAt = Math.floor(Date.now() / 1000);
+    const expiresAt = issuedAt + 30 * 86400;
+
+    return {
+      subject,
+      identityHash,
+      trustTier: 2,
+      issuedAt,
+      expiresAt,
+      attestationSig,
+      isTeam1Verified: true,
+    };
+  }
+
+  async checkAndRecordFaucetClaim(
+    authUser: AuthenticatedUser,
+    walletAddressInput?: string,
+  ) {
+    const walletAddress = normalizeAddress(
+      walletAddressInput ||
+        authUser.walletAddress ||
+        '0x71c95911e9a5d330f4d621842ec243ee13432921',
+    );
+    const cooldownSeconds = 60;
+    const nowSec = Math.floor(Date.now() / 1000);
+    const lastClaimSec = this.faucetCooldownMap.get(walletAddress) || 0;
+    const remainingCooldownSeconds = Math.max(
+      0,
+      lastClaimSec + cooldownSeconds - nowSec,
+    );
+
+    if (remainingCooldownSeconds === 0) {
+      this.faucetCooldownMap.set(walletAddress, nowSec);
+    }
+
+    return {
+      walletAddress,
+      allowed: remainingCooldownSeconds === 0,
+      remainingCooldownSeconds,
+      cooldownSeconds,
+      lastClaimedAt:
+        lastClaimSec > 0 ? new Date(lastClaimSec * 1000).toISOString() : null,
+    };
   }
 }
 

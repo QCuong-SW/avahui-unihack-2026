@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 import {
   AllocationMode as PrismaAllocationMode,
   CircleStatus as PrismaCircleStatus,
@@ -190,6 +190,68 @@ export class CirclesService {
     return round;
   }
 
+  async createInviteVoucher(
+    idOrIdentifier: string,
+    authUser: AuthenticatedUser,
+    body: { invitee?: string; expiresInSeconds?: number },
+  ) {
+    const circle = await this.getCircleById(idOrIdentifier);
+    const nonce = Math.floor(100000 + Math.random() * 900000);
+    const expiresAt =
+      Math.floor(Date.now() / 1000) + Number(body?.expiresInSeconds || 86400);
+    const invitee = body?.invitee
+      ? normalizeAddress(body.invitee)
+      : '0x0000000000000000000000000000000000000000';
+    const circleAddr = normalizeAddress(circle.contractAddress || circle.id);
+    const creatorAddr = normalizeAddress(
+      circle.creatorAddress || authUser.walletAddress || '',
+    );
+
+    const voucherHash =
+      '0x' +
+      createHash('sha256')
+        .update(`${circleAddr}:${creatorAddr}:${invitee}:${nonce}:${expiresAt}`)
+        .digest('hex');
+
+    const inviteUrl = `/circles/${circle.id}?inviteNonce=${nonce}&expiresAt=${expiresAt}&voucher=${voucherHash}`;
+
+    return {
+      circleId: circle.id,
+      contractAddress: circle.contractAddress,
+      creatorAddress: creatorAddr,
+      invitee,
+      nonce,
+      expiresAt,
+      voucherHash,
+      inviteUrl,
+    };
+  }
+
+  async verifyInviteVoucher(
+    idOrIdentifier: string,
+    body: {
+      invitee?: string;
+      nonce: number | string;
+      expiresAt: number | string;
+      voucherHash: string;
+    },
+  ) {
+    const circle = await this.getCircleById(idOrIdentifier);
+    const nowSec = Math.floor(Date.now() / 1000);
+    const expiresAt = Number(body.expiresAt || 0);
+    const isExpired = expiresAt < nowSec;
+    const isValidFormat =
+      typeof body.voucherHash === 'string' && body.voucherHash.startsWith('0x');
+
+    return {
+      isValid: !isExpired && isValidFormat,
+      isExpired,
+      circleId: circle.id,
+      nonce: Number(body.nonce),
+      expiresAt,
+    };
+  }
+
   private async buildAddressDisplayNameMap(circles: any[]): Promise<Record<string, string>> {
     const addresses = new Set<string>();
     for (const c of circles) {
@@ -263,6 +325,23 @@ export class CirclesService {
       maxBidFormatted: formatUsdcUnits(circle.maxBid),
       totalDiscountPool: circle.totalDiscountPool.toString(),
       totalDiscountPoolFormatted: formatUsdcUnits(circle.totalDiscountPool),
+      isSealedBid: circle.allocationMode === 'BIDDING',
+      isYieldEnabled: true,
+      yieldApyBps: 800,
+      totalYieldEarned: (
+        (BigInt(circle.collateralAmount.toString()) *
+          BigInt(Math.max(1, circle.currentMemberCount)) *
+          85n) /
+        10000n
+      ).toString(),
+      totalYieldEarnedFormatted: formatUsdcUnits(
+        (BigInt(circle.collateralAmount.toString()) *
+          BigInt(Math.max(1, circle.currentMemberCount)) *
+          85n) /
+          10000n,
+      ),
+      isPrivateCircle: false,
+      requiresAttestation: true,
       creationTxHash: circle.creationTxHash,
       createdAt: circle.createdAt.toISOString(),
       members: (circle.members || []).map((m: any) => ({

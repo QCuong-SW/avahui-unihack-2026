@@ -5,6 +5,7 @@ import {
   useAvaHuiState,
   useResetDemoData,
   useUpdateProfileMutation,
+  useVerifyAttestationMutation,
 } from '@/hooks/useAvaHuiMockQuery';
 import { useTokenOperations } from '@/hooks/useTokenOperations';
 import { useTxLifecycle } from '@/features/transactions/hooks/useTxLifecycle';
@@ -21,6 +22,7 @@ import {
   KeyRound,
   RefreshCw,
   Save,
+  ShieldCheck,
   UserCircle,
   Wallet,
 } from 'lucide-react';
@@ -29,6 +31,7 @@ import Link from 'next/link';
 export function ProfileView() {
   const { data: state, isLoading } = useAvaHuiState();
   const updateProfileMutation = useUpdateProfileMutation();
+  const verifyAttestationMutation = useVerifyAttestationMutation();
   const { requestFaucet, isOperating: isFaucetOperating } = useTokenOperations();
   const resetMutation = useResetDemoData();
 
@@ -122,7 +125,40 @@ export function ProfileView() {
             </div>
           </form>
 
-          <div className="border-t border-zinc-800 pt-4">
+          <div className="border-t border-zinc-800 pt-4 space-y-3">
+            {/* V2 Team1 Sybil Attestation Card */}
+            <div className="rounded-none border border-sky-500/30 bg-sky-500/10 p-3 font-mono text-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5 font-bold uppercase text-sky-300">
+                  <ShieldCheck className="h-4 w-4 text-sky-400" />
+                  <span>Team1 Sybil Attestation</span>
+                </span>
+                <span className="rounded-none border border-sky-500/40 bg-sky-500/20 px-2 py-0.5 text-[10px] font-bold uppercase text-sky-200">
+                  Tier #{currentUser.trustTier || 2}
+                </span>
+              </div>
+              <p className="text-[11px] text-zinc-300">
+                Mã băm định danh duy nhất (Identity Nullifier) bảo vệ chống 1 cá nhân dùng nhiều ví tham gia cùng dây hụi.
+              </p>
+              {currentUser.isTeam1Verified ? (
+                <div className="rounded-none border border-emerald-500/30 bg-zinc-950/80 px-2.5 py-1.5 text-[11px] text-emerald-400">
+                  Verified Nullifier:{' '}
+                  <span className="text-zinc-300">
+                    {(currentUser.identityHash || '0x1111...1111').slice(0, 18)}...
+                  </span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => verifyAttestationMutation.mutate()}
+                  disabled={verifyAttestationMutation.isPending}
+                  className="w-full rounded-none border border-sky-400 bg-sky-500/20 px-3 py-1.5 font-mono text-xs font-bold uppercase text-sky-200 transition hover:bg-sky-500 hover:text-zinc-950"
+                >
+                  Xác thực định danh Team1 (Miễn phí Gas)
+                </button>
+              )}
+            </div>
+
             <HoverHint
               hint="Khôi phục toàn bộ dây hụi, số dư và lịch sử giao dịch về trạng thái mặc định ban đầu"
               side="bottom"

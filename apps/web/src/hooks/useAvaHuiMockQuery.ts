@@ -11,7 +11,9 @@ import {
   mockJoinCircle,
   mockSettleRound,
   mockSubmitBid,
+  mockSwapAvaxToUsdc,
   mockUpdateUserProfile,
+  mockVerifyTeam1Attestation,
   mockWithdrawCollateral,
   resetMockState,
   switchMockUser,
@@ -312,6 +314,34 @@ export function useUpdateProfileMutation() {
     },
     onSuccess: (newState) => {
       queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, newState);
+      queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
+    },
+  });
+}
+
+export function useSwapAvaxMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (avaxAmount?: number) => {
+      await new Promise((r) => setTimeout(r, 600));
+      return mockSwapAvaxToUsdc(avaxAmount);
+    },
+    onSuccess: ({ state }) => {
+      queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, state);
+      queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
+    },
+  });
+}
+
+export function useVerifyAttestationMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      await new Promise((r) => setTimeout(r, 500));
+      return mockVerifyTeam1Attestation();
+    },
+    onSuccess: ({ state }) => {
+      queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, state);
       queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
     },
   });

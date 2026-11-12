@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import {
   AllocationMode,
@@ -10,15 +10,19 @@ import {
 import { formatUsdc, shortenAddress } from '@/lib/utils';
 import { frontendEnv } from '@/config/env';
 import { HoverHint } from '@/components/ui/HoverHint';
+import { useCircleActions } from '@/hooks/useCircleActions';
 import {
   ArrowLeft,
+  Check,
   Clock,
   Coins,
   ExternalLink,
   Gavel,
   Layers,
+  Link2,
   Lock,
   Repeat,
+  ShieldCheck,
   Sparkles,
   Users,
 } from 'lucide-react';
@@ -28,8 +32,19 @@ interface CircleHeaderProps {
 }
 
 export function CircleHeader({ circle }: CircleHeaderProps) {
+  const { generateInviteVoucherLink } = useCircleActions();
+  const [copiedInvite, setCopiedInvite] = useState(false);
   const basePot =
     parseFloat(circle.contributionAmountFormatted) * circle.maxMembers;
+
+  const handleCopyInviteVoucher = () => {
+    const { inviteUrl } = generateInviteVoucherLink(circle);
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(inviteUrl).catch(() => {});
+    }
+    setCopiedInvite(true);
+    setTimeout(() => setCopiedInvite(false), 2500);
+  };
 
   return (
     <section className="rounded-none border border-zinc-800 bg-surface-card p-4 sm:p-6 shadow-xl">
@@ -123,6 +138,53 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
               <Clock className="h-3.5 w-3.5 text-zinc-500" />
               <span>{circle.roundDurationSeconds}s</span>
             </span>
+          </HoverHint>
+
+          {circle.allocationMode === AllocationMode.BIDDING && (
+            <HoverHint hint="V2 Sealed-Bid Commit-Reveal: Mã hóa giá đấu bằng Keccak256 + Salt chống lộ giá trên Mempool">
+              <span className="inline-flex items-center gap-1 rounded-none border border-avalanche-red/40 bg-avalanche-red/15 px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider text-avalanche-red">
+                <Lock className="h-3 w-3" />
+                <span>SEALED-BID</span>
+              </span>
+            </HoverHint>
+          )}
+
+          {(circle.isYieldEnabled ?? true) && (
+            <HoverHint hint="V2 ERC-4626 Yield Vault: Thế chấp nhàn rỗi đang tự động sinh lãi 8.0% APY và chia đều cuối kỳ">
+              <span className="inline-flex items-center gap-1 rounded-none border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider text-emerald-400">
+                <Sparkles className="h-3 w-3" />
+                <span>YIELD 8% APY</span>
+              </span>
+            </HoverHint>
+          )}
+
+          {(circle.requiresAttestation ?? true) && (
+            <HoverHint hint="V2 Team1 Attestation Verifier: Chống tấn công Sybil bằng mã băm định danh duy nhất (Identity Nullifier)">
+              <span className="inline-flex items-center gap-1 rounded-none border border-sky-500/40 bg-sky-500/15 px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider text-sky-400">
+                <ShieldCheck className="h-3 w-3" />
+                <span>TEAM1 SYBIL-SAFE</span>
+              </span>
+            </HoverHint>
+          )}
+
+          <HoverHint hint="Tạo và sao chép đường dẫn vé mời chữ ký số EIP-712 dùng 1 lần (Stateless Off-chain Invite Voucher)">
+            <button
+              type="button"
+              onClick={handleCopyInviteVoucher}
+              className="inline-flex items-center gap-1.5 rounded-none border border-zinc-700 bg-zinc-900 px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider text-zinc-200 transition hover:border-emerald-400 hover:text-emerald-300"
+            >
+              {copiedInvite ? (
+                <>
+                  <Check className="h-3.5 w-3.5 text-emerald-400" />
+                  <span className="text-emerald-400">Copied EIP-712 Link!</span>
+                </>
+              ) : (
+                <>
+                  <Link2 className="h-3.5 w-3.5 text-amber-400" />
+                  <span>Invite Link</span>
+                </>
+              )}
+            </button>
           </HoverHint>
         </div>
       </div>

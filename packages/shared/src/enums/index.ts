@@ -3,6 +3,11 @@ export enum AllocationMode {
   BIDDING = 'BIDDING',   // 1 trên Smart Contract
 }
 
+export enum BiddingMechanism {
+  OPEN = 'OPEN',
+  SEALED_COMMIT_REVEAL = 'SEALED_COMMIT_REVEAL',
+}
+
 export enum CircleStatus {
   Draft = 'DRAFT',           // Chỉ tồn tại off-chain khi đang tạo
   Recruiting = 'RECRUITING', // 0 trên SC: Đang gom thành viên
@@ -30,6 +35,9 @@ export enum TransactionType {
   JOIN_CIRCLE = 'JOIN_CIRCLE',
   CONTRIBUTE = 'CONTRIBUTE',
   PLACE_BID = 'PLACE_BID',
+  COMMIT_BID = 'COMMIT_BID',
+  REVEAL_BID = 'REVEAL_BID',
+  SWAP_AVAX_TO_USDC = 'SWAP_AVAX_TO_USDC',
   SETTLE_ROUND = 'SETTLE_ROUND',
   WITHDRAW_COLLATERAL = 'WITHDRAW_COLLATERAL',
   CANCEL_CIRCLE = 'CANCEL_CIRCLE',

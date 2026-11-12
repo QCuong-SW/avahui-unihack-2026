@@ -63,5 +63,36 @@ export class CirclesController {
   ) {
     return this.circlesService.getRoundDetail(id, roundNumber);
   }
+
+  @Post(':id/invites')
+  @UseGuards(PrivyAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Tạo vé mời chữ ký số (EIP-712 Invite Voucher) dùng một lần cho dây hụi riêng tư (V2)',
+  })
+  async createInviteVoucher(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() body: { invitee?: string; expiresInSeconds?: number },
+  ) {
+    return this.circlesService.createInviteVoucher(id, user, body);
+  }
+
+  @Post(':id/invites/verify')
+  @ApiOperation({
+    summary: 'Xác minh vé mời chữ ký số (EIP-712 Invite Voucher) trước khi tham gia (V2)',
+  })
+  async verifyInviteVoucher(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      invitee?: string;
+      nonce: number | string;
+      expiresAt: number | string;
+      voucherHash: string;
+    },
+  ) {
+    return this.circlesService.verifyInviteVoucher(id, body);
+  }
 }
 

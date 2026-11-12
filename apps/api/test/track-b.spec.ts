@@ -38,11 +38,26 @@ describe('Track B — Smart Contracts Compilation, ABI Parity, REST API & Indexe
         'interfaces/IAvaHuiCircle.sol': {
           content: readSoliditySource('interfaces/IAvaHuiCircle.sol'),
         },
+        'interfaces/IYieldVault.sol': {
+          content: readSoliditySource('interfaces/IYieldVault.sol'),
+        },
+        'interfaces/ITeam1AttestationVerifier.sol': {
+          content: readSoliditySource('interfaces/ITeam1AttestationVerifier.sol'),
+        },
         'libraries/SecurityLib.sol': {
           content: readSoliditySource('libraries/SecurityLib.sol'),
         },
         'mocks/MockUSDC.sol': {
           content: readSoliditySource('mocks/MockUSDC.sol'),
+        },
+        'mocks/AvaHuiYieldVault.sol': {
+          content: readSoliditySource('mocks/AvaHuiYieldVault.sol'),
+        },
+        'mocks/MockAvaxUsdcSwap.sol': {
+          content: readSoliditySource('mocks/MockAvaxUsdcSwap.sol'),
+        },
+        'verifiers/Team1AttestationVerifier.sol': {
+          content: readSoliditySource('verifiers/Team1AttestationVerifier.sol'),
         },
         'AvaHuiCircle.sol': {
           content: readSoliditySource('AvaHuiCircle.sol'),
@@ -52,6 +67,7 @@ describe('Track B — Smart Contracts Compilation, ABI Parity, REST API & Indexe
         },
       },
       settings: {
+        viaIR: true,
         optimizer: { enabled: true, runs: 200 },
         outputSelection: {
           '*': {
@@ -257,5 +273,22 @@ describe('Track B — Smart Contracts Compilation, ABI Parity, REST API & Indexe
     expect(tracked.status).toBe('PENDING');
     expect(tracked.txType).toBe('CREATE_CIRCLE');
     expect(tracked.circleName).toBe('Hụi Đầu Tư Avalanche UniHack');
+
+    const invite = await circlesService.createInviteVoucher(
+      draft.id,
+      {
+        privyDid: 'did:privy:usr_01HXYZ1',
+        walletAddress: '0x71C95911E9a5D330f4D621842EC243EE13432921',
+      },
+      { expiresInSeconds: 3600 },
+    );
+    expect(invite.voucherHash).toMatch(/^0x[0-9a-f]{64}$/);
+
+    const verified = await circlesService.verifyInviteVoucher(draft.id, {
+      nonce: invite.nonce,
+      expiresAt: invite.expiresAt,
+      voucherHash: invite.voucherHash,
+    });
+    expect(verified.isValid).toBe(true);
   });
 });

@@ -1,5 +1,6 @@
 /**
- * Compiles @avahui/contracts using solc 0.8.24 and outputs artifacts to apps/contracts/out/
+ * Compiles @avahui/contracts (V1 + V2 Security & DeFi modules) using solc 0.8.24
+ * and outputs artifacts to apps/contracts/out/
  */
 const fs = require('fs');
 const path = require('path');
@@ -14,10 +15,15 @@ function main() {
 
   const files = [
     'interfaces/IERC20Minimal.sol',
+    'interfaces/IYieldVault.sol',
+    'interfaces/ITeam1AttestationVerifier.sol',
     'interfaces/IAvaHuiFactory.sol',
     'interfaces/IAvaHuiCircle.sol',
     'libraries/SecurityLib.sol',
     'mocks/MockUSDC.sol',
+    'mocks/AvaHuiYieldVault.sol',
+    'mocks/MockAvaxUsdcSwap.sol',
+    'verifiers/Team1AttestationVerifier.sol',
     'AvaHuiCircle.sol',
     'AvaHuiFactory.sol',
   ];
@@ -33,6 +39,7 @@ function main() {
     language: 'Solidity',
     sources,
     settings: {
+      viaIR: true,
       optimizer: { enabled: true, runs: 200 },
       outputSelection: {
         '*': {
@@ -72,4 +79,3 @@ function main() {
 }
 
 main();
-

@@ -282,6 +282,18 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
         case 'CircleCancelled':
           await this.handleCircleCancelled(tx, event, txHash);
           break;
+        case 'BidCommitted':
+          await this.handleBidCommitted(tx, event, txHash);
+          break;
+        case 'BidRevealed':
+          await this.handleBidRevealed(tx, event, txHash);
+          break;
+        case 'YieldHarvested':
+          await this.handleYieldHarvested(tx, event, txHash);
+          break;
+        case 'AttestationVerified':
+          await this.handleAttestationVerified(tx, event, txHash);
+          break;
       }
     });
 
@@ -974,6 +986,91 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
       circleAddress,
       circle.id,
       TxType.CANCEL_CIRCLE,
+    );
+  }
+
+  private async handleBidCommitted(
+    tx: Prisma.TransactionClient,
+    event: IndexedEventInput,
+    txHash: string,
+  ) {
+    const args = event.args;
+    const circleAddress = normalizeAddress(args.circleAddress || event.contractAddress);
+    const roundNumber = Number(args.roundNumber);
+    const bidderAddress = normalizeAddress(args.bidder);
+
+    const circle = await tx.circle.findUnique({
+      where: { contractAddress: circleAddress },
+    });
+    if (!circle) return;
+
+    await this.ensureRoundExists(tx, circle, roundNumber);
+
+    await this.notifyCircleMembers(
+      tx,
+      circle.id,
+      `Thăm đấu giá kín mới Vòng #${roundNumber}`,
+      `Thành viên ${bidderAddress.slice(0, 6)}...${bidderAddress.slice(-4)} đã gửi cam kết mật mã (Sealed-Bid Commitment) cho Vòng #${roundNumber}.`,
+    );
+
+    await this.confirmTransactionRecord(
+      tx,
+      event,
+      txHash,
+      bidderAddress,
+      circleAddress,
+      circle.id,
+      TxType.PLACE_BID,
+    );
+  }
+
+  private async handleBidRevealed(
+    tx: Prisma.TransactionClient,
+    event: IndexedEventInput,
+    txHash: string,
+  ) {
+    await this.handleBidSubmitted(tx, event, txHash);
+  }
+
+  private async handleYieldHarvested(
+    tx: Prisma.TransactionClient,
+    event: IndexedEventInput,
+    _txHash: string,
+  ) {
+    const args = event.args;
+    const circleAddress = normalizeAddress(args.circleAddress || event.contractAddress);
+    const yieldEarned = String(args.yieldEarned || '0');
+
+    const circle = await tx.circle.findUnique({
+      where: { contractAddress: circleAddress },
+    });
+    if (!circle) return;
+
+    await this.notifyCircleMembers(
+      tx,
+      circle.id,
+      `Thu hoạch lợi suất DeFi — "${circle.name}"`,
+      `Quỹ thế chấp đã sinh lời ${formatUsdcUnits(yieldEarned)} mUSDC từ ERC-4626 Yield Vault và sẵn sàng phân bổ khi rút thế chấp!`,
+    );
+  }
+
+  private async handleAttestationVerified(
+    tx: Prisma.TransactionClient,
+    event: IndexedEventInput,
+    _txHash: string,
+  ) {
+    const args = event.args;
+    const circleAddress = normalizeAddress(args.circleAddress || event.contractAddress);
+    const memberAddress = normalizeAddress(args.member);
+    const identityHash = String(args.identityHash || '');
+
+    const circle = await tx.circle.findUnique({
+      where: { contractAddress: circleAddress },
+    });
+    if (!circle) return;
+
+    this.logger.log(
+      `Team1 Sybil Attestation verified for ${memberAddress} (identityHash=${identityHash.slice(0, 14)}...) in circle ${circle.id}`,
     );
   }
 

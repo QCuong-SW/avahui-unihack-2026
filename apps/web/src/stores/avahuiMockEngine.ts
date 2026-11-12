@@ -181,6 +181,14 @@ export function mockCreateCircle(input: CreateCircleFormInput): {
     maxBidFormatted: input.maxBidUsdc.toFixed(2),
     totalDiscountPool: '0',
     totalDiscountPoolFormatted: '0.00',
+    isSealedBid:
+      input.isSealedBid ?? input.allocationMode === AllocationMode.BIDDING,
+    isYieldEnabled: input.isYieldEnabled ?? true,
+    yieldApyBps: 800,
+    totalYieldEarned: String(Math.round(collateralUsdc * 0.0085 * 1e6)),
+    totalYieldEarnedFormatted: (collateralUsdc * 0.0085).toFixed(2),
+    isPrivateCircle: input.isPrivateCircle ?? false,
+    requiresAttestation: input.requiresAttestation ?? true,
     createdAt: nowIso,
     members: [
       {
@@ -783,7 +791,10 @@ export function mockWithdrawCollateral(circleId: string): {
   const lockedReturned = parseFloat(member.lockedCollateralFormatted);
   const bonusPerMember =
     parseFloat(circle.totalDiscountPoolFormatted) / circle.maxMembers;
-  const totalReturn = lockedReturned + bonusPerMember;
+  const yieldPerMember =
+    (parseFloat(circle.totalYieldEarnedFormatted || '0') || 0) /
+    circle.maxMembers;
+  const totalReturn = lockedReturned + bonusPerMember + yieldPerMember;
 
   user.usdcBalance = (parseFloat(user.usdcBalance) + totalReturn).toFixed(2);
   user.stats.totalCollateralLocked = Math.max(
@@ -838,4 +849,67 @@ export function mockUpdateUserProfile(displayName: string): AvaHuiMockState {
   }
 
   return saveMockState(state);
+}
+
+export function mockSwapAvaxToUsdc(avaxAmount: number = 0.25): {
+  state: AvaHuiMockState;
+  txHash: string;
+  usdcOutFormatted: string;
+} {
+  const state = loadMockState();
+  const user = state.users.find((u) => u.id === state.currentUserId);
+  if (!user) throw new Error('User not found');
+
+  const currentAvax = parseFloat(user.avaxBalance.replace(/[^0-9.]/g, '')) || 0;
+  const safeAvaxIn = Math.min(Math.max(0.05, avaxAmount), Math.max(0.05, currentAvax));
+  const usdcOut = safeAvaxIn * 40; // 1 AVAX = 40 mUSDC on MockAvaxUsdcSwap
+
+  user.avaxBalance = Math.max(0.01, currentAvax - safeAvaxIn).toFixed(3);
+  user.usdcBalance = (
+    (parseFloat(user.usdcBalance.replace(/[^0-9.]/g, '')) || 0) + usdcOut
+  ).toFixed(2);
+
+  const txHash = generateMockTxHash();
+  state.transactions.unshift({
+    id: `tx_${Date.now()}`,
+    chainId: 43113,
+    txHash,
+    senderAddress: user.walletAddress,
+    senderName: user.displayName,
+    contractAddress: '0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9',
+    txType: TransactionType.SWAP_AVAX_TO_USDC,
+    status: TransactionStatus.CONFIRMED,
+    blockNumber: 38510000 + state.transactions.length,
+    amountFormatted: `${safeAvaxIn.toFixed(2)} AVAX -> +${usdcOut.toFixed(2)} mUSDC`,
+    createdAt: new Date().toISOString(),
+  });
+
+  return {
+    state: saveMockState(state),
+    txHash,
+    usdcOutFormatted: usdcOut.toFixed(2),
+  };
+}
+
+export function mockVerifyTeam1Attestation(): {
+  state: AvaHuiMockState;
+  identityHash: string;
+  trustTier: number;
+} {
+  const state = loadMockState();
+  const user = state.users.find((u) => u.id === state.currentUserId);
+  if (!user) throw new Error('User not found');
+
+  const identityHash =
+    user.identityHash ||
+    `0x${user.walletAddress.slice(2).padEnd(64, 'a').slice(0, 64)}`;
+  user.isTeam1Verified = true;
+  user.identityHash = identityHash;
+  user.trustTier = 2;
+
+  return {
+    state: saveMockState(state),
+    identityHash,
+    trustTier: 2,
+  };
 }

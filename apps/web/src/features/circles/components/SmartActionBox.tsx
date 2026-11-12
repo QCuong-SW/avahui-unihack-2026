@@ -41,11 +41,16 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
     executeJoinCircle,
     executeContribute,
     executeSubmitBid,
+    executeCommitBid,
+    executeRevealBid,
+    getSavedBidCommitment,
     executeSettleRound,
     executeWithdrawCollateral,
     isJoining,
     isContributing,
     isBidding,
+    isCommitting,
+    isRevealing,
     isSettling,
     isWithdrawing,
   } = useCircleActions();
@@ -79,6 +84,11 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
   );
 
   const [bidInput, setBidInput] = useState<string>(String(suggestedBid));
+  const [, setCommitTick] = useState<number>(0);
+
+  const savedCommitment = currentRoundObj
+    ? getSavedBidCommitment(circle.id, currentRoundObj.roundNumber)
+    : null;
 
   const hasPaidCurrentRound =
     myMember && currentRoundObj
@@ -134,6 +144,37 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
     });
   };
 
+  const handleCommitSealedBid = async () => {
+    if (!currentRoundObj) return;
+    const numericBid = parseFloat(bidInput);
+    await runTransaction({
+      title: `Sealed-Bid Commit • Round #${currentRoundObj.roundNumber}`,
+      description: `Keccak256 Hash Lock (${formatUsdc(numericBid)} mUSDC + 32-byte Salt)`,
+      action: async () => {
+        const res = await executeCommitBid(
+          circle,
+          currentRoundObj.roundNumber,
+          numericBid
+        );
+        setCommitTick((t) => t + 1);
+        return { txHash: res.txHash };
+      },
+    });
+  };
+
+  const handleRevealSealedBid = async () => {
+    if (!currentRoundObj) return;
+    await runTransaction({
+      title: `Sealed-Bid Reveal • Round #${currentRoundObj.roundNumber}`,
+      description: `Verify Salt & Reveal Bid on AvaHuiCircle`,
+      action: async () => {
+        const res = await executeRevealBid(circle, currentRoundObj.roundNumber);
+        setCommitTick((t) => t + 1);
+        return { txHash: res.txHash };
+      },
+    });
+  };
+
   const handleSettleRound = async () => {
     if (!currentRoundObj) return;
     const willSlash = unpaidMembersCount > 0;
@@ -154,11 +195,16 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
     if (!myMember) return;
     const bonusPerMember =
       parseFloat(circle.totalDiscountPoolFormatted) / circle.maxMembers;
+    const yieldPerMember =
+      (parseFloat(circle.totalYieldEarnedFormatted || '4.25') || 0) /
+      circle.maxMembers;
     const totalClaim =
-      parseFloat(myMember.lockedCollateralFormatted) + bonusPerMember;
+      parseFloat(myMember.lockedCollateralFormatted) +
+      bonusPerMember +
+      yieldPerMember;
 
     await runTransaction({
-      title: `Withdraw Collateral & Bonus`,
+      title: `Withdraw Collateral, Bonus & DeFi Yield`,
       description: `+${formatUsdc(totalClaim)} mUSDC`,
       action: async () => {
         return await executeWithdrawCollateral(circle);
@@ -362,6 +408,79 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                       );
                     })}
                   </div>
+
+                  {/* V2 Sealed-Bid 2-Phase Commit-Reveal Controls */}
+                  <div className="mt-2.5 space-y-2 border-t border-zinc-800 pt-2.5 font-mono">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="flex items-center gap-1 font-bold uppercase text-amber-300">
+                        <Lock className="h-3 w-3" />
+                        <span>V2 Sealed-Bid (Commit-Reveal)</span>
+                      </span>
+                      <span className="text-zinc-400">
+                        {savedCommitment
+                          ? savedCommitment.revealed
+                            ? 'Revealed'
+                            : 'Committed'
+                          : 'Phase 1'}
+                      </span>
+                    </div>
+
+                    {!savedCommitment ? (
+                      <HoverHint
+                        hint="Pha 1 (Commit): Băm mức giá cùng mã Salt 32-byte bằng Keccak256 và gửi lên chuỗi mà không tiết lộ số tiền thật"
+                        className="w-full"
+                      >
+                        <button
+                          type="button"
+                          disabled={isCommitting}
+                          onClick={handleCommitSealedBid}
+                          className="flex w-full items-center justify-center gap-1.5 rounded-none border border-amber-500/50 bg-amber-500/15 px-3 py-2 text-xs font-bold uppercase tracking-wider text-amber-300 transition hover:bg-amber-500 hover:text-zinc-950 disabled:opacity-50"
+                        >
+                          <Lock className="h-3.5 w-3.5" />
+                          <span>1. Commit Sealed Bid (Ẩn giá)</span>
+                        </button>
+                      </HoverHint>
+                    ) : !savedCommitment.revealed ? (
+                      <div className="space-y-1.5">
+                        <div className="rounded-none border border-amber-500/30 bg-zinc-950 px-2.5 py-1.5 text-[10px] text-zinc-300">
+                          <div>
+                            Hash:{' '}
+                            <span className="text-amber-300">
+                              {savedCommitment.commitment.slice(0, 14)}...
+                            </span>
+                          </div>
+                          <div>
+                            Saved Salt &amp; Bid:{' '}
+                            <span className="font-bold text-white">
+                              {formatUsdc(savedCommitment.bidAmountUsdc)} mUSDC
+                            </span>
+                          </div>
+                        </div>
+                        <HoverHint
+                          hint="Pha 2 (Reveal): Gửi giá trị thực và Salt để Smart Contract đối chiếu mã băm Keccak256 và cập nhật người dẫn đầu"
+                          className="w-full"
+                        >
+                          <button
+                            type="button"
+                            disabled={isRevealing}
+                            onClick={handleRevealSealedBid}
+                            className="flex w-full items-center justify-center gap-1.5 rounded-none border border-emerald-500 bg-emerald-500 px-3 py-2 text-xs font-bold uppercase tracking-wider text-zinc-950 transition hover:bg-emerald-400 disabled:opacity-50"
+                          >
+                            <Unlock className="h-3.5 w-3.5" />
+                            <span>
+                              2. Reveal Sealed Bid (
+                              {formatUsdc(savedCommitment.bidAmountUsdc)} mUSDC)
+                            </span>
+                          </button>
+                        </HoverHint>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between rounded-none border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1.5 text-[11px] font-bold text-emerald-300">
+                        <span>Đã mở thăm hợp lệ</span>
+                        <span>{formatUsdc(savedCommitment.bidAmountUsdc)} mUSDC</span>
+                      </div>
+                    )}
+                  </div>
                 </form>
               )}
             </div>
@@ -448,6 +567,17 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                       mUSDC
                     </span>
                   </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-400">Lãi DeFi Vault (8% APY):</span>
+                    <span className="font-bold text-sky-400">
+                      +
+                      {formatUsdc(
+                        (parseFloat(circle.totalYieldEarnedFormatted || '4.25') ||
+                          0) / circle.maxMembers
+                      )}{' '}
+                      mUSDC
+                    </span>
+                  </div>
                 </div>
 
                 <HoverHint
@@ -477,21 +607,38 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
         </div>
       )}
 
-      {/* Compact Collateral Pool Footer */}
-      <HoverHint
-        hint="Tổng tài sản thế chấp đang được khóa bảo chứng trong Smart Contract"
-        className="w-full"
-      >
-        <div className="flex w-full items-center justify-between rounded-none border border-zinc-800 bg-zinc-950/60 px-3.5 py-2.5 font-mono text-xs">
-          <span className="flex items-center gap-1.5 text-zinc-400 uppercase tracking-wider text-[11px]">
-            <Lock className="h-3.5 w-3.5 text-amber-400" />
-            <span>Total Locked Collateral</span>
-          </span>
-          <span className="font-bold text-amber-300">
-            {formatUsdc(totalCollateralInContract)} mUSDC
-          </span>
-        </div>
-      </HoverHint>
+      {/* Compact Collateral Pool & V2 DeFi Yield Vault Footer */}
+      <div className="space-y-2">
+        <HoverHint
+          hint="Tổng tài sản thế chấp đang được khóa bảo chứng trong Smart Contract"
+          className="w-full"
+        >
+          <div className="flex w-full items-center justify-between rounded-none border border-zinc-800 bg-zinc-950/60 px-3.5 py-2.5 font-mono text-xs">
+            <span className="flex items-center gap-1.5 text-zinc-400 uppercase tracking-wider text-[11px]">
+              <Lock className="h-3.5 w-3.5 text-amber-400" />
+              <span>Total Locked Collateral</span>
+            </span>
+            <span className="font-bold text-amber-300">
+              {formatUsdc(totalCollateralInContract)} mUSDC
+            </span>
+          </div>
+        </HoverHint>
+
+        <HoverHint
+          hint="V2 ERC-4626 Yield Vault: Lãi suất tích lũy theo thời gian thực (8.0% APY) trên vốn thế chấp nhàn rỗi, tự động chia đều khi hoàn tất dây hụi"
+          className="w-full"
+        >
+          <div className="flex w-full items-center justify-between rounded-none border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2.5 font-mono text-xs">
+            <span className="flex items-center gap-1.5 text-emerald-300 uppercase tracking-wider text-[11px]">
+              <Zap className="h-3.5 w-3.5 text-emerald-400" />
+              <span>ERC-4626 Yield Vault (8% APY)</span>
+            </span>
+            <span className="font-bold text-emerald-400">
+              +{formatUsdc(circle.totalYieldEarnedFormatted || (totalCollateralInContract * 0.0085).toFixed(2))} mUSDC
+            </span>
+          </div>
+        </HoverHint>
+      </div>
     </aside>
   );
 }

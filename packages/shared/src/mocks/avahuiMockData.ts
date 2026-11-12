@@ -26,6 +26,9 @@ export const MOCK_DEMO_USERS: UserProfile[] = [
     avaxBalance: '1.45',
     usdcBalance: '2500.00',
     usdcAllowance: '1000.00',
+    isTeam1Verified: true,
+    identityHash: '0x1111111111111111111111111111111111111111111111111111111111111111',
+    trustTier: 2,
     stats: {
       activeCirclesCount: 2,
       totalContributed: '300.00',
@@ -130,6 +133,13 @@ export const MOCK_CIRCLES: CircleItem[] = [
     maxBidFormatted: '40.00',
     totalDiscountPool: '15000000',
     totalDiscountPoolFormatted: '15.00',
+    isSealedBid: true,
+    isYieldEnabled: true,
+    yieldApyBps: 800,
+    totalYieldEarned: '4250000',
+    totalYieldEarnedFormatted: '4.25',
+    isPrivateCircle: true,
+    requiresAttestation: true,
     createdAt: '2026-11-02T07:00:00Z',
     members: [
       {

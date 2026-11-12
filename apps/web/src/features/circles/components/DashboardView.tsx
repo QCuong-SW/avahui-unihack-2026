@@ -57,7 +57,7 @@ export function DashboardView() {
       )
   );
 
-  const actionItems = useMemo(() => {
+  const actionItems = (() => {
     const items: Array<{
       id: string;
       circleId: string;
@@ -120,7 +120,7 @@ export function DashboardView() {
     }
 
     return items;
-  }, [myCircles, currentUser.walletAddress]);
+  })();
 
   const filteredMyCircles = myCircles.filter((c) => {
     if (activeTab === 'ACTIVE') return c.status === CircleStatus.Active;
