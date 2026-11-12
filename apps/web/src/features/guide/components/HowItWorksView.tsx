@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { ROSCA_GLOSSARY_ITEMS } from '@/lib/constants/glossary';
+import { dispatchOpenBeginnerSandbox } from './BeginnerSandboxGuide';
 import {
   AlertTriangle,
   ArrowRight,
@@ -14,6 +15,7 @@ import {
   Gavel,
   KeyRound,
   Lock,
+  Play,
   PlusCircle,
   ShieldCheck,
   Sparkles,
@@ -125,6 +127,14 @@ export function HowItWorksView() {
           </div>
 
           <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => dispatchOpenBeginnerSandbox()}
+              className="inline-flex items-center gap-1.5 rounded-none border border-amber-500/60 bg-amber-500/15 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-amber-200 transition hover:bg-amber-500 hover:text-zinc-950"
+            >
+              <Play className="h-3.5 w-3.5" />
+              <span>Thực hành Mô phỏng (UI Giả lập)</span>
+            </button>
             <Link
               href="/circles"
               className="inline-flex items-center gap-1.5 rounded-none border border-zinc-700 bg-zinc-900 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-zinc-200 transition hover:border-zinc-500 hover:text-white"

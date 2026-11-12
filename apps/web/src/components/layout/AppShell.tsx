@@ -7,6 +7,7 @@ import { MobileBottomNav } from './MobileBottomNav';
 import { PageTransition } from './PageTransition';
 import { RouteGuard } from '@/components/auth/RouteGuard';
 import { TransactionLifecycleModal } from '@/features/transactions/components/TransactionLifecycleModal';
+import { BeginnerSandboxGuide } from '@/features/guide/components/BeginnerSandboxGuide';
 import { AvahuiLogo } from '@/components/ui/AvahuiLogo';
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -37,6 +38,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </footer>
       <MobileBottomNav />
       <TransactionLifecycleModal />
+      <BeginnerSandboxGuide />
     </div>
   );
 }

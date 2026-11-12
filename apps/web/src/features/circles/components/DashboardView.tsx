@@ -11,6 +11,7 @@ import {
 import { computeWithdrawBreakdown, formatUsdc } from '@/lib/utils';
 import { CircleCard } from './CircleCard';
 import { HoverHint } from '@/components/ui/HoverHint';
+import { dispatchOpenBeginnerSandbox } from '@/features/guide/components/BeginnerSandboxGuide';
 import {
   AlertCircle,
   ArrowRight,
@@ -20,6 +21,7 @@ import {
   Compass,
   Layers,
   Lock,
+  Play,
   PlusCircle,
   Sparkles,
   TrendingUp,
@@ -153,6 +155,15 @@ export function DashboardView() {
         </h1>
 
         <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+          <button
+            type="button"
+            onClick={() => dispatchOpenBeginnerSandbox()}
+            className="inline-flex items-center gap-1.5 rounded-none border border-amber-500/40 bg-amber-500/10 px-3 sm:px-3.5 py-1.5 sm:py-2 font-mono text-xs font-bold uppercase tracking-wider text-amber-200 transition hover:bg-amber-500 hover:text-zinc-950 active:scale-95"
+          >
+            <Play className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <span>Tập thử UI</span>
+          </button>
+
           <Link
             href="/guide"
             className="inline-flex items-center gap-1.5 rounded-none border border-zinc-800 bg-surface-card px-3 sm:px-3.5 py-1.5 sm:py-2 font-mono text-xs font-bold uppercase tracking-wider text-zinc-300 transition hover:border-zinc-600 hover:text-white active:scale-95"
