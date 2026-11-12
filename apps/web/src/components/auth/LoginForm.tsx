@@ -165,94 +165,144 @@ export function LoginForm() {
   };
 
   return (
-    <div className="mx-auto grid min-h-[78vh] max-w-5xl items-center gap-6 sm:gap-8 py-3 sm:py-4 lg:grid-cols-12 animate-fade-in">
+    <div className="relative mx-auto grid min-h-[80vh] max-w-5xl items-center gap-6 sm:gap-8 py-4 sm:py-6 lg:grid-cols-12 animate-fade-in">
+      {/* Ambient Glow Lights Behind Grid */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -left-20 -top-20 h-72 w-72 rounded-full bg-avalanche-red/10 blur-[100px]"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-20 -right-20 h-72 w-72 rounded-full bg-emerald-500/10 blur-[100px]"
+      />
+
       {/* Left Section – Brand Presentation */}
-      <div className="flex flex-col justify-between space-y-6 rounded-none border border-zinc-800 bg-zinc-900/50 p-5 sm:p-10 lg:col-span-6 animate-fade-down">
+      <div className="relative flex flex-col justify-between space-y-6 rounded-xl border border-zinc-800/80 bg-zinc-950/70 p-6 sm:p-9 backdrop-blur-xl shadow-2xl overflow-hidden lg:col-span-6 animate-fade-down">
+        {/* Top Crimson Accent Beam */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-avalanche-red/80 to-transparent" />
+
         <div className="space-y-6">
-          {/* Avahui Logo & Brand Title */}
+          {/* Brand Header with Live Network Status */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <AvahuiLogo size={42} roundedClass="rounded-none" />
+              <div className="relative flex h-11 w-11 items-center justify-center rounded-lg border border-avalanche-red/40 bg-avalanche-red/10 shadow-[0_0_15px_rgba(232,65,66,0.25)]">
+                <AvahuiLogo size={32} roundedClass="rounded-md" />
+              </div>
               <div>
-                <span className="font-mono text-xl font-extrabold uppercase tracking-tight text-white">
-                  Avahui
-                </span>
-                <span className="ml-2 rounded-none border border-zinc-700 bg-zinc-800/80 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-zinc-300">
-                  ON-CHAIN ROSCA
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xl font-extrabold uppercase tracking-tight text-white">
+                    Avahui
+                  </span>
+                  <span className="rounded-md border border-avalanche-red/40 bg-avalanche-red/10 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-avalanche-red">
+                    ON-CHAIN ROSCA
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 font-mono text-[10px] text-zinc-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_6px_#34d399]" />
+                  <span>Avalanche Fuji Testnet (43113)</span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Mascot Avahui Showcase */}
-          <div className="flex justify-center py-1">
+          {/* Mascot Avahui Showcase with Holographic Floating Frame */}
+          <div className="flex justify-center py-2">
             <HoverHint
-              hint="Mascot Avahui — Bảo chứng kỷ luật tài chính trên Avalanche"
+              hint="Mascot Avahui — Biểu tượng kỷ luật tài chính tự động trên Avalanche"
               side="top"
             >
-              <div className="overflow-hidden rounded-none border border-avalanche-red/40 bg-black p-1.5 shadow-xl shadow-avalanche-red/10">
-                <img
-                  src="/avahui-logo.jpg"
-                  alt="Mascot Avahui"
-                  className="h-36 w-36 rounded-none object-cover sm:h-40 sm:w-40"
-                />
+              <div className="group relative animate-float-slow">
+                <div className="absolute -inset-1 rounded-xl bg-gradient-to-r from-avalanche-red/40 via-emerald-500/20 to-avalanche-red/40 opacity-70 blur-md transition duration-500 group-hover:opacity-100" />
+                <div className="relative overflow-hidden rounded-xl border border-zinc-700/80 bg-zinc-950 p-2 shadow-2xl">
+                  <img
+                    src="/avahui-logo.jpg"
+                    alt="Mascot Avahui"
+                    className="h-36 w-36 rounded-lg object-cover transition-transform duration-500 group-hover:scale-105 sm:h-40 sm:w-40"
+                  />
+                  <div className="absolute bottom-2 inset-x-2 rounded-md bg-black/80 backdrop-blur-md py-1 text-center font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-300 border border-white/10">
+                    AVAHUI ON-CHAIN
+                  </div>
+                </div>
               </div>
             </HoverHint>
           </div>
 
-          {/* Slogan & Short Intro */}
-          <div className="space-y-2.5 text-center sm:text-left">
-            <h1 className="text-2xl font-extrabold leading-snug tracking-tight text-white sm:text-3xl">
-              Hụi minh bạch.{' '}
-              <span className="text-avalanche-red">Niềm tin vững chắc.</span>
+          {/* Slogan & Key Security Highlights */}
+          <div className="space-y-3 text-center sm:text-left">
+            <h1 className="text-2xl font-black leading-snug tracking-tight text-white sm:text-3xl">
+              Hụi Minh Bạch.{' '}
+              <span className="bg-gradient-to-r from-avalanche-red via-rose-400 to-amber-300 bg-clip-text text-transparent">
+                Không Thể Giật Hụi.
+              </span>
             </h1>
 
-            <p className="text-sm leading-relaxed text-zinc-400">
-              Nền tảng quản lý vòng hụi xoay vòng tự động với cơ chế khóa tài
-              sản thế chấp minh bạch. Đăng nhập nhanh bằng tài khoản cá nhân mà
-              không cần tự quản lý khóa bảo mật phức tạp.
+            <p className="text-xs sm:text-sm leading-relaxed text-zinc-400">
+              Chuyển đổi dây hụi truyền thống sang hợp đồng thông minh tự động:
+              Tiền cọc tự bù khi có người trễ, bỏ thăm kín mật mã và sinh lãi
+              khoản cọc nhàn rỗi.
             </p>
+
+            {/* Micro Feature Matrix */}
+            <div className="grid gap-2 pt-2 text-left font-mono text-xs">
+              <div className="flex items-center gap-2 rounded-lg border border-zinc-800/80 bg-zinc-900/60 px-3 py-2 text-zinc-300">
+                <span className="text-emerald-400 font-bold">✓</span>
+                <span>Hợp đồng tự động giữ quỹ — không ai ôm tiền bỏ trốn</span>
+              </div>
+              <div className="flex items-center gap-2 rounded-lg border border-zinc-800/80 bg-zinc-900/60 px-3 py-2 text-zinc-300">
+                <span className="text-sky-400 font-bold">✓</span>
+                <span>Bỏ thăm kín 2 bước — bảo mật giá thăm tuyệt đối</span>
+              </div>
+              <div className="flex items-center gap-2 rounded-lg border border-zinc-800/80 bg-zinc-900/60 px-3 py-2 text-zinc-300">
+                <span className="text-amber-400 font-bold">✓</span>
+                <span>Tiền cọc sinh lãi ~6.5%/năm &amp; tự bù khi trễ hạn</span>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Avalanche Ecosystem Branding */}
-        <div className="flex items-center justify-between border-t border-zinc-800/80 pt-5 text-xs text-zinc-400">
+        <div className="flex items-center justify-between border-t border-zinc-800/80 pt-4 text-xs text-zinc-400">
           <div className="flex items-center gap-2">
-            <AvahuiLogo size={20} roundedClass="rounded-none" />
-            <span className="font-mono font-semibold uppercase tracking-wider text-zinc-200">
+            <span className="h-2 w-2 rounded-full bg-avalanche-red" />
+            <span className="font-mono font-bold uppercase tracking-wider text-zinc-200">
               Built on Avalanche
             </span>
           </div>
           <span className="font-mono text-[11px] uppercase tracking-wider text-zinc-500">
-            Fuji Testnet (43113)
+            Fuji C-Chain 43113
           </span>
         </div>
       </div>
 
       {/* Right Section – Authentication Form */}
-      <div className="rounded-none border border-zinc-800 bg-surface-card p-5 sm:p-10 shadow-xl lg:col-span-6 animate-fade-up">
+      <div className="relative rounded-xl border border-zinc-800/80 bg-zinc-950/80 p-6 sm:p-9 backdrop-blur-xl shadow-2xl shadow-black/80 lg:col-span-6 animate-fade-up">
+        {/* Top Emerald Accent Beam */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-400/80 to-transparent" />
+
         <div className="flex items-center gap-3">
-          <AvahuiLogo size={38} roundedClass="rounded-none" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900/90 text-avalanche-red">
+            <Wallet className="h-5 w-5" />
+          </div>
           <div>
-            <h2 className="font-mono text-2xl font-extrabold uppercase tracking-tight text-white">
-              Chào mừng tới Avahui
+            <h2 className="font-mono text-xl sm:text-2xl font-black uppercase tracking-tight text-white">
+              Đăng Nhập Avahui
             </h2>
-            <p className="text-sm text-zinc-400">
-              Đăng nhập để quản lý dây hụi minh bạch của bạn.
+            <p className="text-xs sm:text-sm text-zinc-400">
+              Truy cập ngay vào dây hụi minh bạch của bạn.
             </p>
           </div>
         </div>
 
         {/* Status Alert Banner (Error / Success) */}
         {errorText && (
-          <div className="mt-4 flex items-center gap-2 rounded-none border border-rose-500/40 bg-rose-500/10 px-3.5 py-2.5 font-mono text-xs text-rose-300">
+          <div className="mt-4 flex items-center gap-2.5 rounded-lg border border-rose-500/40 bg-rose-500/10 p-3 font-mono text-xs text-rose-300 shadow-sm animate-fade-down">
             <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
-            <span>{errorText}</span>
+            <span className="leading-snug">{errorText}</span>
           </div>
         )}
 
         {uiState === 'SUCCESS' && (
-          <div className="mt-4 flex items-center gap-2 rounded-none border border-emerald-500/40 bg-emerald-500/10 px-3.5 py-2.5 font-mono text-xs text-emerald-300">
+          <div className="mt-4 flex items-center gap-2.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 font-mono text-xs text-emerald-300 shadow-sm animate-fade-down">
             <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
             <span>Xác thực thành công! Đang chuyển hướng...</span>
           </div>
@@ -269,7 +319,7 @@ export function LoginForm() {
           <div className="relative flex items-center py-1">
             <div className="flex-grow border-t border-zinc-800" />
             <span className="mx-3 shrink-0 font-mono text-[11px] font-bold uppercase tracking-wider text-zinc-500">
-              hoặc
+              hoặc đăng nhập bằng
             </span>
             <div className="flex-grow border-t border-zinc-800" />
           </div>
@@ -291,21 +341,21 @@ export function LoginForm() {
           />
 
           {/* 3. Connect External Wallet via Cryptographic SIWE Signature */}
-          <div className="space-y-2">
+          <div className="space-y-2 pt-1">
             <button
               type="button"
               onClick={handleExternalWalletLogin}
               disabled={isBusy}
-              className="flex w-full items-center justify-center gap-2 rounded-none border border-zinc-800 bg-zinc-900/70 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-zinc-300 transition hover:border-zinc-700 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="group relative flex w-full items-center justify-center gap-2.5 rounded-lg border border-zinc-700/80 bg-gradient-to-r from-zinc-900 via-zinc-900/90 to-zinc-900 px-4 py-3 font-mono text-xs font-bold uppercase tracking-wider text-zinc-200 shadow-md transition-all duration-200 hover:border-avalanche-red/60 hover:text-white hover:shadow-[0_0_20px_rgba(232,65,66,0.2)] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
             >
               {uiState === 'LOADING_WALLET' ? (
                 <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-avalanche-red" />
+                  <Loader2 className="h-4 w-4 animate-spin text-avalanche-red" />
                   <span>Đang kết nối ví...</span>
                 </>
               ) : (
                 <>
-                  <Wallet className="h-3.5 w-3.5 text-zinc-400" />
+                  <Wallet className="h-4 w-4 text-zinc-400 transition-colors group-hover:text-avalanche-red" />
                   <span>Kết nối Ví Web3 (Core / MetaMask — không tốn gas)</span>
                 </>
               )}
@@ -313,8 +363,8 @@ export function LoginForm() {
 
             {/* Quick Cancel button if user closes popup or wants to cancel midway */}
             {uiState === 'LOADING_WALLET' && (
-              <div className="flex items-center justify-center gap-2 pt-1 animate-fade-in">
-                <span className="font-mono text-[11px] text-zinc-500">
+              <div className="flex items-center justify-center gap-2 pt-1.5 animate-fade-in">
+                <span className="font-mono text-[11px] text-zinc-400">
                   Chưa thấy popup hoặc muốn hủy?
                 </span>
                 <button
@@ -352,7 +402,7 @@ export function LoginForm() {
             </button>
 
             {showDemoOptions && (
-              <div className="mt-3 space-y-2 rounded-none border border-zinc-800 bg-zinc-950/60 p-3">
+              <div className="mt-3 space-y-2 rounded-lg border border-zinc-800 bg-zinc-950/70 p-3">
                 <div className="grid gap-1.5">
                   {state.users.map((u) => {
                     const active = u.id === selectedUserId;
@@ -364,7 +414,7 @@ export function LoginForm() {
                           setSelectedUserId(u.id);
                           setEmail(u.email);
                         }}
-                        className={`flex items-center justify-between rounded-none px-3 py-2 text-left font-mono text-xs transition ${
+                        className={`flex items-center justify-between rounded-md px-3 py-2 text-left font-mono text-xs transition ${
                           active
                             ? 'border border-avalanche-red/50 bg-avalanche-red/10 text-white'
                             : 'text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200'
@@ -386,7 +436,7 @@ export function LoginForm() {
                     type="checkbox"
                     checked={simulateNewWalletSetup}
                     onChange={(e) => setSimulateNewWalletSetup(e.target.checked)}
-                    className="rounded-none border-zinc-700 bg-zinc-900 text-avalanche-red focus:ring-0"
+                    className="rounded border-zinc-700 bg-zinc-900 text-avalanche-red focus:ring-0"
                   />
                   <span>
                     Mô phỏng tài khoản mới (Chuyển qua bước{' '}
@@ -398,17 +448,10 @@ export function LoginForm() {
           </div>
         )}
 
-        {/* Terms of Service & Privacy Policy */}
+        {/* Terms of Service & Legal Compliance */}
         <p className="mt-6 text-center font-mono text-[11px] leading-relaxed text-zinc-500">
-          Bằng việc tiếp tục, bạn đồng ý với{' '}
-          <span className="underline decoration-zinc-700 hover:text-zinc-300">
-            Điều khoản Sử dụng
-          </span>{' '}
-          và{' '}
-          <span className="underline decoration-zinc-700 hover:text-zinc-300">
-            Chính sách Bảo mật
-          </span>{' '}
-          của Avahui.
+          Tuân thủ Nghị định 19/2019/NĐ-CP về Họ, Hụi, Biêu, Phường. Hợp đồng
+          thông minh mã nguồn mở trên mạng Avalanche C-Chain.
         </p>
       </div>
     </div>

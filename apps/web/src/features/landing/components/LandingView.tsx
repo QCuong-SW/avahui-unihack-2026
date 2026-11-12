@@ -158,11 +158,11 @@ export function LandingView() {
       {/* Ambient Avalanche Crimson Backdrop Glow */}
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed -top-40 left-1/2 h-[540px] w-[960px] -translate-x-1/2 rounded-full bg-avalanche-red/12 blur-[140px]"
+        className="pointer-events-none fixed -top-40 left-1/2 h-[540px] w-[960px] -translate-x-1/2 rounded-full bg-avalanche-red/15 blur-[140px]"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed bottom-0 -right-32 h-[420px] w-[420px] rounded-full bg-emerald-500/10 blur-[120px]"
+        className="pointer-events-none fixed bottom-0 -right-32 h-[420px] w-[420px] rounded-full bg-emerald-500/12 blur-[120px]"
       />
 
       {/* Pinned Floating Right Focus Rail Portal */}
@@ -174,22 +174,22 @@ export function LandingView() {
       <ScrollFocusSection
         id="hero"
         initialFocused
-        className="relative min-h-[82vh] flex items-center border-b border-zinc-800/80"
+        className="relative min-h-[82vh] flex items-center border-b border-zinc-800/80 bg-cyber-dots"
       >
         <div className="mx-auto grid w-full max-w-7xl items-center gap-10 px-4 py-14 sm:px-6 lg:grid-cols-12 lg:py-20">
           {/* Left Column: High-Impact Messaging & CTAs */}
           <div className="space-y-6 lg:col-span-7">
-            <div className="inline-flex items-center gap-2 rounded-none border border-avalanche-red/40 bg-avalanche-red/10 px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-avalanche-red">
-              <span className="h-2 w-2 animate-pulse bg-emerald-400" />
-              <span>Hụi Minh Bạch Trên Blockchain • Mạng Avalanche (43113)</span>
+            <div className="inline-flex items-center gap-2.5 rounded-full border border-avalanche-red/40 bg-avalanche-red/10 px-3.5 py-1.5 font-mono text-[11px] font-bold uppercase tracking-widest text-avalanche-red shadow-[0_0_15px_rgba(232,65,66,0.2)]">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
+              <span>Hụi Minh Bạch Trên Blockchain • Avalanche Fuji (43113)</span>
             </div>
 
-            <h1 className="text-4xl font-black uppercase leading-[1.06] tracking-tight text-white sm:text-5xl lg:text-6xl">
+            <h1 className="text-4xl font-black uppercase leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-6xl">
               HỤI ON-CHAIN{' '}
-              <span className="block text-avalanche-red">
+              <span className="block bg-gradient-to-r from-avalanche-red via-rose-500 to-amber-300 bg-clip-text text-transparent">
                 KHÔNG CHỦ HỤI.
               </span>
-              <span className="block text-zinc-200">
+              <span className="block text-zinc-100">
                 KHÔNG VỠ NỢ.
               </span>
             </h1>
@@ -207,16 +207,16 @@ export function LandingView() {
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <Link
                 href="/login"
-                className="inline-flex items-center gap-2 rounded-none border border-avalanche-red bg-avalanche-red px-6 py-3.5 font-mono text-xs font-extrabold uppercase tracking-wider text-white shadow-xl shadow-avalanche-red/30 transition hover:bg-avalanche-darkRed active:scale-95 sm:text-sm"
+                className="group relative inline-flex items-center gap-2.5 rounded-lg bg-gradient-to-r from-avalanche-red via-red-600 to-avalanche-darkRed px-6 py-3.5 font-mono text-xs sm:text-sm font-extrabold uppercase tracking-wider text-white shadow-xl shadow-avalanche-red/30 transition-all duration-200 hover:shadow-avalanche-red/50 hover:brightness-110 active:scale-95"
               >
                 <LogIn className="h-4 w-4" />
                 <span>Đăng nhập / Đăng ký</span>
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
               </Link>
 
               <Link
                 href={isAuthenticated ? '/dashboard' : '/circles'}
-                className="inline-flex items-center gap-2 rounded-none border border-zinc-700 bg-zinc-900/90 px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-wider text-white transition hover:border-emerald-400 hover:text-emerald-300 active:scale-95 sm:text-sm"
+                className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900/90 px-6 py-3.5 font-mono text-xs sm:text-sm font-bold uppercase tracking-wider text-white shadow-md transition-all duration-200 hover:border-emerald-400 hover:text-emerald-300 hover:shadow-lg hover:shadow-emerald-500/10 active:scale-95"
               >
                 <Compass className="h-4 w-4 text-emerald-400" />
                 <span>{isAuthenticated ? 'Vào App Ngay (Dashboard)' : 'Xem Dây Hụi Live'}</span>
@@ -224,36 +224,44 @@ export function LandingView() {
             </div>
 
             {/* Trust Micro-Badges */}
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-3 font-mono text-xs text-zinc-400">
-              <span className="inline-flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2.5 pt-3 font-mono text-xs text-zinc-400">
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-zinc-800 bg-zinc-900/60 px-2.5 py-1">
                 <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                Tạo ví dễ dàng qua Google / Email hoặc nối Core &amp; MetaMask
+                Google / Email / Core / MetaMask SIWE
               </span>
-              <span className="inline-flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-zinc-800 bg-zinc-900/60 px-2.5 py-1">
                 <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
                 Chốt giao dịch &lt; 2 giây
               </span>
-              <span className="inline-flex items-center gap-1.5">
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-zinc-800 bg-zinc-900/60 px-2.5 py-1">
                 <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                Quy tắc hợp đồng công khai, ai cũng kiểm tra được
+                Foundry 13/13 Hợp đồng Verified
               </span>
             </div>
           </div>
 
           {/* Right Column: Interactive Live Protocol Terminal */}
           <div className="lg:col-span-5">
-            <div className="rounded-none border border-zinc-800 bg-surface-card shadow-2xl shadow-black/80">
-              {/* Terminal Top Bar */}
-              <div className="flex items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 py-3 font-mono text-[11px]">
-                <div className="flex items-center gap-2 text-zinc-300">
-                  <Terminal className="h-3.5 w-3.5 text-avalanche-red" />
-                  <span className="font-bold uppercase tracking-wider">
+            <div className="relative rounded-xl border border-zinc-700/80 bg-zinc-950/90 shadow-2xl shadow-black/90 backdrop-blur-2xl overflow-hidden">
+              {/* Top Accent Beam */}
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-avalanche-red to-transparent opacity-80" />
+
+              {/* Terminal Top Bar with macOS Cyberpunk Dots */}
+              <div className="flex items-center justify-between border-b border-zinc-800/90 bg-zinc-950/95 px-4 py-3 font-mono text-[11px]">
+                <div className="flex items-center gap-2.5 text-zinc-300">
+                  <div className="flex items-center gap-1.5">
+                    <span className="h-2.5 w-2.5 rounded-full bg-rose-500/80" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-amber-500/80" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/80" />
+                  </div>
+                  <Terminal className="h-3.5 w-3.5 text-avalanche-red ml-1" />
+                  <span className="font-bold uppercase tracking-wider text-white">
                     AVAHUI_V2_ENGINE.SOL
                   </span>
                 </div>
-                <span className="inline-flex items-center gap-1.5 rounded-none border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
-                  <span className="h-1.5 w-1.5 bg-emerald-400" />
-                  ON-CHAIN READY
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.2)]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  FUJI LIVE READY
                 </span>
               </div>
 
@@ -344,16 +352,16 @@ export function LandingView() {
       {/* ================================================================= */}
       <ScrollFocusSection
         id="metrics"
-        className="border-b border-zinc-800 bg-zinc-950/70"
+        className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md"
       >
-        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-3 px-4 py-6 sm:px-6 lg:grid-cols-4 font-mono">
+        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-3.5 px-4 py-8 sm:px-6 lg:grid-cols-4 font-mono">
           {[
             {
               value: '0%',
               label: 'Rủi ro chủ hụi ôm tiền',
               sub: 'Quỹ giữ hoàn toàn trong hợp đồng tự động',
               color: 'text-avalanche-red',
-              activeBorder: 'border-avalanche-red bg-avalanche-red/10 shadow-[0_14px_38px_-10px_rgba(232,65,66,0.45)]',
+              activeBorder: 'border-avalanche-red/90 bg-avalanche-red/10 shadow-[0_14px_38px_-10px_rgba(232,65,66,0.45)]',
               topBar: 'bg-avalanche-red',
             },
             {
@@ -361,7 +369,7 @@ export function LandingView() {
               label: 'Tiền cọc bảo đảm',
               sub: 'Tự động trích tiền cọc bù ngay khi có người trễ hạn',
               color: 'text-amber-300',
-              activeBorder: 'border-amber-400 bg-amber-500/10 shadow-[0_14px_38px_-10px_rgba(251,191,36,0.35)]',
+              activeBorder: 'border-amber-400/90 bg-amber-500/10 shadow-[0_14px_38px_-10px_rgba(251,191,36,0.35)]',
               topBar: 'bg-amber-400',
             },
             {
@@ -369,7 +377,7 @@ export function LandingView() {
               label: 'Tiền cọc tự sinh lãi',
               sub: 'Khoản cọc nằm chờ trong dây vẫn tự cộng lãi mỗi ngày',
               color: 'text-emerald-400',
-              activeBorder: 'border-emerald-400 bg-emerald-500/10 shadow-[0_14px_38px_-10px_rgba(52,211,153,0.35)]',
+              activeBorder: 'border-emerald-400/90 bg-emerald-500/10 shadow-[0_14px_38px_-10px_rgba(52,211,153,0.35)]',
               topBar: 'bg-emerald-400',
             },
             {
@@ -377,7 +385,7 @@ export function LandingView() {
               label: 'Xử lý trên Avalanche',
               sub: 'Xác nhận đóng & nhận tiền nhanh, phí rất thấp',
               color: 'text-sky-300',
-              activeBorder: 'border-sky-400 bg-sky-500/10 shadow-[0_14px_38px_-10px_rgba(56,189,248,0.35)]',
+              activeBorder: 'border-sky-400/90 bg-sky-500/10 shadow-[0_14px_38px_-10px_rgba(56,189,248,0.35)]',
               topBar: 'bg-sky-400',
             },
           ].map((stat, idx) => {
@@ -387,15 +395,15 @@ export function LandingView() {
                 key={stat.label}
                 onMouseEnter={() => setHoveredMetric(idx)}
                 onMouseLeave={() => setHoveredMetric(null)}
-                className={`relative border p-5 sm:p-6 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                className={`relative rounded-xl border p-5 sm:p-6 backdrop-blur-xl transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden ${
                   isHighlighted
                     ? `-translate-y-2.5 scale-[1.02] opacity-100 ${stat.activeBorder}`
-                    : 'translate-y-0 scale-100 border-zinc-800/80 bg-surface-card/60 opacity-75 hover:opacity-100'
+                    : 'translate-y-0 scale-100 border-zinc-800/80 bg-zinc-900/50 opacity-80 hover:opacity-100 hover:border-zinc-700'
                 }`}
               >
                 <span
                   aria-hidden="true"
-                  className={`absolute left-0 right-0 top-0 h-[2px] transition-all duration-500 ${
+                  className={`absolute left-0 right-0 top-0 h-[2.5px] transition-all duration-500 ${
                     isHighlighted ? `${stat.topBar} opacity-100` : 'opacity-0'
                   }`}
                 />
@@ -406,10 +414,10 @@ export function LandingView() {
                 >
                   {stat.value}
                 </div>
-                <div className="mt-1.5 text-xs font-bold uppercase tracking-wider text-white">
+                <div className="mt-2 text-xs font-bold uppercase tracking-wider text-white">
                   {stat.label}
                 </div>
-                <div className="mt-1 text-[11px] text-zinc-400">{stat.sub}</div>
+                <div className="mt-1 text-[11px] leading-relaxed text-zinc-400">{stat.sub}</div>
               </div>
             );
           })}
@@ -437,16 +445,16 @@ export function LandingView() {
 
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Traditional Problems */}
-          <div className="rounded-none border border-zinc-800 bg-surface-card p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-zinc-800 pb-3 font-mono">
+          <div className="relative rounded-xl border border-zinc-800/90 bg-zinc-950/80 p-6 sm:p-8 backdrop-blur-xl shadow-xl transition-all duration-300 hover:border-rose-500/40 hover:shadow-2xl hover:shadow-rose-500/5 space-y-4">
+            <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3 font-mono">
               <span className="text-sm font-bold uppercase tracking-wider text-zinc-300">
                 Hụi Truyền Thống
               </span>
-              <span className="border border-rose-500/40 bg-rose-500/10 px-2 py-0.5 text-[10px] font-bold uppercase text-rose-400">
+              <span className="rounded-full border border-rose-500/40 bg-rose-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase text-rose-400">
                 Rủi ro cao
               </span>
             </div>
-            <ul className="space-y-3 text-sm text-zinc-300">
+            <ul className="space-y-3.5 text-sm text-zinc-300">
               {[
                 'Chủ hụi cầm tiền mặt toàn nhóm — dễ phát sinh rủi ro giữ tiền hoặc chiếm dụng quỹ chung.',
                 'Người nhận quỹ sớm trễ hạn hoặc mất khả năng đóng các kỳ sau, khiến cả nhóm phải gánh nợ thay.',
@@ -455,23 +463,26 @@ export function LandingView() {
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2.5">
                   <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-500" />
-                  <span>{item}</span>
+                  <span className="leading-relaxed">{item}</span>
                 </li>
               ))}
             </ul>
           </div>
 
           {/* AvaHui On-Chain Solutions */}
-          <div className="rounded-none border border-emerald-500/40 bg-emerald-500/5 p-6 space-y-4">
+          <div className="relative rounded-xl border border-emerald-500/40 bg-emerald-500/5 p-6 sm:p-8 backdrop-blur-xl shadow-xl transition-all duration-300 hover:border-emerald-400 hover:shadow-2xl hover:shadow-emerald-500/10 space-y-4 overflow-hidden">
+            {/* Top Emerald Accent Beam */}
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-400 to-transparent opacity-80" />
+
             <div className="flex items-center justify-between border-b border-emerald-500/20 pb-3 font-mono">
               <span className="text-sm font-bold uppercase tracking-wider text-white">
                 Avahui Trên Blockchain
               </span>
-              <span className="border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-300">
+              <span className="rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-bold uppercase text-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.2)]">
                 Không cần chủ hụi
               </span>
             </div>
-            <ul className="space-y-3 text-sm text-zinc-200">
+            <ul className="space-y-3.5 text-sm text-zinc-200">
               {[
                 'Hợp đồng tự động giữ quỹ riêng cho từng dây hụi — không cá nhân nào tự ý rút được tiền chung.',
                 'Thành viên đặt cọc 100%–300% mUSDC; nếu có người đóng trễ, hệ thống tự trích cọc bù đủ kỳ góp.',
@@ -480,7 +491,7 @@ export function LandingView() {
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2.5">
                   <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
-                  <span>{item}</span>
+                  <span className="leading-relaxed">{item}</span>
                 </li>
               ))}
             </ul>
@@ -513,7 +524,7 @@ export function LandingView() {
                 tag: 'Chống lộ giá bỏ thăm',
                 icon: Lock,
                 accent: 'text-sky-400 border-sky-500/30 bg-sky-500/10',
-                glow: 'border-sky-400/70 bg-sky-500/5 shadow-[0_14px_36px_-12px_rgba(56,189,248,0.35)]',
+                glow: 'border-sky-400/80 bg-sky-500/10 shadow-[0_14px_36px_-12px_rgba(56,189,248,0.35)]',
                 desc: 'Mức giá bạn đưa ra được khóa thành mã bí mật kèm số ngẫu nhiên ở bước đầu. Hết giờ mới đồng loạt mở thăm đối chiếu, ngăn việc nhìn trộm để trả cao hơn 1 đồng.',
               },
               {
@@ -522,7 +533,7 @@ export function LandingView() {
                 tag: 'Lãi kép ~6.5% / năm',
                 icon: TrendingUp,
                 accent: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
-                glow: 'border-emerald-400/70 bg-emerald-500/5 shadow-[0_14px_36px_-12px_rgba(52,211,153,0.35)]',
+                glow: 'border-emerald-400/80 bg-emerald-500/10 shadow-[0_14px_36px_-12px_rgba(52,211,153,0.35)]',
                 desc: 'Toàn bộ tiền cọc và quỹ chờ giải ngân không nằm chết một chỗ mà tự sinh lời trong kho lãi. Cuối dây, phần lãi thu được sẽ chia thêm cho các thành viên đóng đúng hạn.',
               },
               {
@@ -531,7 +542,7 @@ export function LandingView() {
                 tag: 'Ngăn tài khoản ảo',
                 icon: ShieldCheck,
                 accent: 'text-amber-400 border-amber-500/30 bg-amber-500/10',
-                glow: 'border-amber-400/70 bg-amber-500/5 shadow-[0_14px_36px_-12px_rgba(251,191,36,0.35)]',
+                glow: 'border-amber-400/80 bg-amber-500/10 shadow-[0_14px_36px_-12px_rgba(251,191,36,0.35)]',
                 desc: 'Mỗi cá nhân thật chỉ xác nhận được một suất tham gia hợp lệ bằng mã định danh riêng, ngăn kẻ xấu lập nhiều tài khoản ảo để thông đồng thâu tóm dây hụi.',
               },
               {
@@ -540,7 +551,7 @@ export function LandingView() {
                 tag: 'Chỉ người có mã mới vào',
                 icon: Share2,
                 accent: 'text-avalanche-red border-avalanche-red/30 bg-avalanche-red/10',
-                glow: 'border-avalanche-red/80 bg-avalanche-red/5 shadow-[0_14px_36px_-12px_rgba(232,65,66,0.4)]',
+                glow: 'border-avalanche-red/90 bg-avalanche-red/10 shadow-[0_14px_36px_-12px_rgba(232,65,66,0.4)]',
                 desc: 'Tạo dây hụi kín cho bạn bè, đồng nghiệp hoặc hội nhóm với mã mời khóa chặt ngay trên hợp đồng. Chỉ cần gửi 1 đường link là người quen có thể kiểm tra và vào dây ngay.',
               },
             ].map((card, idx) => {
@@ -551,24 +562,24 @@ export function LandingView() {
                   key={card.num}
                   onMouseEnter={() => setHoveredModule(idx)}
                   onMouseLeave={() => setHoveredModule(null)}
-                  className={`group rounded-none border p-6 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                  className={`group rounded-xl border p-6 sm:p-7 backdrop-blur-xl transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
                     isHighlighted
                       ? `-translate-y-2 scale-[1.015] opacity-100 ${card.glow}`
-                      : 'translate-y-0 scale-100 border-zinc-800 bg-surface-card opacity-75 hover:opacity-100'
+                      : 'translate-y-0 scale-100 border-zinc-800 bg-surface-card opacity-80 hover:opacity-100 hover:border-zinc-700'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-4">
-                    <div className={`flex h-11 w-11 items-center justify-center rounded-none border transition-transform duration-500 ${card.accent} ${isHighlighted ? 'scale-110' : ''}`}>
-                      <Icon className="h-5 w-5" />
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-lg border transition-transform duration-500 ${card.accent} ${isHighlighted ? 'scale-110' : ''}`}>
+                      <Icon className="h-6 w-6" />
                     </div>
                     <span className={`font-mono text-[11px] font-bold uppercase tracking-wider transition-colors ${isHighlighted ? 'text-white' : 'text-zinc-500'}`}>
                       CƠ CHẾ // {card.num}
                     </span>
                   </div>
-                  <div className="mt-4 inline-block border border-zinc-700 bg-zinc-900 px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-zinc-300">
+                  <div className="mt-4 inline-block rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase text-zinc-300">
                     {card.tag}
                   </div>
-                  <h3 className={`mt-2.5 font-mono text-lg font-extrabold transition-colors ${isHighlighted ? 'text-white' : 'text-zinc-200'}`}>
+                  <h3 className={`mt-2.5 font-mono text-lg font-extrabold transition-colors ${isHighlighted ? 'text-white' : 'text-zinc-100'}`}>
                     {card.title}
                   </h3>
                   <p className="mt-2 text-sm leading-relaxed text-zinc-400">
@@ -641,15 +652,15 @@ export function LandingView() {
                 key={item.step}
                 onMouseEnter={() => setHoveredStep(idx)}
                 onMouseLeave={() => setHoveredStep(null)}
-                className={`relative rounded-none border p-5 space-y-3 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                className={`relative rounded-xl border p-5 space-y-3 backdrop-blur-xl transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] overflow-hidden ${
                   isHighlighted
                     ? '-translate-y-2.5 scale-[1.02] border-avalanche-red bg-avalanche-red/10 shadow-[0_14px_38px_-10px_rgba(232,65,66,0.45)] opacity-100'
-                    : 'translate-y-0 scale-100 border-zinc-800 bg-surface-card opacity-75 hover:opacity-100'
+                    : 'translate-y-0 scale-100 border-zinc-800 bg-surface-card opacity-80 hover:opacity-100 hover:border-zinc-700'
                 }`}
               >
                 <span
                   aria-hidden="true"
-                  className={`absolute left-0 right-0 top-0 h-[2px] bg-avalanche-red transition-opacity duration-500 ${
+                  className={`absolute left-0 right-0 top-0 h-[2.5px] bg-avalanche-red transition-opacity duration-500 ${
                     isHighlighted ? 'opacity-100' : 'opacity-0'
                   }`}
                 />
@@ -676,38 +687,46 @@ export function LandingView() {
       {/* ================================================================= */}
       <ScrollFocusSection
         id="bat-dau"
-        className="border-t border-zinc-800 bg-gradient-to-b from-surface-card to-zinc-950"
+        className="border-t border-zinc-800 bg-gradient-to-b from-surface-card via-zinc-950 to-black py-16 sm:py-20"
       >
-        <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-4 py-16 text-center sm:px-6 lg:flex-row lg:text-left">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-widest text-emerald-400">
-              <Zap className="h-3.5 w-3.5" />
-              <span>Sẵn sàng trải nghiệm ngay trên hệ thống</span>
+        <div className="relative mx-auto max-w-7xl rounded-2xl border border-zinc-800/80 bg-zinc-950/80 p-8 sm:p-12 backdrop-blur-2xl shadow-2xl overflow-hidden">
+          {/* Ambient Corner Glows */}
+          <div className="pointer-events-none absolute -left-20 -top-20 h-64 w-64 rounded-full bg-avalanche-red/15 blur-[90px]" />
+          <div className="pointer-events-none absolute -bottom-20 -right-20 h-64 w-64 rounded-full bg-emerald-500/15 blur-[90px]" />
+
+          <div className="relative flex flex-col items-center justify-between gap-8 text-center lg:flex-row lg:text-left">
+            <div className="space-y-3 max-w-2xl">
+              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 font-mono text-xs font-bold uppercase tracking-widest text-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.2)]">
+                <Zap className="h-3.5 w-3.5" />
+                <span>Sẵn sàng trải nghiệm trên Avalanche Testnet</span>
+              </div>
+              <h2 className="text-2xl sm:text-4xl font-black uppercase tracking-tight text-white">
+                Bắt Đầu Dây Hụi On-Chain Ngay Hôm Nay
+              </h2>
+              <p className="text-sm leading-relaxed text-zinc-400">
+                Trải nghiệm trọn vẹn từ đăng nhập dễ dàng, nhận USDC thử nghiệm,
+                bỏ thăm kín 2 bước cho đến nhận tiền tự động không cần người trung gian.
+              </p>
             </div>
-            <h2 className="text-2xl font-black uppercase tracking-tight text-white sm:text-3xl">
-              Bắt Đầu Tham Gia Hoặc Tạo Dây Hụi Ngay Hôm Nay
-            </h2>
-            <p className="text-sm text-zinc-400">
-              Trải nghiệm trọn vẹn từ đăng nhập, nhận tiền thử nghiệm, bỏ thăm kín cho đến nhận tiền tự động trên mạng Avalanche.
-            </p>
-          </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-3 shrink-0">
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-2 rounded-none border border-avalanche-red bg-avalanche-red px-6 py-3.5 font-mono text-xs font-extrabold uppercase tracking-wider text-white shadow-lg shadow-avalanche-red/25 transition hover:bg-avalanche-darkRed"
-            >
-              <LogIn className="h-4 w-4" />
-              <span>Đăng nhập / Đăng ký</span>
-            </Link>
+            <div className="flex flex-wrap items-center justify-center gap-3.5 shrink-0">
+              <Link
+                href="/login"
+                className="group relative inline-flex items-center gap-2.5 rounded-lg bg-gradient-to-r from-avalanche-red via-red-600 to-avalanche-darkRed px-7 py-4 font-mono text-xs sm:text-sm font-extrabold uppercase tracking-wider text-white shadow-xl shadow-avalanche-red/30 transition-all duration-200 hover:shadow-avalanche-red/50 hover:brightness-110 active:scale-95"
+              >
+                <LogIn className="h-4 w-4" />
+                <span>Đăng nhập / Đăng ký</span>
+                <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
+              </Link>
 
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-2 rounded-none border border-zinc-700 bg-zinc-900 px-6 py-3.5 font-mono text-xs font-bold uppercase tracking-wider text-zinc-200 transition hover:border-white hover:text-white"
-            >
-              <Layers className="h-4 w-4 text-avalanche-red" />
-              <span>Vào Dashboard</span>
-            </Link>
+              <Link
+                href="/dashboard"
+                className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900 px-7 py-4 font-mono text-xs sm:text-sm font-bold uppercase tracking-wider text-zinc-200 shadow-md transition-all duration-200 hover:border-white hover:text-white hover:shadow-lg active:scale-95"
+              >
+                <Layers className="h-4 w-4 text-avalanche-red" />
+                <span>Vào Dashboard</span>
+              </Link>
+            </div>
           </div>
         </div>
       </ScrollFocusSection>
