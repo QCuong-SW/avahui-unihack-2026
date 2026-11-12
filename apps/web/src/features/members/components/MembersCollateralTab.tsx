@@ -3,6 +3,7 @@
 import React from 'react';
 import { CircleItem, MemberStatus } from '@avahui/shared';
 import { formatUsdc, shortenAddress } from '@/lib/utils';
+import { MEMBER_STATUS_META } from '@/lib/constants/glossary';
 import { HoverHint } from '@/components/ui/HoverHint';
 import {
   CheckCircle2,
@@ -30,9 +31,9 @@ export function MembersCollateralTab({
       <table className="w-full text-left font-mono text-xs">
         <thead className="border-b border-zinc-800 bg-zinc-900/90 text-[11px] font-bold uppercase tracking-wider text-zinc-400">
           <tr>
-            <th className="px-3.5 py-3">Slot</th>
+            <th className="px-3.5 py-3">Vị trí</th>
             <th className="px-3.5 py-3">Thành viên</th>
-            <th className="px-3.5 py-3">Payout</th>
+            <th className="px-3.5 py-3">Nhận quỹ</th>
             <th className="px-3.5 py-3">
               <HoverHint
                 hint={`Mỗi thành viên khóa ${formatUsdc(circle.collateralAmountFormatted)} mUSDC thế chấp khi gia nhập`}
@@ -49,7 +50,7 @@ export function MembersCollateralTab({
                 side="top"
               >
                 <span className="cursor-help underline decoration-dotted">
-                  Slashed
+                  Trích thế chấp
                 </span>
               </HoverHint>
             </th>
@@ -172,7 +173,7 @@ export function MembersCollateralTab({
                         : 'bg-sky-500/15 text-sky-400'
                     }`}
                   >
-                    {member.status}
+                    {MEMBER_STATUS_META[member.status]?.label || member.status}
                   </span>
                 </td>
               </tr>

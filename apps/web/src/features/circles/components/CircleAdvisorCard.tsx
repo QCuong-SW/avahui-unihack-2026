@@ -42,11 +42,17 @@ function buildLocalFallbackAdvisor(circle: CircleItem): CircleAdvisorDto {
     highlights: [
       `Tỷ lệ bảo chứng thế chấp ${collateralRatio}x tiền đóng mỗi kỳ.`,
     ],
-    summary: `Dây "${circle.name}" đạt mức rủi ro ${riskLevel} (${riskScore}/100) với bảo chứng ${collateralRatio}x.`,
+    summary: `Dây "${circle.name}" đạt mức rủi ro ${riskLevel === 'LOW' ? 'Thấp' : 'Trung bình'} (${riskScore}/100) với bảo chứng ${collateralRatio}x.`,
     aiPowered: false,
     model: 'deterministic-risk-engine-v1',
   };
 }
+
+const RISK_LEVEL_LABEL: Record<CircleAdvisorDto['riskLevel'], string> = {
+  LOW: 'Thấp',
+  MEDIUM: 'Trung bình',
+  HIGH: 'Cao',
+};
 
 export function CircleAdvisorCard({ circle }: { circle: CircleItem }) {
   const inviteCode =
@@ -79,14 +85,14 @@ export function CircleAdvisorCard({ circle }: { circle: CircleItem }) {
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-2.5">
         <div className="flex items-center gap-2 font-bold uppercase tracking-wider text-white">
           <Sparkles className="h-4 w-4 text-avalanche-red" />
-          <span>AvaHui Risk &amp; Bid Advisor</span>
+          <span>Trợ lý Rủi ro &amp; Đấu giá AvaHui</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className={`rounded-none border px-2 py-0.5 text-[10px] font-bold uppercase ${badgeClass}`}>
-            Risk {advisor.riskLevel} ({advisor.riskScore}/100)
+            Rủi ro {RISK_LEVEL_LABEL[advisor.riskLevel] || advisor.riskLevel} ({advisor.riskScore}/100)
           </span>
           <span className="rounded-none border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[10px] text-zinc-400">
-            {advisor.aiPowered ? advisor.model : 'Quant Engine'}
+            {advisor.aiPowered ? advisor.model : 'Phân tích định lượng'}
           </span>
         </div>
       </div>
@@ -97,7 +103,7 @@ export function CircleAdvisorCard({ circle }: { circle: CircleItem }) {
         <div className="rounded-none border border-zinc-800 bg-zinc-900/70 p-2.5">
           <div className="flex items-center gap-1 text-zinc-400">
             <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-            <span>Bảo chứng</span>
+            <span>Mức bảo chứng</span>
           </div>
           <div className="mt-1 font-bold text-white">{advisor.collateralRatio}x</div>
         </div>
@@ -105,7 +111,7 @@ export function CircleAdvisorCard({ circle }: { circle: CircleItem }) {
         <div className="rounded-none border border-zinc-800 bg-zinc-900/70 p-2.5">
           <div className="flex items-center gap-1 text-zinc-400">
             <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
-            <span>Yield Dự kiến</span>
+            <span>Lãi Vault dự kiến</span>
           </div>
           <div className="mt-1 font-bold text-emerald-400">
             +{advisor.estimatedCycleYieldUsdc} mUSDC
@@ -116,10 +122,13 @@ export function CircleAdvisorCard({ circle }: { circle: CircleItem }) {
           <div className="rounded-none border border-zinc-800 bg-zinc-900/70 p-2.5">
             <div className="flex items-center gap-1 text-zinc-400">
               <Gavel className="h-3.5 w-3.5 text-avalanche-red" />
-              <span>Gợi ý Bid</span>
+              <span>Giá đấu gợi ý</span>
             </div>
             <div className="mt-1 font-bold text-amber-300">
               {advisor.bidRecommendation.optimalBidUsdc} mUSDC
+              <span className="ml-1 text-[10px] font-normal text-zinc-400">
+                (chiết khấu {advisor.bidRecommendation.suggestedEffectiveApyPct}%)
+              </span>
             </div>
           </div>
         )}

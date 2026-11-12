@@ -10,6 +10,9 @@ import { formatUsdc, shortenAddress } from '@/lib/utils';
 import { frontendEnv } from '@/config/env';
 import { HoverHint } from '@/components/ui/HoverHint';
 import {
+  ROUND_STATUS_META,
+} from '@/lib/constants/glossary';
+import {
   CheckCircle2,
   Clock,
   ExternalLink,
@@ -113,12 +116,12 @@ export function RoundsHistoryTab({ circle }: RoundsHistoryTabProps) {
                         {round.status === RoundStatus.Settled ? (
                           <>
                             <CheckCircle2 className="h-3 w-3" />
-                            <span>SETTLED</span>
+                            <span>{ROUND_STATUS_META[RoundStatus.Settled].label}</span>
                           </>
                         ) : (
                           <>
                             <Clock className="h-3 w-3" />
-                            <span>OPEN</span>
+                            <span>{ROUND_STATUS_META[RoundStatus.Open].label}</span>
                           </>
                         )}
                       </span>
@@ -130,7 +133,7 @@ export function RoundsHistoryTab({ circle }: RoundsHistoryTabProps) {
                         >
                           <span className="inline-flex items-center gap-1 rounded-none bg-rose-500/20 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-rose-300">
                             <ShieldAlert className="h-3 w-3" />
-                            <span>Slashed ({slashedInRound.length})</span>
+                            <span>Trích thế chấp ({slashedInRound.length})</span>
                           </span>
                         </HoverHint>
                       )}
@@ -171,7 +174,7 @@ export function RoundsHistoryTab({ circle }: RoundsHistoryTabProps) {
                       <div>
                         <div className="flex items-center justify-end gap-1 text-[10px] uppercase tracking-wider text-zinc-400">
                           <Gavel className="h-2.5 w-2.5 text-avalanche-red" />
-                          <span>Bid</span>
+                          <span>Chiết khấu</span>
                         </div>
                         <div className="font-bold text-avalanche-red">
                           -{formatUsdc(round.winningBidFormatted)}
@@ -185,7 +188,7 @@ export function RoundsHistoryTab({ circle }: RoundsHistoryTabProps) {
                     side="top"
                   >
                     <div>
-                      <div className="text-[10px] uppercase tracking-wider text-zinc-400">Payout</div>
+                      <div className="text-[10px] uppercase tracking-wider text-zinc-400">Thực nhận</div>
                       <div className="text-sm font-extrabold text-emerald-400">
                         {formatUsdc(round.netPayoutFormatted)} mUSDC
                       </div>

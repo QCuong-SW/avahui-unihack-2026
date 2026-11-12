@@ -10,6 +10,10 @@ import {
   RoundStatus,
 } from '@avahui/shared';
 import { formatUsdc, shortenAddress } from '@/lib/utils';
+import {
+  ALLOCATION_MODE_META,
+  CIRCLE_STATUS_META,
+} from '@/lib/constants/glossary';
 import { HoverHint } from '@/components/ui/HoverHint';
 import {
   ArrowUpRight,
@@ -81,27 +85,26 @@ export function CircleCard({ circle, currentUserAddress }: CircleCardProps) {
                 }`}
               >
                 <span className="h-1 w-1 bg-current" />
-                {circle.status}
+                {CIRCLE_STATUS_META[circle.status]?.label || circle.status}
               </span>
             </HoverHint>
 
             <HoverHint
               hint={
-                circle.allocationMode === AllocationMode.BIDDING
-                  ? 'Đấu giá chiết khấu: Ai đặt chiết khấu cao nhất được nhận quỹ trước'
-                  : 'Xoay vòng cố định: Nhận quỹ lần lượt theo vị trí Slot #1 -> Slot #N'
+                ALLOCATION_MODE_META[circle.allocationMode]?.description ||
+                circle.allocationMode
               }
             >
               <span className="inline-flex items-center gap-1 rounded-none border border-zinc-700 bg-zinc-900 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-zinc-300">
                 {circle.allocationMode === AllocationMode.BIDDING ? (
                   <>
                     <Gavel className="h-3 w-3 text-avalanche-red" />
-                    <span>BIDDING</span>
+                    <span>{ALLOCATION_MODE_META[AllocationMode.BIDDING].shortLabel}</span>
                   </>
                 ) : (
                   <>
                     <Repeat className="h-3 w-3 text-emerald-400" />
-                    <span>FIXED</span>
+                    <span>{ALLOCATION_MODE_META[AllocationMode.FIXED].shortLabel}</span>
                   </>
                 )}
               </span>
@@ -111,7 +114,7 @@ export function CircleCard({ circle, currentUserAddress }: CircleCardProps) {
           <HoverHint
             hint={
               circle.contractAddress
-                ? `Contract: ${circle.contractAddress}`
+                ? `Địa chỉ hợp đồng: ${circle.contractAddress}`
                 : 'Chưa triển khai hợp đồng'
             }
           >
@@ -145,9 +148,9 @@ export function CircleCard({ circle, currentUserAddress }: CircleCardProps) {
             </div>
           </HoverHint>
 
-          <HoverHint hint="Tổng quỹ giải ngân mỗi vòng (Gross Pot)">
+          <HoverHint hint="Tổng quỹ giải ngân mỗi kỳ trước khi trừ chiết khấu đấu giá">
             <div className="w-full">
-              <div className="text-[10px] uppercase tracking-wider text-zinc-500">Tổng Quỹ</div>
+              <div className="text-[10px] uppercase tracking-wider text-zinc-500">Tổng quỹ kỳ</div>
               <div className="mt-0.5 font-bold text-emerald-400">
                 {formatUsdc(basePot)}
               </div>

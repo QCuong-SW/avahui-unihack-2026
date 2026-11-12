@@ -55,7 +55,7 @@ export function EmailLoginForm({
           </>
         ) : (
           <>
-            <span>Continue with Email</span>
+            <span>Tiếp tục với Email</span>
             <ArrowRight className="h-4 w-4" />
           </>
         )}

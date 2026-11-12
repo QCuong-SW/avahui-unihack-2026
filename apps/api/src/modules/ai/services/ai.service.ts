@@ -101,23 +101,26 @@ export class AiService {
       };
     }
 
+    const riskLabelVi =
+      riskLevel === 'LOW' ? 'Thấp' : riskLevel === 'MEDIUM' ? 'Trung bình' : 'Cao';
+
     const highlights: string[] = [
-      `Tỷ lệ thế chấp bảo chứng ${collateralRatio}x tiền đóng (${circle.collateralAmountFormatted} mUSDC/slot).`,
+      `Tỷ lệ thế chấp bảo chứng ${collateralRatio}x tiền đóng (${circle.collateralAmountFormatted} mUSDC/vị trí).`,
       circle.requireTeam1Attestation
-        ? 'Bật Team1 Anti-Sybil: chặn trùng danh tính 1-Human-1-Slot.'
-        : 'Chưa bật Team1 Anti-Sybil: phù hợp nhóm quen biết hoặc công khai.',
+        ? 'Đã bật xác thực Team1: chặn tạo nhiều ví (1 người / 1 vị trí).'
+        : 'Chưa bật xác thực Team1: phù hợp nhóm quen biết hoặc dây mở công khai.',
       circle.enableYieldVault
-        ? `Quỹ thế chấp sinh lời tự động tại AvaHuiYieldVault (6.50% APY, ước tính ~${estimatedCycleYieldUsdc} mUSDC/chu kỳ).`
-        : 'Không bật Yield Vault: vốn giữ nguyên trực tiếp trong AvaHuiCircle.',
+        ? `Quỹ thế chấp sinh lời tự động tại kho AvaHui (6.50% APY, ước tính ~${estimatedCycleYieldUsdc} mUSDC/chu kỳ).`
+        : 'Không bật kho sinh lời: vốn giữ nguyên trực tiếp trong hợp đồng AvaHuiCircle.',
     ];
     if (totalDefaults > 0) {
-      highlights.push(`Cảnh báo: đã ghi nhận ${totalDefaults} lần trễ hạn bị trích thế chấp.`);
+      highlights.push(`Lưu ý: dây đã ghi nhận ${totalDefaults} lượt trễ hạn phải trích thế chấp.`);
     }
 
     const fallbackSummary =
       circle.allocationMode === AllocationMode.BIDDING && bidRecommendation
-        ? `Dây "${circle.name}" có mức rủi ro ${riskLevel} (${riskScore}/100). Với mức bid tối đa đang dẫn là ${bidRecommendation.currentHighestBidUsdc} mUSDC, mức đấu giá hợp lý khoảng ${bidRecommendation.optimalBidUsdc} mUSDC (chiết khấu ${bidRecommendation.suggestedEffectiveApyPct}% pot).`
-        : `Dây "${circle.name}" có mức rủi ro ${riskLevel} (${riskScore}/100) với cơ chế xoay vòng cố định và tỷ lệ bảo chứng ${collateralRatio}x.`;
+        ? `Dây "${circle.name}" có mức rủi ro ${riskLabelVi} (${riskScore}/100). Với mức chiết khấu cao nhất đang dẫn là ${bidRecommendation.currentHighestBidUsdc} mUSDC, mức đấu giá cân bằng gợi ý khoảng ${bidRecommendation.optimalBidUsdc} mUSDC (tương đương chiết khấu ${bidRecommendation.suggestedEffectiveApyPct}% tổng quỹ).`
+        : `Dây "${circle.name}" có mức rủi ro ${riskLabelVi} (${riskScore}/100) với cơ chế xoay vòng theo thứ tự cố định và tỷ lệ bảo chứng ${collateralRatio}x.`;
 
     const llmSummary = await this.tryGenerateGeminiSummary(
       circle.name,
@@ -154,8 +157,8 @@ export class AiService {
 
     const model = process.env.AI_MODEL?.trim() || 'gemini-2.5-flash';
     const prompt = [
-      `Bạn là cố vấn rủi ro DeFi cho nền tảng hụi on-chain AvaHui trên Avalanche.`,
-      `Hãy viết đúng 2 câu ngắn gọn bằng tiếng Việt đưa ra nhận xét thực tế cho dây "${circleName}" dựa trên số liệu sau:`,
+      `Bạn là cố vấn tài chính Fintech cho nền tảng hụi on-chain AvaHui trên Avalanche.`,
+      `Hãy viết đúng 2 câu tiếng Việt thuần, tự nhiên và dễ hiểu cho người mới để đánh giá rủi ro và gợi ý hành động cho dây "${circleName}" dựa trên số liệu sau (tránh pha từ lóng hoặc tiếng Anh không cần thiết):`,
       quantitativeBrief,
       ...highlights,
     ].join('\n');

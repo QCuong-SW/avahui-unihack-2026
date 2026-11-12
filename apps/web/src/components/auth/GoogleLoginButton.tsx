@@ -32,7 +32,7 @@ export function GoogleLoginButton({
         </svg>
       )}
       <span>
-        {isLoading ? 'Đang xác thực Google...' : 'Continue with Google'}
+        {isLoading ? 'Đang xác thực Google...' : 'Tiếp tục với Google'}
       </span>
     </button>
   );

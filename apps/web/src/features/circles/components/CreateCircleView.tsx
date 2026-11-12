@@ -128,8 +128,8 @@ export function CreateCircleView() {
 
   const onSubmit = async (values: CreateCircleFormValues) => {
     await runTransaction({
-      title: `Deploy Circle "${values.name}"`,
-      description: `Slot #1 Collateral: ${formatUsdc(requiredCollateralUsdc)} mUSDC`,
+      title: `Khởi tạo dây hụi "${values.name}"`,
+      description: `Thế chấp vị trí #1: ${formatUsdc(requiredCollateralUsdc)} mUSDC`,
       action: async () => {
         return await executeCreateCircle({
           ...values,
@@ -162,7 +162,7 @@ export function CreateCircleView() {
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-400 transition hover:text-white active:scale-95"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span>Circles</span>
+          <span>Danh sách dây hụi</span>
         </Link>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -176,7 +176,7 @@ export function CreateCircleView() {
               className="inline-flex items-center gap-1.5 rounded-none border border-avalanche-red/50 bg-avalanche-red/10 px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider text-avalanche-red transition hover:bg-avalanche-red hover:text-white active:scale-95"
             >
               <Zap className="h-3.5 w-3.5" />
-              <span>Preset: Bidding</span>
+              <span>Mẫu: Đấu giá</span>
             </button>
           </HoverHint>
 
@@ -190,7 +190,7 @@ export function CreateCircleView() {
               className="inline-flex items-center gap-1.5 rounded-none border border-zinc-700 bg-zinc-900 px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider text-zinc-300 transition hover:border-zinc-500 hover:text-white active:scale-95"
             >
               <Repeat className="h-3.5 w-3.5 text-emerald-400" />
-              <span>Preset: Fixed</span>
+              <span>Mẫu: Cố định</span>
             </button>
           </HoverHint>
         </div>
@@ -203,7 +203,7 @@ export function CreateCircleView() {
       >
         <div className="space-y-5 rounded-none border border-zinc-800 bg-surface-card p-4 sm:p-6 lg:col-span-7">
           <h1 className="border-b border-zinc-800 pb-3.5 font-mono text-xl font-extrabold uppercase tracking-wider text-white">
-            Create Circle
+            Mở Dây Hụi Mới
           </h1>
 
           {/* Name & Description */}
@@ -264,7 +264,7 @@ export function CreateCircleView() {
                   }`}
                 >
                   <Gavel className="h-4 w-4 text-avalanche-red" />
-                  <span>BIDDING (Đấu giá)</span>
+                  <span>Đấu giá chiết khấu</span>
                 </div>
               </HoverHint>
 
@@ -285,7 +285,7 @@ export function CreateCircleView() {
                   }`}
                 >
                   <Repeat className="h-4 w-4 text-emerald-400" />
-                  <span>FIXED (Cố định)</span>
+                  <span>Thứ tự cố định</span>
                 </div>
               </HoverHint>
             </div>
@@ -432,7 +432,7 @@ export function CreateCircleView() {
           {/* V2 Protocol Security & DeFi Yield Options */}
           <div className="space-y-2.5 rounded-none border border-emerald-500/30 bg-emerald-500/5 p-3.5 font-mono">
             <div className="text-xs font-bold uppercase tracking-wider text-emerald-300">
-              V2 Security &amp; DeFi Yield Modules
+              Cơ chế Bảo mật &amp; Kho Sinh Lời V2
             </div>
             <div className="grid gap-2.5 sm:grid-cols-2 text-xs">
               <label className="flex cursor-pointer items-center gap-2 rounded-none border border-zinc-800 bg-zinc-900/80 px-3 py-2 text-zinc-200 hover:border-zinc-700">
@@ -441,7 +441,7 @@ export function CreateCircleView() {
                   {...register('isSealedBid')}
                   className="h-3.5 w-3.5 accent-avalanche-red"
                 />
-                <span>Sealed-Bid (Commit-Reveal)</span>
+                <span>Đấu giá kín 2 pha (Chống lộ giá)</span>
               </label>
 
               <label className="flex cursor-pointer items-center gap-2 rounded-none border border-zinc-800 bg-zinc-900/80 px-3 py-2 text-zinc-200 hover:border-zinc-700">
@@ -450,7 +450,7 @@ export function CreateCircleView() {
                   {...register('enableYieldVault')}
                   className="h-3.5 w-3.5 accent-emerald-500"
                 />
-                <span>ERC-4626 Yield Vault (6.5% APY)</span>
+                <span>Kho sinh lời ERC-4626 (6.5% APY)</span>
               </label>
 
               <label className="flex cursor-pointer items-center gap-2 rounded-none border border-zinc-800 bg-zinc-900/80 px-3 py-2 text-zinc-200 hover:border-zinc-700">
@@ -459,7 +459,7 @@ export function CreateCircleView() {
                   {...register('requireTeam1Attestation')}
                   className="h-3.5 w-3.5 accent-amber-500"
                 />
-                <span>Team1 Anti-Sybil (1-Human-1-Slot)</span>
+                <span>Xác thực Team1 (1 người / 1 suất)</span>
               </label>
 
               <label className="flex cursor-pointer items-center gap-2 rounded-none border border-zinc-800 bg-zinc-900/80 px-3 py-2 text-zinc-200 hover:border-zinc-700">
@@ -468,7 +468,7 @@ export function CreateCircleView() {
                   {...register('isPrivateInvite')}
                   className="h-3.5 w-3.5 accent-sky-500"
                 />
-                <span>Invite-Only Link Gate</span>
+                <span>Dây riêng tư (Khóa bằng mã mời)</span>
               </label>
             </div>
 
@@ -508,7 +508,7 @@ export function CreateCircleView() {
         {/* Right Live Summary Box */}
         <div className="sticky top-24 space-y-4 rounded-none border border-zinc-800 bg-surface-card p-6 shadow-2xl lg:col-span-5">
           <div className="flex items-center justify-between border-b border-zinc-800 pb-3.5">
-            <h2 className="font-mono text-base font-bold uppercase tracking-wider text-white">Contract Summary</h2>
+            <h2 className="font-mono text-base font-bold uppercase tracking-wider text-white">Tóm tắt Hợp đồng</h2>
             <Layers className="h-4 w-4 text-avalanche-red" />
           </div>
 
@@ -517,7 +517,7 @@ export function CreateCircleView() {
             className="w-full"
           >
             <div className="w-full rounded-none border border-emerald-500/30 bg-emerald-500/10 p-4 text-center">
-              <div className="font-mono text-xs uppercase tracking-wider text-emerald-300">Gross Pot / Round</div>
+              <div className="font-mono text-xs uppercase tracking-wider text-emerald-300">Tổng quỹ / Kỳ</div>
               <div className="mt-1 font-mono text-3xl font-extrabold text-white">
                 {formatUsdc(basePotUsdc)}{' '}
                 <span className="text-base font-semibold text-emerald-400">
@@ -531,17 +531,17 @@ export function CreateCircleView() {
             <div className="flex items-center justify-between rounded-none border border-zinc-800/80 bg-zinc-900/80 px-3.5 py-2.5">
               <span className="flex items-center gap-1.5 font-mono text-zinc-400 uppercase tracking-wider text-[11px]">
                 <Users className="h-3.5 w-3.5 text-avalanche-red" />
-                <span>Total Rounds</span>
+                <span>Tổng số kỳ</span>
               </span>
               <span className="font-mono font-bold text-white">
-                {watchedValues.maxMembers || 5} Rounds
+                {watchedValues.maxMembers || 5} kỳ
               </span>
             </div>
 
             <div className="flex items-center justify-between rounded-none border border-zinc-800/80 bg-zinc-900/80 px-3.5 py-2.5">
               <span className="flex items-center gap-1.5 font-mono text-zinc-400 uppercase tracking-wider text-[11px]">
                 <Lock className="h-3.5 w-3.5 text-amber-400" />
-                <span>Collateral Required</span>
+                <span>Thế chấp yêu cầu</span>
               </span>
               <span className="font-mono font-bold text-amber-300">
                 {formatUsdc(requiredCollateralUsdc)} mUSDC
@@ -551,7 +551,7 @@ export function CreateCircleView() {
             <div className="flex items-center justify-between rounded-none border border-zinc-800/80 bg-zinc-900/80 px-3.5 py-2.5">
               <span className="flex items-center gap-1.5 font-mono text-zinc-400 uppercase tracking-wider text-[11px]">
                 <Coins className="h-3.5 w-3.5 text-emerald-400" />
-                <span>Wallet Balance</span>
+                <span>Số dư ví hiện tại</span>
               </span>
               <span
                 className={`font-mono font-bold ${
@@ -575,7 +575,7 @@ export function CreateCircleView() {
                 onClick={() => requestFaucet(1000)}
                 className="rounded-none bg-avalanche-red px-2.5 py-1 font-mono text-xs font-bold uppercase tracking-wider text-white transition hover:bg-avalanche-darkRed disabled:opacity-60"
               >
-                +1,000 Faucet
+                Nhận +1,000 mUSDC
               </button>
             </div>
           )}
@@ -591,7 +591,7 @@ export function CreateCircleView() {
             >
               <Rocket className="h-4 w-4" />
               <span>
-                Deploy Circle • Lock {formatUsdc(requiredCollateralUsdc)} mUSDC
+                Mở dây hụi • Khóa {formatUsdc(requiredCollateralUsdc)} mUSDC
               </span>
             </button>
           </HoverHint>

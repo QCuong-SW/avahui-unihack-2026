@@ -355,9 +355,9 @@ export function AdminConsoleView() {
             onChange={(e) => setAttestTier(Number(e.target.value))}
             className="sm:col-span-2 rounded-none border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-emerald-400 focus:outline-none"
           >
-            <option value={1}>Tier 1 (Basic)</option>
-            <option value={2}>Tier 2 (Team1)</option>
-            <option value={3}>Tier 3 (KYC)</option>
+            <option value={1}>Cấp 1 (Cơ bản)</option>
+            <option value={2}>Cấp 2 (Team1)</option>
+            <option value={3}>Cấp 3 (KYC)</option>
           </select>
           <button
             type="button"
@@ -373,7 +373,7 @@ export function AdminConsoleView() {
             {issueAttestationMutation.isPending ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <span>Cấp Verify</span>
+              <span>Cấp chứng nhận</span>
             )}
           </button>
           <button

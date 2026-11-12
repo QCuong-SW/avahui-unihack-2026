@@ -146,9 +146,9 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
 
   const handleJoinCircle = async () => {
     await runTransaction({
-      title: `Join Circle & Lock Collateral`,
-      description: `Slot #${circle.currentMemberCount + 1} • ${formatUsdc(circle.collateralAmountFormatted)} mUSDC${
-        inviteCodeInput ? ` • Invite: ${inviteCodeInput}` : ''
+      title: `Tham gia dây & Khóa thế chấp`,
+      description: `Vị trí #${circle.currentMemberCount + 1} • ${formatUsdc(circle.collateralAmountFormatted)} mUSDC${
+        inviteCodeInput ? ` • Mã mời: ${inviteCodeInput}` : ''
       }`,
       action: async () => {
         return await executeJoinCircle(circle, inviteCodeInput || undefined);
@@ -159,7 +159,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
   const handleContribute = async () => {
     if (!currentRoundObj) return;
     await runTransaction({
-      title: `Contribute Round #${currentRoundObj.roundNumber}`,
+      title: `Đóng hụi Kỳ #${currentRoundObj.roundNumber}`,
       description: `${formatUsdc(circle.contributionAmountFormatted)} mUSDC • ${circle.name}`,
       action: async () => {
         return await executeContribute(circle, currentRoundObj.roundNumber);
@@ -172,8 +172,8 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
     if (!currentRoundObj) return;
     const numericBid = parseFloat(bidInput);
     await runTransaction({
-      title: `Submit Bid • Round #${currentRoundObj.roundNumber}`,
-      description: `Discount Bid: ${formatUsdc(numericBid)} mUSDC`,
+      title: `Đặt giá chiết khấu • Kỳ #${currentRoundObj.roundNumber}`,
+      description: `Mức chiết khấu: ${formatUsdc(numericBid)} mUSDC`,
       action: async () => {
         return await executeSubmitBid(
           circle,
@@ -192,8 +192,8 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
     if (!currentRoundObj) return;
     const numericBid = parseFloat(bidInput);
     await runTransaction({
-      title: `Commit Sealed Bid • Round #${currentRoundObj.roundNumber}`,
-      description: `keccak256(circle, R#${currentRoundObj.roundNumber}, bidder, ${formatUsdc(numericBid)} mUSDC, salt)`,
+      title: `Niêm phong giá đấu kín • Kỳ #${currentRoundObj.roundNumber}`,
+      description: `Mã băm bảo mật keccak256 cho mức giá ${formatUsdc(numericBid)} mUSDC`,
       action: async () => {
         return await executeCommitBid(
           circle,
@@ -208,8 +208,8 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
     if (!currentRoundObj) return;
     const revealAmount = savedSealedBid?.bidAmountUsdc || parseFloat(bidInput);
     await runTransaction({
-      title: `Reveal Sealed Bid • Round #${currentRoundObj.roundNumber}`,
-      description: `Verifying Salt & Revealing Bid: ${formatUsdc(revealAmount)} mUSDC`,
+      title: `Mở niêm phong giá đấu • Kỳ #${currentRoundObj.roundNumber}`,
+      description: `Xác thực mã Salt & Công bố mức đấu giá: ${formatUsdc(revealAmount)} mUSDC`,
       action: async () => {
         return await executeRevealBid(
           circle,
@@ -237,7 +237,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
         recoverySaltInput,
       );
       await runTransaction({
-        title: `Reveal Recovered Bid • Round #${currentRoundObj.roundNumber}`,
+        title: `Khôi phục & Mở niêm phong • Kỳ #${currentRoundObj.roundNumber}`,
         description: `Khôi phục Salt & Mở niêm phong ${formatUsdc(parsedBid)} mUSDC`,
         action: async () => {
           return await executeRevealBid(circle, currentRoundObj.roundNumber, {
@@ -283,8 +283,8 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
 
   const handleVerifyTeam1 = async () => {
     await runTransaction({
-      title: `Team1 Anti-Sybil Attestation`,
-      description: `Verifying 1-Human-1-Slot Nullifier on Avalanche Fuji`,
+      title: `Xác thực định danh Team1`,
+      description: `Đăng ký định danh 1 người / 1 vị trí trên Avalanche Fuji`,
       action: async () => {
         return await verifyTeam1Mutation.mutateAsync();
       },
@@ -296,11 +296,11 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
     const willSlash = unpaidMembersCount > 0;
     await runTransaction({
       title: willSlash
-        ? `Settle Round #${currentRoundObj.roundNumber} & Auto-Slash`
-        : `Settle Round #${currentRoundObj.roundNumber} & Payout`,
+        ? `Tất toán Kỳ #${currentRoundObj.roundNumber} & Trích thế chấp`
+        : `Tất toán Kỳ #${currentRoundObj.roundNumber} & Giải ngân`,
       description: willSlash
-        ? `Slashing ${unpaidMembersCount} unpaid member(s)`
-        : `Distributing ${formatUsdc(currentRoundObj.netPayoutFormatted)} mUSDC`,
+        ? `Trích thế chấp của ${unpaidMembersCount} thành viên chưa đóng bù quỹ`
+        : `Giải ngân ${formatUsdc(currentRoundObj.netPayoutFormatted)} mUSDC`,
       action: async () => {
         return await executeSettleRound(circle, currentRoundObj.roundNumber);
       },
@@ -320,7 +320,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
     if (!myMember) return;
 
     await runTransaction({
-      title: `Withdraw Collateral & Bonus`,
+      title: `Rút Thế chấp & Tiền thưởng`,
       description: `+${formatUsdc(withdrawBreakdown.totalClaimableUsdc)} mUSDC`,
       action: async () => {
         return await executeWithdrawCollateral(circle);
@@ -336,7 +336,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
   return (
     <aside className="sticky top-24 space-y-4 rounded-none border border-zinc-800 bg-surface-card p-4 sm:p-5 shadow-2xl">
       <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
-        <h2 className="font-mono text-xs font-bold uppercase tracking-wider text-white">Action Console</h2>
+        <h2 className="font-mono text-xs font-bold uppercase tracking-wider text-white">Bảng Thao Tác</h2>
         <span
           className={`rounded-none border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${walletMeta.badgeClass}`}
         >
@@ -366,7 +366,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
             }
             className="w-full rounded-none border border-avalanche-red bg-avalanche-red px-3 py-2 font-mono text-xs font-bold uppercase tracking-wider text-white transition hover:bg-avalanche-darkRed"
           >
-            Connect Wallet to Transact
+            Kích hoạt ví để giao dịch
           </button>
         </div>
       )}
@@ -375,9 +375,9 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
       {circle.status === CircleStatus.Recruiting && (
         <div className="space-y-3">
           <div className="flex items-center justify-between rounded-none border border-amber-500/30 bg-amber-500/10 px-4 py-3 font-mono text-xs">
-            <span className="font-bold text-amber-300 uppercase tracking-wider">Recruiting</span>
+            <span className="font-bold text-amber-300 uppercase tracking-wider">Đang gom thành viên</span>
             <span className="font-bold text-white">
-              {circle.currentMemberCount} / {circle.maxMembers} Slots
+              {circle.currentMemberCount} / {circle.maxMembers} vị trí
             </span>
           </div>
 
@@ -385,10 +385,10 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
           <div className="flex items-center justify-between rounded-none border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 font-mono text-[11px]">
             <span className="flex items-center gap-1.5 text-emerald-300 font-semibold">
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-              <span>Team1 Sybil Guard</span>
+              <span>Bảo vệ định danh Team1</span>
             </span>
             {currentUser.isTeam1Verified ? (
-              <span className="text-emerald-400 font-bold">1-Human-1-Slot OK</span>
+              <span className="text-emerald-400 font-bold">Đã xác thực (1 người / 1 suất)</span>
             ) : frontendEnv.useMock ||
               currentUser.role === UserRole.ADMIN ||
               currentUser.role === UserRole.VERIFIER ? (
@@ -397,7 +397,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                 onClick={handleVerifyTeam1}
                 className="underline text-amber-300 hover:text-white font-bold"
               >
-                Verify Now
+                Xác thực ngay
               </button>
             ) : (
               <span
@@ -408,7 +408,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                 }
               >
                 {circle.requireTeam1Attestation
-                  ? 'Cần Admin duyệt (/admin)'
+                  ? 'Cần Quản trị duyệt'
                   : 'Không bắt buộc'}
               </span>
             )}
@@ -418,7 +418,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
             <div className="space-y-2.5">
               {(circle.isPrivateInvite || inviteCodeInput) && (
                 <div className="flex items-center justify-between gap-2 rounded-none border border-sky-500/30 bg-sky-500/5 px-3 py-2 font-mono text-[11px]">
-                  <span className="text-sky-300 font-semibold">Invite Code:</span>
+                  <span className="text-sky-300 font-semibold">Mã mời:</span>
                   <input
                     type="text"
                     value={inviteCodeInput}
@@ -571,12 +571,12 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                       {useSealedMode ? (
                         <>
                           <Lock className="h-3 w-3 text-avalanche-red" />
-                          <span>Đấu giá Kín (Sealed-Bid Commit-Reveal)</span>
+                          <span>Đấu giá kín (2 pha Niêm phong)</span>
                         </>
                       ) : (
                         <>
                           <Zap className="h-3 w-3 text-amber-400" />
-                          <span>Đấu giá Mở (Open Bid)</span>
+                          <span>Đấu giá công khai</span>
                         </>
                       )}
                     </span>
@@ -592,16 +592,16 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
 
               {myMember.hasReceivedPayout ? (
                 <HoverHint
-                  hint="Mỗi thành viên chỉ được nhận Payout 1 lần duy nhất trong dây hụi"
+                  hint="Mỗi thành viên chỉ được nhận quỹ 1 lần duy nhất trong suốt dây hụi"
                   className="w-full"
                 >
                   <div className="flex w-full items-center justify-between rounded-none border border-zinc-800 bg-zinc-950/60 px-3 py-2.5 font-mono text-xs text-zinc-400">
                     <span className="flex items-center gap-1.5">
                       <Trophy className="h-4 w-4 text-amber-400" />
-                      <span>Đã nhận Payout</span>
+                      <span>Đã nhận quỹ</span>
                     </span>
                     <span className="font-bold text-white">
-                      Vòng #{myMember.wonRoundNumber}
+                      Kỳ #{myMember.wonRoundNumber}
                     </span>
                   </div>
                 </HoverHint>
@@ -622,14 +622,14 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                         />
                       </HoverHint>
 
-                      <HoverHint hint="Bước 1: Gửi mã băm cam kết (Commitment Hash) lên chuỗi">
+                      <HoverHint hint="Bước 1: Gửi mã băm niêm phong lên chuỗi (2/3 thời gian đầu)">
                         <button
                           type="submit"
                           disabled={isCommittingBid || isBidding || isPaused}
                           className="shrink-0 inline-flex items-center gap-1 rounded-none border border-avalanche-red bg-avalanche-red/15 px-3 py-2 font-mono text-xs font-bold uppercase tracking-wider text-avalanche-red transition hover:bg-avalanche-red hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <Lock className="h-3.5 w-3.5" />
-                          <span>Commit</span>
+                          <span>Niêm phong</span>
                         </button>
                       </HoverHint>
                     </div>
@@ -638,7 +638,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                   {savedSealedBid && (
                     <div className="rounded-none border border-sky-500/30 bg-sky-500/10 p-2.5 font-mono text-[11px] space-y-2">
                       <div className="flex items-center justify-between text-sky-300">
-                        <span>Committed Hash:</span>
+                        <span>Mã niêm phong:</span>
                         <span className="font-bold">
                           {shortenAddress(savedSealedBid.commitment, 6)}
                         </span>
@@ -655,7 +655,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                           ) : (
                             <Copy className="h-3 w-3" />
                           )}
-                          <span>{saltCopied ? 'Đã chép Salt' : 'Copy Salt'}</span>
+                          <span>{saltCopied ? 'Đã chép Salt' : 'Sao chép Salt'}</span>
                         </button>
                         <button
                           type="button"
@@ -669,7 +669,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
 
                       {savedSealedBid.revealed ? (
                         <div className="flex items-center justify-between text-emerald-400 font-bold">
-                          <span>Đã mở niêm phong (Revealed):</span>
+                          <span>Đã mở niêm phong:</span>
                           <span>{formatUsdc(savedSealedBid.bidAmountUsdc)} mUSDC</span>
                         </div>
                       ) : (
@@ -681,7 +681,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                         >
                           <Eye className="h-3.5 w-3.5" />
                           <span>
-                            Reveal Bid ({formatUsdc(savedSealedBid.bidAmountUsdc)} mUSDC)
+                            Mở niêm phong ({formatUsdc(savedSealedBid.bidAmountUsdc)} mUSDC)
                           </span>
                         </button>
                       )}
@@ -759,7 +759,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                         disabled={isBidding || isPaused}
                         className="shrink-0 rounded-none border border-avalanche-red bg-avalanche-red/15 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-avalanche-red transition hover:bg-avalanche-red hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        Bid
+                        Đặt giá
                       </button>
                     </HoverHint>
                   </div>
@@ -794,16 +794,16 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
           <div className="rounded-none border border-zinc-800 bg-zinc-900/70 p-4 space-y-2.5">
             <div className="flex items-center justify-between font-mono text-xs">
               <span className="font-bold uppercase tracking-wider text-zinc-300">
-                3. Kết toán Vòng #{currentRoundObj.roundNumber}
+                3. Tất toán Kỳ #{currentRoundObj.roundNumber}
               </span>
               <span className="font-semibold text-emerald-400">
-                {currentRoundObj.contributionsCount}/{circle.maxMembers} Paid
+                {currentRoundObj.contributionsCount}/{circle.maxMembers} Đã đóng
               </span>
             </div>
 
             {unpaidMembersCount === 0 ? (
               <HoverHint
-                hint={`Giải ngân ${formatUsdc(currentRoundObj.netPayoutFormatted)} mUSDC cho người thắng và chuyển sang vòng tiếp theo`}
+                hint={`Giải ngân ${formatUsdc(currentRoundObj.netPayoutFormatted)} mUSDC cho người thắng và chuyển sang kỳ tiếp theo`}
                 className="w-full"
               >
                 <button
@@ -813,7 +813,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                 >
                   <Sparkles className="h-4 w-4" />
                   <span>
-                    Settle &amp; Payout{' '}
+                    Tất toán &amp; Giải ngân{' '}
                     {formatUsdc(currentRoundObj.netPayoutFormatted)} mUSDC
                   </span>
                 </button>
@@ -830,7 +830,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                 >
                   <ShieldAlert className="h-4 w-4" />
                   <span>
-                    Settle &amp; Slash ({unpaidMembersCount} trễ hạn)
+                    Tất toán &amp; Trích thế chấp ({unpaidMembersCount} trễ hạn)
                   </span>
                 </button>
               </HoverHint>
@@ -938,7 +938,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
         <div className="flex w-full items-center justify-between rounded-none border border-zinc-800 bg-zinc-950/60 px-3.5 py-2.5 font-mono text-xs">
           <span className="flex items-center gap-1.5 text-zinc-400 uppercase tracking-wider text-[11px]">
             <Lock className="h-3.5 w-3.5 text-amber-400" />
-            <span>Total Locked Collateral</span>
+            <span>Tổng thế chấp đang khóa</span>
           </span>
           <span className="font-bold text-amber-300">
             {formatUsdc(totalCollateralInContract)} mUSDC
@@ -955,7 +955,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
           <div className="flex w-full items-center justify-between rounded-none border border-emerald-500/30 bg-emerald-500/5 px-3.5 py-2.5 font-mono text-xs">
             <span className="flex items-center gap-1.5 text-emerald-300 uppercase tracking-wider text-[11px]">
               <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
-              <span>ERC-4626 Yield (6.5% APY)</span>
+              <span>Kho sinh lãi (6.5% APY)</span>
             </span>
             <span className="font-bold text-emerald-400">
               +{formatUsdc(circle.accruedYieldFormatted || '0.00')} mUSDC

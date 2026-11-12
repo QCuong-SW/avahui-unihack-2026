@@ -18,8 +18,8 @@ export const WALLET_STATUS_META: Record<
 > = {
   WALLET_CREATED: {
     state: 'WALLET_CREATED',
-    label: 'Wallet Created',
-    shortLabel: 'Created',
+    label: 'Đã khởi tạo ví',
+    shortLabel: 'Mới tạo',
     dotColorClass: 'bg-amber-400',
     badgeClass: 'border-amber-500/40 bg-amber-500/10 text-amber-300',
     hint: 'Ví nhúng đã được khởi tạo trên Avalanche Fuji, hãy kích hoạt kết nối để ký giao dịch',
@@ -27,8 +27,8 @@ export const WALLET_STATUS_META: Record<
   },
   WALLET_CONNECTED_READY: {
     state: 'WALLET_CONNECTED_READY',
-    label: 'Wallet Connected / Ready',
-    shortLabel: 'Connected',
+    label: 'Ví đã kết nối / Sẵn sàng',
+    shortLabel: 'Sẵn sàng',
     dotColorClass: 'bg-emerald-400',
     badgeClass: 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300',
     hint: 'Ví nhúng Privy đang kết nối trên Avalanche Fuji (Chain ID: 43113) và sẵn sàng ký giao dịch',
@@ -36,8 +36,8 @@ export const WALLET_STATUS_META: Record<
   },
   WALLET_DISCONNECTED: {
     state: 'WALLET_DISCONNECTED',
-    label: 'Wallet Disconnected / Unavailable',
-    shortLabel: 'Disconnected',
+    label: 'Ví tạm ngắt kết nối',
+    shortLabel: 'Tạm ngắt',
     dotColorClass: 'bg-rose-400',
     badgeClass: 'border-rose-500/40 bg-rose-500/10 text-rose-300',
     hint: 'Ví đang tạm ngắt kết nối phiên ký. Bấm để kết nối lại mà không cần đăng nhập lại',

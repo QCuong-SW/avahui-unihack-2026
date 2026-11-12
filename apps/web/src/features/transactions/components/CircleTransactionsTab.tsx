@@ -30,8 +30,8 @@ export function CircleTransactionsTab({
             <th className="px-3.5 py-3">Sự kiện</th>
             <th className="px-3.5 py-3">Từ Ví</th>
             <th className="px-3.5 py-3">Chi tiết</th>
-            <th className="px-3.5 py-3">Block</th>
-            <th className="px-3.5 py-3">Tx</th>
+            <th className="px-3.5 py-3">Khối (Block)</th>
+            <th className="px-3.5 py-3">Mã giao dịch</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-zinc-800/70">

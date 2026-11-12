@@ -425,7 +425,7 @@ export function LandingView() {
       >
         <div className="mb-10 max-w-2xl space-y-2">
           <div className="font-mono text-xs font-bold uppercase tracking-widest text-avalanche-red">
-            01 // Giải Quyết Nỗi Lo Chơi Hụi
+            01 // Giải Quyết Rủi Ro Hụi Truyền Thống
           </div>
           <h2 className="text-2xl font-black uppercase tracking-tight text-white sm:text-3xl">
             Từ &ldquo;Tin Vào Lời Hứa&rdquo; Sang &ldquo;Quy Tắc Minh Bạch&rdquo;
@@ -448,8 +448,8 @@ export function LandingView() {
             </div>
             <ul className="space-y-3 text-sm text-zinc-300">
               {[
-                'Chủ hụi cầm tiền mặt toàn nhóm — dễ phát sinh rủi ro giữ tiền hoặc giật hụi.',
-                'Người hốt hụi sớm rồi "bùng" các kỳ sau, cả nhóm phải gánh nợ thay.',
+                'Chủ hụi cầm tiền mặt toàn nhóm — dễ phát sinh rủi ro giữ tiền hoặc chiếm dụng quỹ chung.',
+                'Người nhận quỹ sớm trễ hạn hoặc mất khả năng đóng các kỳ sau, khiến cả nhóm phải gánh nợ thay.',
                 'Bỏ thăm kín bằng giấy dễ bị chủ hụi can thiệp, lộ mức giá cho người quen.',
                 'Tiền quỹ thu góp nằm im một chỗ, không sinh thêm đồng lãi nào.',
               ].map((item) => (

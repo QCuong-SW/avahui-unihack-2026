@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuthSession } from '@/lib/auth/useAuthSession';
 
 const AUTH_PUBLIC_ROUTES = ['/login', '/login/verify'];
-const ALWAYS_PUBLIC_ROUTES = ['/'];
+const ALWAYS_PUBLIC_ROUTES = ['/', '/guide'];
 
 export function RouteGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || '/';

@@ -185,7 +185,7 @@ export function OTPVerification() {
             className="inline-flex items-center gap-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-zinc-400 transition hover:text-white"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Back to login</span>
+            <span>Quay lại đăng nhập</span>
           </Link>
 
           {!session?.pendingOtp?.isRealPrivy && frontendEnv.enableDevDemoTools && (
@@ -267,7 +267,7 @@ export function OTPVerification() {
                 <span>Đang xác thực...</span>
               </>
             ) : (
-              <span>Verify</span>
+              <span>Xác nhận OTP</span>
             )}
           </button>
         </form>
@@ -287,7 +287,7 @@ export function OTPVerification() {
               className="inline-flex items-center gap-1 font-bold uppercase tracking-wider text-avalanche-red hover:underline"
             >
               <RefreshCw className="h-3 w-3" />
-              <span>Resend OTP</span>
+              <span>Gửi lại mã OTP</span>
             </button>
           )}
         </div>

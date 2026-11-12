@@ -17,7 +17,7 @@ export function ExploreCirclesView() {
   if (isLoading || !state) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center font-mono text-xs text-zinc-400">
-        Loading...
+        Đang tải danh sách dây hụi...
       </div>
     );
   }
@@ -43,7 +43,7 @@ export function ExploreCirclesView() {
     <div className="space-y-5 sm:space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 animate-fade-down">
         <h1 className="font-mono text-xl sm:text-2xl font-extrabold uppercase tracking-wider text-white">
-          Circles ({filteredCircles.length})
+          Danh sách Dây hụi ({filteredCircles.length})
         </h1>
 
         <Link
@@ -51,7 +51,7 @@ export function ExploreCirclesView() {
           className="inline-flex items-center gap-1.5 rounded-none border border-avalanche-red bg-avalanche-red px-3.5 py-2 font-mono text-xs font-bold uppercase tracking-wider text-white transition hover:bg-avalanche-darkRed active:scale-95 shadow-md shadow-avalanche-red/20"
         >
           <PlusCircle className="h-4 w-4" />
-          <span>Create Circle</span>
+          <span>Mở dây mới</span>
         </Link>
       </div>
 
@@ -63,7 +63,7 @@ export function ExploreCirclesView() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search circle name or contract (0x...)"
+            placeholder="Tìm theo tên dây hụi hoặc địa chỉ hợp đồng (0x...)"
             className="w-full rounded-none border border-zinc-800 bg-zinc-900 py-2 pl-9 pr-3 font-mono text-xs text-white focus:border-avalanche-red focus:outline-none transition-colors"
           />
         </div>
@@ -72,10 +72,10 @@ export function ExploreCirclesView() {
           <Filter className="h-3.5 w-3.5 text-zinc-500" />
           {(
             [
-              { key: 'ALL', label: 'All' },
-              { key: CircleStatus.Recruiting, label: 'Recruiting' },
-              { key: CircleStatus.Active, label: 'Active' },
-              { key: CircleStatus.Completed, label: 'Completed' },
+              { key: 'ALL', label: 'Tất cả' },
+              { key: CircleStatus.Recruiting, label: 'Đang gom' },
+              { key: CircleStatus.Active, label: 'Đang chạy' },
+              { key: CircleStatus.Completed, label: 'Đã tất toán' },
             ] as const
           ).map((st) => (
             <button
@@ -95,9 +95,9 @@ export function ExploreCirclesView() {
         <div className="flex flex-wrap items-center justify-start md:justify-end gap-1.5 md:col-span-3">
           {(
             [
-              { key: 'ALL', label: 'All Modes' },
-              { key: AllocationMode.FIXED, label: 'FIXED' },
-              { key: AllocationMode.BIDDING, label: 'BIDDING' },
+              { key: 'ALL', label: 'Mọi cơ chế' },
+              { key: AllocationMode.FIXED, label: 'Cố định' },
+              { key: AllocationMode.BIDDING, label: 'Đấu giá' },
             ] as const
           ).map((md) => (
             <button

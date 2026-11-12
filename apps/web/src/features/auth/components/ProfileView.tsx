@@ -69,8 +69,8 @@ export function ProfileView() {
 
   const handleClaimVoucher = async (voucher: SignedAttestationVoucher) => {
     await runTransaction({
-      title: 'Claim Team1 Attestation (EIP-712)',
-      description: 'Gửi chữ ký EIP-712 lên Team1AttestationVerifier trên Fuji',
+      title: 'Nhận chứng thực Team1 (EIP-712)',
+      description: 'Gửi chữ ký EIP-712 lên hợp đồng Team1AttestationVerifier trên Fuji',
       action: () => claimVoucherMutation.mutateAsync(voucher),
       onSuccess: () => {
         setShowVoucherPaste(false);
@@ -412,15 +412,15 @@ export function ProfileView() {
                   type="button"
                   onClick={() =>
                     runTransaction({
-                      title: 'Team1 Sybil Attestation Verification',
-                      description: 'Registering 1-Human-1-Slot Nullifier on Avalanche Fuji',
+                      title: 'Xác thực chống Sybil Team1',
+                      description: 'Đăng ký định danh 1 người / 1 vị trí trên Avalanche Fuji',
                       action: () => verifyTeam1Mutation.mutateAsync(),
                     })
                   }
                   className="inline-flex items-center gap-1 rounded-none border border-emerald-500/40 bg-emerald-500/15 px-3 py-1.5 font-mono text-xs font-bold uppercase text-emerald-300 hover:bg-emerald-500 hover:text-zinc-950"
                 >
                   <ShieldCheck className="h-3.5 w-3.5" />
-                  <span>{isTeam1Verified ? 'Re-Verify' : 'Verify Team1'}</span>
+                  <span>{isTeam1Verified ? 'Xác thực lại' : 'Xác thực Team1'}</span>
                 </button>
               )}
 
@@ -429,7 +429,7 @@ export function ProfileView() {
                   type="button"
                   onClick={() =>
                     runTransaction({
-                      title: 'Swap AVAX → mUSDC',
+                      title: 'Quy đổi AVAX → mUSDC',
                       description: '0.05 AVAX → +250.00 mUSDC',
                       action: () => swapMutation.mutateAsync(0.05),
                     })
@@ -437,7 +437,7 @@ export function ProfileView() {
                   className="inline-flex items-center gap-1 rounded-none border border-sky-500/40 bg-sky-500/15 px-3 py-1.5 font-mono text-xs font-bold uppercase text-sky-300 hover:bg-sky-500 hover:text-zinc-950"
                 >
                   <ArrowLeftRight className="h-3.5 w-3.5" />
-                  <span>Swap 0.05 AVAX</span>
+                  <span>Đổi 0.05 AVAX</span>
                 </button>
               )}
             </div>
@@ -510,7 +510,7 @@ export function ProfileView() {
                           {tx.circleName || tx.circleId}
                         </Link>
                       ) : (
-                        <span className="text-zinc-500">MockUSDC</span>
+                        <span className="text-zinc-500">mUSDC (Token thử nghiệm)</span>
                       )}
                     </td>
                     <td className="px-3.5 py-3 font-semibold text-emerald-400">

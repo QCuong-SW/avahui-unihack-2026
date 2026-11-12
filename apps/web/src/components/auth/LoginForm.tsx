@@ -216,10 +216,10 @@ export function LoginForm() {
           <AvahuiLogo size={38} roundedClass="rounded-none" />
           <div>
             <h2 className="font-mono text-2xl font-extrabold uppercase tracking-tight text-white">
-              Welcome to Avahui
+              Chào mừng tới Avahui
             </h2>
             <p className="text-sm text-zinc-400">
-              Đăng nhập để quản lý vòng hụi của bạn.
+              Đăng nhập để quản lý dây hụi minh bạch của bạn.
             </p>
           </div>
         </div>
@@ -283,7 +283,7 @@ export function LoginForm() {
             ) : (
               <Wallet className="h-3.5 w-3.5 text-zinc-400" />
             )}
-            <span>Connect Wallet (Core / MetaMask SIWE)</span>
+            <span>Kết nối Ví Web3 (Core / MetaMask — không tốn gas)</span>
           </button>
         </div>
 
@@ -360,11 +360,11 @@ export function LoginForm() {
         <p className="mt-6 text-center font-mono text-[11px] leading-relaxed text-zinc-500">
           Bằng việc tiếp tục, bạn đồng ý với{' '}
           <span className="underline decoration-zinc-700 hover:text-zinc-300">
-            Terms of Service
+            Điều khoản Sử dụng
           </span>{' '}
           và{' '}
           <span className="underline decoration-zinc-700 hover:text-zinc-300">
-            Privacy Policy
+            Chính sách Bảo mật
           </span>{' '}
           của Avahui.
         </p>

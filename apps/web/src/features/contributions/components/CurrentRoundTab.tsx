@@ -111,8 +111,8 @@ export function CurrentRoundTab({
           <div className="w-full">
             <div className="font-mono text-[11px] uppercase tracking-wider text-zinc-400">
               {circle.allocationMode === AllocationMode.BIDDING
-                ? 'Dẫn đầu Bid'
-                : 'Người nhận (Fixed)'}
+                ? 'Dẫn đầu đấu giá'
+                : 'Người nhận theo thứ tự'}
             </div>
             <div className="mt-1 font-mono text-sm font-bold text-white">
               {circle.allocationMode === AllocationMode.BIDDING ? (
@@ -124,15 +124,15 @@ export function CurrentRoundTab({
                     </div>
                   </>
                 ) : (
-                  <span className="text-xs text-zinc-400">Chưa có Bid</span>
+                  <span className="text-xs text-zinc-400">Chưa có lượt đặt giá</span>
                 )
               ) : (
                 <>
                   <div className="truncate">
                     #{currentRoundObj.roundNumber}{' '}
-                    {fixedRecipient?.displayName || 'N/A'}
+                    {fixedRecipient?.displayName || 'Chưa xác định'}
                   </div>
-                  <div className="text-[11px] text-emerald-400">100% Pot</div>
+                  <div className="text-[11px] text-emerald-400">100% Tổng quỹ</div>
                 </>
               )}
             </div>
@@ -210,7 +210,7 @@ export function CurrentRoundTab({
                       >
                         <span className="inline-flex items-center gap-1 font-bold text-rose-400">
                           <ShieldAlert className="h-3.5 w-3.5" />
-                          <span>Slashed</span>
+                          <span>Đã trích thế chấp</span>
                         </span>
                       </HoverHint>
                     ) : (
@@ -253,7 +253,7 @@ export function CurrentRoundTab({
               <span>Đấu giá Vòng #{currentRoundObj.roundNumber}</span>
             </span>
             <HoverHint
-              hint="Giới hạn giá Bid tối thiểu và tối đa cho phép trong mỗi vòng"
+              hint="Giới hạn mức chiết khấu tối thiểu và tối đa cho phép trong mỗi kỳ"
               side="left"
             >
               <span className="cursor-help font-mono text-[11px] text-zinc-400">

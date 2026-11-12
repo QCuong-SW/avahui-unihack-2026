@@ -8,6 +8,10 @@ import {
   CircleStatus,
 } from '@avahui/shared';
 import { formatUsdc, getSavedCreatorInviteCode, shortenAddress } from '@/lib/utils';
+import {
+  ALLOCATION_MODE_META,
+  CIRCLE_STATUS_META,
+} from '@/lib/constants/glossary';
 import { frontendEnv } from '@/config/env';
 import { HoverHint } from '@/components/ui/HoverHint';
 import {
@@ -71,18 +75,18 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
           className="inline-flex items-center gap-1.5 font-mono text-xs font-bold uppercase tracking-wider text-zinc-400 transition hover:text-white"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span>Circles</span>
+          <span>Danh sách dây hụi</span>
         </Link>
 
         <div className="flex flex-wrap items-center gap-2">
-          <HoverHint hint="Mời thành viên tham gia dây hụi qua đường dẫn có mã xác thực On-Chain (Invite Code)">
+          <HoverHint hint="Mời thành viên tham gia dây hụi qua liên kết có mã xác thực trên chuỗi (Invite Code)">
             <button
               type="button"
               onClick={() => setShowInviteBox((prev) => !prev)}
               className="inline-flex items-center gap-1.5 rounded-none border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 font-mono text-xs font-bold uppercase tracking-wider text-emerald-300 transition hover:bg-emerald-500 hover:text-zinc-950"
             >
               <Share2 className="h-3.5 w-3.5" />
-              <span>Invite Link</span>
+              <span>Liên kết mời</span>
             </button>
           </HoverHint>
 
@@ -109,7 +113,7 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
             {circle.isPrivateInvite && (
               <>
                 <span className="font-bold uppercase text-emerald-300">
-                  Invite Code:
+                  Mã mời:
                 </span>
                 <input
                   type="text"
@@ -135,7 +139,7 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
             ) : (
               <>
                 <Copy className="h-3.5 w-3.5" />
-                <span>Copy Link</span>
+                <span>Sao chép liên kết</span>
               </>
             )}
           </button>
@@ -156,13 +160,7 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
 
         <div className="flex flex-wrap items-center gap-2">
           <HoverHint
-            hint={
-              circle.status === CircleStatus.Active
-                ? 'Đang mở đóng góp và giải ngân theo kỳ'
-                : circle.status === CircleStatus.Recruiting
-                ? 'Đang gom đủ thành viên để tự động mở Vòng #1'
-                : 'Dây hụi đã hoàn tất toàn bộ các kỳ'
-            }
+            hint={CIRCLE_STATUS_META[circle.status]?.description || circle.status}
           >
             <span
               className={`inline-flex items-center gap-1.5 rounded-none border px-2.5 py-1 font-mono text-xs font-bold uppercase tracking-wider ${
@@ -174,36 +172,35 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
               }`}
             >
               <span className="h-1.5 w-1.5 bg-current" />
-              {circle.status}
+              {CIRCLE_STATUS_META[circle.status]?.label || circle.status}
             </span>
           </HoverHint>
 
           {circle.isPaused && (
-            <HoverHint hint="Dây hụi đang tạm dừng bởi Guardian trên Smart Contract">
+            <HoverHint hint="Dây hụi đang tạm dừng khẩn cấp bởi Guardian trên Hợp đồng thông minh">
               <span className="inline-flex items-center gap-1.5 rounded-none border border-rose-500/50 bg-rose-500/15 px-2.5 py-1 font-mono text-xs font-bold uppercase tracking-wider text-rose-300">
                 <Lock className="h-3 w-3" />
-                <span>PAUSED</span>
+                <span>Tạm dừng</span>
               </span>
             </HoverHint>
           )}
 
           <HoverHint
             hint={
-              circle.allocationMode === AllocationMode.BIDDING
-                ? 'Chế độ Đấu giá chiết khấu: Ai đặt chiết khấu cao nhất nhận quỹ trước'
-                : 'Chế độ Cố định: Nhận quỹ lần lượt từ Slot #1 đến Slot #N'
+              ALLOCATION_MODE_META[circle.allocationMode]?.description ||
+              circle.allocationMode
             }
           >
             <span className="inline-flex items-center gap-1.5 rounded-none border border-zinc-700 bg-zinc-900 px-2.5 py-1 font-mono text-xs font-bold uppercase tracking-wider text-zinc-200">
               {circle.allocationMode === AllocationMode.BIDDING ? (
                 <>
                   <Gavel className="h-3.5 w-3.5 text-avalanche-red" />
-                  <span>BIDDING</span>
+                  <span>{ALLOCATION_MODE_META[AllocationMode.BIDDING].label}</span>
                 </>
               ) : (
                 <>
                   <Repeat className="h-3.5 w-3.5 text-emerald-400" />
-                  <span>FIXED</span>
+                  <span>{ALLOCATION_MODE_META[AllocationMode.FIXED].label}</span>
                 </>
               )}
             </span>
@@ -219,28 +216,28 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
           </HoverHint>
 
           {circle.allocationMode === AllocationMode.BIDDING && (
-            <HoverHint hint="Đấu giá kín 2 pha Commit-Reveal bằng mã băm keccak256 chống nhìn trộm trên Mempool">
+            <HoverHint hint="Đấu giá kín 2 pha Niêm phong / Mở niêm phong (keccak256) chống nhìn trộm giá trên mạng">
               <span className="inline-flex items-center gap-1 rounded-none border border-sky-500/40 bg-sky-500/10 px-2.5 py-1 font-mono text-xs font-bold uppercase text-sky-300">
                 <Lock className="h-3.5 w-3.5 text-sky-400" />
-                <span>Sealed-Bid</span>
+                <span>Đấu giá kín</span>
               </span>
             </HoverHint>
           )}
 
           {circle.enableYieldVault !== false && (
-            <HoverHint hint="Tài sản thế chấp và quỹ chưa giải ngân tự động sinh lãi 6.50% APY trong ERC-4626 Vault">
+            <HoverHint hint="Tài sản thế chấp và quỹ chưa giải ngân tự động sinh lãi 6.50% APY trong kho ERC-4626">
               <span className="inline-flex items-center gap-1 rounded-none border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 font-mono text-xs font-bold uppercase text-emerald-300">
                 <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
-                <span>6.5% APY Vault</span>
+                <span>Kho lãi 6.5% APY</span>
               </span>
             </HoverHint>
           )}
 
           {circle.requireTeam1Attestation !== false && (
-            <HoverHint hint="Bảo vệ chống Sybil bằng chứng thực định danh Team1 (1-Human-1-Slot)">
+            <HoverHint hint="Bảo vệ chống tạo nhiều ví bằng chứng thực định danh Team1 (1 người / 1 vị trí)">
               <span className="inline-flex items-center gap-1 rounded-none border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 font-mono text-xs font-bold uppercase text-amber-300">
                 <ShieldCheck className="h-3.5 w-3.5 text-amber-400" />
-                <span>Team1 Verified</span>
+                <span>Xác thực Team1</span>
               </span>
             </HoverHint>
           )}
@@ -273,7 +270,7 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
         >
           <div className="w-full rounded-none border border-zinc-800 bg-zinc-900/60 p-4">
             <div className="flex items-center justify-between text-xs text-zinc-400 uppercase tracking-wider">
-              <span>Gross Pot / Vòng</span>
+              <span>Tổng quỹ / Kỳ</span>
               <Layers className="h-4 w-4 text-emerald-400" />
             </div>
             <div className="mt-1.5 text-xl font-extrabold text-emerald-400">

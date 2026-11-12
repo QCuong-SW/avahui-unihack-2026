@@ -11,6 +11,7 @@ import {
   useActiveLandingSection,
 } from '@/components/ui/ScrollFocusSection';
 import {
+  BookOpen,
   Compass,
   LayoutDashboard,
   LogIn,
@@ -23,10 +24,11 @@ import { UserRole } from '@avahui/shared';
 import { useAvaHuiState } from '@/hooks/useAvaHuiMockQuery';
 
 const NAV_ITEMS = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/circles', label: 'Circles', icon: Compass },
-  { href: '/circles/create', label: 'Create', icon: PlusCircle },
-  { href: '/profile', label: 'Profile', icon: UserCircle },
+  { href: '/dashboard', label: 'Tổng quan', icon: LayoutDashboard },
+  { href: '/circles', label: 'Dây hụi', icon: Compass },
+  { href: '/circles/create', label: 'Mở dây', icon: PlusCircle },
+  { href: '/profile', label: 'Hồ sơ', icon: UserCircle },
+  { href: '/guide', label: 'Hướng dẫn', icon: BookOpen },
 ];
 
 const LANDING_NAV_ITEMS = [
@@ -97,6 +99,12 @@ export function TopNavbar() {
               >
                 Dây hụi Live
               </Link>
+              <Link
+                href="/guide"
+                className="relative py-1 text-zinc-400 transition-colors hover:text-white"
+              >
+                Hướng dẫn
+              </Link>
             </nav>
           </div>
 
@@ -166,7 +174,7 @@ export function TopNavbar() {
             {[
               ...NAV_ITEMS,
               ...(isStaff
-                ? [{ href: '/admin', label: 'Admin', icon: Shield }]
+                ? [{ href: '/admin', label: 'Quản trị', icon: Shield }]
                 : []),
             ].map((item) => {
               const Icon = item.icon;

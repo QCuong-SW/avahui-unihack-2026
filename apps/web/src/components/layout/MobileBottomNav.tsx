@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
+  BookOpen,
   Compass,
   LayoutDashboard,
   Plus,
@@ -11,9 +12,10 @@ import {
 } from 'lucide-react';
 
 const MOBILE_NAV_ITEMS = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/circles', label: 'Circles', icon: Compass },
-  { href: '/circles/create', label: 'Tạo hụi', icon: Plus, isPrimary: true },
+  { href: '/dashboard', label: 'Tổng quan', icon: LayoutDashboard },
+  { href: '/circles', label: 'Dây hụi', icon: Compass },
+  { href: '/circles/create', label: 'Mở dây', icon: Plus, isPrimary: true },
+  { href: '/guide', label: 'Hướng dẫn', icon: BookOpen },
   { href: '/profile', label: 'Hồ sơ', icon: UserCircle },
 ];
 

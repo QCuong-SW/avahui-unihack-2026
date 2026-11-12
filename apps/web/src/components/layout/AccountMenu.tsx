@@ -112,7 +112,7 @@ export function AccountMenu() {
             {/* 2. Wallet Address & Network Status */}
             <div className="space-y-2 rounded-none border border-zinc-800 bg-zinc-900/70 p-3 text-xs">
               <div className="flex items-center justify-between">
-                <span className="text-zinc-400">Wallet Address</span>
+                <span className="text-zinc-400">Địa chỉ ví</span>
                 <div className="flex items-center gap-1.5">
                   <code className="font-mono font-semibold text-zinc-200">
                     {currentUser.walletAddress
@@ -136,7 +136,7 @@ export function AccountMenu() {
               </div>
 
               <div className="flex items-center justify-between border-t border-zinc-800/80 pt-2">
-                <span className="text-zinc-400">Network</span>
+                <span className="text-zinc-400">Mạng lưới</span>
                 <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold text-zinc-200">
                   <span className="h-1.5 w-1.5 bg-emerald-400" />
                   <span>Avalanche Fuji (43113)</span>
@@ -152,7 +152,7 @@ export function AccountMenu() {
                 >
                   <span className="flex items-center gap-1 font-mono text-[11px] uppercase tracking-wider text-zinc-400">
                     <Wallet className="h-3 w-3 text-avalanche-red" />
-                    <span>Wallet Status</span>
+                    <span>Trạng thái ví</span>
                   </span>
                   <span
                     className={`rounded-none border px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase ${walletMeta.badgeClass}`}
@@ -241,7 +241,7 @@ export function AccountMenu() {
                 >
                   <span className="flex items-center gap-2">
                     <Shield className="h-3.5 w-3.5 text-emerald-400" />
-                    <span>Admin / Verifier Console</span>
+                    <span>Bảng điều khiển Quản trị</span>
                   </span>
                   <span className="font-mono text-[10px] uppercase">{currentUser.role}</span>
                 </Link>
@@ -253,7 +253,7 @@ export function AccountMenu() {
                 className="flex w-full items-center gap-2 rounded-none border border-transparent px-3 py-2 text-xs font-semibold text-zinc-300 transition hover:border-zinc-800 hover:bg-zinc-900 hover:text-white"
               >
                 <Settings className="h-3.5 w-3.5 text-zinc-400" />
-                <span>Account Settings</span>
+                <span>Hồ sơ & Cài đặt</span>
               </Link>
 
               <button
@@ -265,7 +265,7 @@ export function AccountMenu() {
                 className="flex w-full items-center gap-2 rounded-none border border-transparent px-3 py-2 text-xs font-semibold text-rose-400 transition hover:border-rose-500/30 hover:bg-rose-500/10 hover:text-rose-300"
               >
                 <LogOut className="h-3.5 w-3.5" />
-                <span>Logout</span>
+                <span>Đăng xuất</span>
               </button>
             </div>
           </div>
