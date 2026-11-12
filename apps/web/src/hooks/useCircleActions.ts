@@ -18,7 +18,7 @@ import {
   CreateCircleFormInput,
   TransactionType,
 } from '@avahui/shared';
-import { frontendEnv } from '@/config/env';
+import { frontendEnv, requireConfiguredContractAddress } from '@/config/env';
 import { circleApi, transactionApi } from '@/lib/api';
 import {
   useAvaHuiState,
@@ -33,7 +33,7 @@ import {
   useWithdrawCollateralMutation,
 } from '@/hooks/useAvaHuiMockQuery';
 import { useTokenOperations } from '@/hooks/useTokenOperations';
-import { generateMockTxHash } from '@/lib/utils';
+import { generateMockTxHash, saveCreatorInviteCode } from '@/lib/utils';
 import {
   activeFujiChain,
   publicClient,
@@ -41,6 +41,8 @@ import {
 } from '@/lib/wagmi/client';
 
 const isMockMode = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
+const ZERO_ADDRESS =
+  '0x0000000000000000000000000000000000000000' as `0x${string}`;
 const ZERO_BYTES32 =
   '0x0000000000000000000000000000000000000000000000000000000000000000' as `0x${string}`;
 
@@ -556,6 +558,14 @@ export function useCircleActions() {
           : ZERO_BYTES32;
 
       if (!isMockMode) {
+        const factoryAddress = requireConfiguredContractAddress(
+          frontendEnv.factoryAddress,
+          'AvaHuiFactory',
+        );
+        const usdcAddress = requireConfiguredContractAddress(
+          frontendEnv.usdcTokenAddress,
+          'MockUSDC',
+        );
         const signer = await requireLiveSigner();
 
         try {
@@ -563,6 +573,7 @@ export function useCircleActions() {
             name: values.name,
             description: values.description,
             creatorAddress: signer.account,
+            tokenAddress: usdcAddress,
             allocationMode: values.allocationMode,
             maxMembers: values.maxMembers,
             contributionAmount: contributionBaseUnits.toString(),
@@ -575,6 +586,9 @@ export function useCircleActions() {
             isPrivateInvite: Boolean(values.isPrivateInvite),
             inviteCode: values.isPrivateInvite ? trimmedInvite : undefined,
             requireTeam1Attestation: Boolean(values.requireTeam1Attestation),
+            isSealedBid:
+              values.isSealedBid ?? values.allocationMode === AllocationMode.BIDDING,
+            enableYieldVault: values.enableYieldVault ?? true,
           });
         } catch (err) {
           console.warn('[AvaHui] Failed to create circle draft:', err);
@@ -586,14 +600,14 @@ export function useCircleActions() {
         );
 
         txHash = await signer.client.writeContract({
-          address: frontendEnv.factoryAddress,
+          address: factoryAddress,
           abi: AvaHuiFactoryABI,
           functionName: 'createCircle',
           args: [
             {
               metadataId,
               name: values.name,
-              token: frontendEnv.usdcTokenAddress,
+              token: usdcAddress,
               allocationMode: values.allocationMode === AllocationMode.BIDDING ? 1 : 0,
               maxMembers: values.maxMembers,
               contributionAmount: contributionBaseUnits,
@@ -631,11 +645,36 @@ export function useCircleActions() {
         }
 
         if (deployedCircleAddress) {
+          if (values.isPrivateInvite && trimmedInvite) {
+            saveCreatorInviteCode(
+              [deployedCircleAddress, draftRes?.id, metadataId],
+              trimmedInvite,
+            );
+          }
+
+          if (values.enableYieldVault === false) {
+            const vaultTx = await signer.client.writeContract({
+              address: deployedCircleAddress,
+              abi: AvaHuiCircleABI,
+              functionName: 'setYieldVault',
+              args: [ZERO_ADDRESS],
+              account: signer.account,
+              chain: activeFujiChain,
+            });
+            await publicClient.waitForTransactionReceipt({ hash: vaultTx });
+          }
+
           const needsSecurityConfig =
             Boolean(values.isPrivateInvite && inviteHash !== ZERO_BYTES32) ||
             Boolean(values.requireTeam1Attestation);
 
           if (needsSecurityConfig) {
+            const verifierAddr = values.requireTeam1Attestation
+              ? requireConfiguredContractAddress(
+                  frontendEnv.sybilVerifierAddress,
+                  'Team1AttestationVerifier',
+                )
+              : frontendEnv.sybilVerifierAddress;
             const secTx = await signer.client.writeContract({
               address: deployedCircleAddress,
               abi: AvaHuiCircleABI,
@@ -643,7 +682,7 @@ export function useCircleActions() {
               args: [
                 inviteHash,
                 Boolean(values.requireTeam1Attestation),
-                frontendEnv.sybilVerifierAddress,
+                verifierAddr,
               ],
               account: signer.account,
               chain: activeFujiChain,

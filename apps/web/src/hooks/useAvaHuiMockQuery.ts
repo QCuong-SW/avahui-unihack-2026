@@ -20,37 +20,73 @@ import {
   mockVerifyTeam1Attestation,
   mockWithdrawCollateral,
   resetMockState,
-  saveMockState,
   switchMockUser,
 } from '@/stores/avahuiMockEngine';
 import {
   CreateCircleFormInput,
   TransactionType,
+  UserProfile,
   UserRole,
+  UserStatsDto,
 } from '@avahui/shared';
-import { MockUSDCABI } from '@avahui/blockchain';
+import { MockUSDCABI, Team1AttestationVerifierABI } from '@avahui/blockchain';
 import { formatEther, formatUnits, parseUnits } from 'viem';
 import {
+  ACTIVE_WALLET_STORAGE_KEY,
+  AUTH_TOKEN_STORAGE_KEY,
+  SignedAttestationVoucher,
   authApi,
   circleApi,
   transactionApi,
   notificationApi,
   verifierApi,
 } from '@/lib/api';
-import { frontendEnv } from '@/config/env';
+import {
+  frontendEnv,
+  isConfiguredAddress,
+  requireConfiguredContractAddress,
+} from '@/config/env';
 import {
   activeFujiChain,
   ensureBrowserWalletNetwork,
   publicClient,
   resolveSignerClient,
 } from '@/lib/wagmi/client';
-import { generateMockTxHash } from '@/lib/utils';
+import { generateMockTxHash, getSavedCreatorInviteCode } from '@/lib/utils';
 
 export const AVAHUI_QUERY_KEYS = {
   mockState: ['avahui', 'app-state'] as const,
 };
 
 const isMockMode = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
+
+const EMPTY_USER_STATS: UserStatsDto = {
+  activeCirclesCount: 0,
+  totalContributed: '0.00',
+  totalCollateralLocked: '0.00',
+  totalPayoutReceived: '0.00',
+};
+
+function createGuestUserProfile(
+  walletAddress = '',
+  avaxBalance = '0.00',
+  usdcBalance = '0.00',
+): UserProfile {
+  return {
+    id: 'guest_unauthenticated',
+    role: UserRole.MEMBER,
+    isActive: true,
+    email: '',
+    displayName: 'Guest',
+    walletAddress,
+    avaxBalance,
+    usdcBalance,
+    usdcAllowance: '0.00',
+    stats: EMPTY_USER_STATS,
+    isTeam1Verified: false,
+    trustTier: 0,
+  };
+}
 
 async function readOnChainBalances(walletAddress: string): Promise<{
   avaxBalance?: string;
@@ -60,14 +96,16 @@ async function readOnChainBalances(walletAddress: string): Promise<{
     const addr = walletAddress as `0x${string}`;
     const [weiBal, usdcRaw] = await Promise.all([
       publicClient.getBalance({ address: addr }),
-      publicClient
-        .readContract({
-          address: frontendEnv.usdcTokenAddress,
-          abi: MockUSDCABI,
-          functionName: 'balanceOf',
-          args: [addr],
-        })
-        .catch(() => null),
+      isConfiguredAddress(frontendEnv.usdcTokenAddress)
+        ? publicClient
+            .readContract({
+              address: frontendEnv.usdcTokenAddress,
+              abi: MockUSDCABI,
+              functionName: 'balanceOf',
+              args: [addr],
+            })
+            .catch(() => null)
+        : Promise.resolve(null),
     ]);
 
     return {
@@ -91,111 +129,104 @@ async function fetchRealOrMockState(): Promise<AvaHuiMockState> {
     const fallbackUser =
       mockFallback.users.find((u) => u.id === mockFallback.currentUserId) ||
       mockFallback.users[0];
+    const hasAuthToken =
+      typeof window !== 'undefined' &&
+      Boolean(window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY));
     const activeWallet =
-      (typeof window !== 'undefined' &&
-        window.localStorage.getItem('avahui_active_wallet')) ||
-      fallbackUser?.walletAddress;
+      typeof window !== 'undefined'
+        ? window.localStorage.getItem(ACTIVE_WALLET_STORAGE_KEY) || undefined
+        : undefined;
 
     const [userProfile, circlesRes, transactions, notifications, onChainBal] =
       await Promise.all([
-        authApi.getMe(activeWallet).catch((err) => {
-          console.warn('[AvaHui] authApi.getMe fallback to mock:', err?.message);
-          return null;
-        }),
+        hasAuthToken
+          ? authApi.getMe(activeWallet).catch((err) => {
+              console.warn('[AvaHui] authApi.getMe fallback to mock:', err?.message);
+              return null;
+            })
+          : Promise.resolve(null),
         circleApi.listCircles({ limit: 50 }).catch((err) => {
           console.warn('[AvaHui] circleApi.listCircles fallback to mock:', err?.message);
           return null;
         }),
-        transactionApi.getMyTransactions().catch(() => []),
-        notificationApi.getMyNotifications().catch(() => []),
+        hasAuthToken ? transactionApi.getMyTransactions().catch(() => []) : Promise.resolve([]),
+        hasAuthToken ? notificationApi.getMyNotifications().catch(() => []) : Promise.resolve([]),
         activeWallet
           ? readOnChainBalances(activeWallet)
           : Promise.resolve<{ avaxBalance?: string; usdcBalance?: string }>({}),
       ]);
 
     const resolvedWallet =
-      userProfile?.walletAddress || activeWallet || fallbackUser.walletAddress;
+      userProfile?.walletAddress || activeWallet || '';
 
-    const mappedActiveUser = userProfile
+    const mappedActiveUser: UserProfile = userProfile
       ? {
-          id: fallbackUser?.walletAddress?.toLowerCase() === resolvedWallet.toLowerCase()
-            ? fallbackUser.id
-            : userProfile.id,
-          role: userProfile.role ?? fallbackUser?.role ?? UserRole.MEMBER,
+          id: userProfile.id,
+          role: userProfile.role ?? UserRole.MEMBER,
           isActive: userProfile.isActive ?? true,
-          email: userProfile.email || fallbackUser?.email || 'builder@avahui.io',
-          displayName:
-            userProfile.displayName || fallbackUser?.displayName || 'Avahui Member',
+          email: userProfile.email || '',
+          displayName: userProfile.displayName || 'Avahui Member',
           avatarUrl: userProfile.avatarUrl || undefined,
           walletAddress: resolvedWallet,
           avaxBalance:
-            onChainBal.avaxBalance ||
-            userProfile.avaxBalance ||
-            fallbackUser?.avaxBalance ||
-            '1000.00',
+            onChainBal.avaxBalance || userProfile.avaxBalance || '0.00',
           usdcBalance:
-            onChainBal.usdcBalance ||
-            userProfile.usdcBalance ||
-            fallbackUser?.usdcBalance ||
-            '10000.00',
-          usdcAllowance: userProfile.usdcAllowance || '1000.00',
-          stats: userProfile.stats,
+            onChainBal.usdcBalance || userProfile.usdcBalance || '0.00',
+          usdcAllowance: userProfile.usdcAllowance || '0.00',
+          stats: userProfile.stats || EMPTY_USER_STATS,
           isTeam1Verified: Boolean(
             userProfile.team1Attested ?? userProfile.isTeam1Verified ?? false,
           ),
           identityNullifier: userProfile.identityNullifier,
           trustTier: userProfile.trustTier,
         }
-      : {
-          ...fallbackUser,
-          ...(onChainBal.avaxBalance ? { avaxBalance: onChainBal.avaxBalance } : {}),
-          ...(onChainBal.usdcBalance ? { usdcBalance: onChainBal.usdcBalance } : {}),
-        };
+      : createGuestUserProfile(
+          resolvedWallet,
+          onChainBal.avaxBalance || '0.00',
+          onChainBal.usdcBalance || '0.00',
+        );
 
     const userWallet = (mappedActiveUser.walletAddress || '').toLowerCase();
-    const mergedUsers = [
-      mappedActiveUser,
-      ...mockFallback.users.filter(
-        (u) => (u.walletAddress || '').toLowerCase() !== userWallet,
-      ),
-    ];
+    const mergedUsers: UserProfile[] = frontendEnv.enableDevDemoTools
+      ? [
+          mappedActiveUser,
+          ...mockFallback.users.filter(
+            (u) => (u.walletAddress || '').toLowerCase() !== userWallet,
+          ),
+        ]
+      : [mappedActiveUser];
 
-    if (circlesRes && Array.isArray(circlesRes.items) && circlesRes.items.length > 0) {
-      return {
-        currentUserId: mappedActiveUser.id,
-        users: mergedUsers.map((u) => ({
-          ...u,
-          isTeam1Verified: u.isTeam1Verified ?? true,
-        })),
-        circles: circlesRes.items.map((c, idx) => ({
+    const liveCircles = Array.isArray(circlesRes?.items)
+      ? circlesRes.items.map((c) => ({
           ...c,
           isSealedBid: c.isSealedBid ?? c.allocationMode === 'BIDDING',
           enableYieldVault: c.enableYieldVault ?? true,
           yieldApyBps: c.yieldApyBps ?? 650,
-          accruedYieldFormatted:
-            c.accruedYieldFormatted ?? ((idx + 1) * 3.25).toFixed(2),
-          inviteCode: c.inviteCode || `AVAHUI-${c.id.slice(-4).toUpperCase()}`,
-          requireTeam1Attestation: c.requireTeam1Attestation ?? true,
-        })),
-        transactions:
-          transactions && transactions.length > 0
-            ? transactions
-            : mockFallback.transactions,
-        notifications:
-          notifications && notifications.length > 0
-            ? notifications
-            : mockFallback.notifications,
-      };
-    }
+          accruedYieldFormatted: c.accruedYieldFormatted ?? '0.00',
+          inviteCode:
+            c.inviteCode ||
+            getSavedCreatorInviteCode(c.id, c.metadataId, c.contractAddress),
+          requireTeam1Attestation: c.requireTeam1Attestation ?? false,
+        }))
+      : [];
 
     return {
-      ...mockFallback,
-      users: mergedUsers,
       currentUserId: mappedActiveUser.id,
+      users: mergedUsers,
+      circles: liveCircles,
+      transactions: Array.isArray(transactions) ? transactions : [],
+      notifications: Array.isArray(notifications) ? notifications : [],
     };
   } catch (err) {
-    console.warn('[AvaHui] Failed to fetch live backend state, using mock fallback:', err);
-    return loadMockState();
+    console.warn('[AvaHui] Failed to fetch live backend state:', err);
+    const guest = createGuestUserProfile();
+    return {
+      currentUserId: guest.id,
+      users: [guest],
+      circles: [],
+      transactions: [],
+      notifications: [],
+    };
   }
 }
 
@@ -203,7 +234,8 @@ export function useAvaHuiState() {
   return useQuery<AvaHuiMockState>({
     queryKey: AVAHUI_QUERY_KEYS.mockState,
     queryFn: () => fetchRealOrMockState(),
-    refetchInterval: isMockMode ? false : 3000,
+    refetchInterval: isMockMode ? false : 2500,
+    refetchIntervalInBackground: false,
     staleTime: isMockMode ? Infinity : 1500,
   });
 }
@@ -211,6 +243,15 @@ export function useAvaHuiState() {
 function invalidateAllCircleQueries(queryClient: ReturnType<typeof useQueryClient>) {
   queryClient.invalidateQueries({ queryKey: AVAHUI_QUERY_KEYS.mockState });
   queryClient.invalidateQueries({ queryKey: ['avahui'] });
+}
+
+function getLiveOrFallbackState(
+  queryClient: ReturnType<typeof useQueryClient>,
+): AvaHuiMockState {
+  return (
+    queryClient.getQueryData<AvaHuiMockState>(AVAHUI_QUERY_KEYS.mockState) ??
+    loadMockState()
+  );
 }
 
 export function useSwitchDemoUser() {
@@ -251,7 +292,7 @@ export function useFaucetMint() {
       const amountUsdc = typeof arg === 'number' ? arg : arg?.amountUsdc;
       const skipMock = typeof arg === 'object' ? arg?.skipMock : false;
       if (skipMock && !isMockMode) {
-        return { state: loadMockState(), txHash: '' };
+        return { state: getLiveOrFallbackState(queryClient), txHash: '' };
       }
       await new Promise((r) => setTimeout(r, 400));
       return mockFaucetMint(amountUsdc);
@@ -273,7 +314,11 @@ export function useCreateCircleMutation() {
       const skipMock = 'skipMock' in arg ? Boolean(arg.skipMock) : false;
 
       if (skipMock && !isMockMode) {
-        return { state: loadMockState(), newCircle: undefined, txHash: '' };
+        return {
+          state: getLiveOrFallbackState(queryClient),
+          newCircle: undefined,
+          txHash: '',
+        };
       }
 
       if (!isMockMode) {
@@ -340,7 +385,23 @@ export function useResetDemoData() {
 export function useMarkNotificationsRead() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async () => {
+    mutationFn: async (notificationId?: string) => {
+      if (!isMockMode) {
+        if (notificationId) {
+          await notificationApi.markAsRead(notificationId);
+        } else {
+          await notificationApi.markAllAsRead();
+        }
+        const current = getLiveOrFallbackState(queryClient);
+        return {
+          ...current,
+          notifications: current.notifications.map((n) =>
+            !notificationId || n.id === notificationId
+              ? { ...n, isRead: true }
+              : n,
+          ),
+        };
+      }
       return markAllNotificationsRead();
     },
     onSuccess: (newState) => {
@@ -357,7 +418,11 @@ export function useJoinCircleMutation() {
       const circleId = typeof arg === 'string' ? arg : arg.circleId;
       const skipMock = typeof arg === 'object' ? Boolean(arg.skipMock) : false;
       if (skipMock && !isMockMode) {
-        return { state: loadMockState(), txHash: '', activated: false };
+        return {
+          state: getLiveOrFallbackState(queryClient),
+          txHash: '',
+          activated: false,
+        };
       }
       await new Promise((r) => setTimeout(r, 400));
       return mockJoinCircle(circleId);
@@ -382,7 +447,7 @@ export function useContributeRoundMutation() {
       skipMock?: boolean;
     }) => {
       if (skipMock && !isMockMode) {
-        return { state: loadMockState(), txHash: '' };
+        return { state: getLiveOrFallbackState(queryClient), txHash: '' };
       }
       await new Promise((r) => setTimeout(r, 400));
       return mockContributeRound(circleId, roundNumber);
@@ -409,7 +474,7 @@ export function useSubmitBidMutation() {
       skipMock?: boolean;
     }) => {
       if (skipMock && !isMockMode) {
-        return { state: loadMockState(), txHash: '' };
+        return { state: getLiveOrFallbackState(queryClient), txHash: '' };
       }
       await new Promise((r) => setTimeout(r, 400));
       return mockSubmitBid(circleId, roundNumber, bidAmountUsdc);
@@ -435,7 +500,7 @@ export function useSettleRoundMutation() {
     }) => {
       if (skipMock && !isMockMode) {
         return {
-          state: loadMockState(),
+          state: getLiveOrFallbackState(queryClient),
           txHash: '',
           winnerName: '',
           netPayoutFormatted: '0.00',
@@ -459,7 +524,11 @@ export function useWithdrawCollateralMutation() {
       const circleId = typeof arg === 'string' ? arg : arg.circleId;
       const skipMock = typeof arg === 'object' ? Boolean(arg.skipMock) : false;
       if (skipMock && !isMockMode) {
-        return { state: loadMockState(), txHash: '', totalReturnedFormatted: '0.00' };
+        return {
+          state: getLiveOrFallbackState(queryClient),
+          txHash: '',
+          totalReturnedFormatted: '0.00',
+        };
       }
       await new Promise((r) => setTimeout(r, 400));
       return mockWithdrawCollateral(circleId);
@@ -478,7 +547,7 @@ export function useCancelCircleMutation() {
       const circleId = typeof arg === 'string' ? arg : arg.circleId;
       const skipMock = typeof arg === 'object' ? Boolean(arg.skipMock) : false;
       if (skipMock && !isMockMode) {
-        return { state: loadMockState(), txHash: '' };
+        return { state: getLiveOrFallbackState(queryClient), txHash: '' };
       }
       await new Promise((r) => setTimeout(r, 350));
       return mockCancelExpiredCircle(circleId);
@@ -495,11 +564,16 @@ export function useUpdateProfileMutation() {
   return useMutation({
     mutationFn: async (displayName: string) => {
       if (!isMockMode) {
-        try {
-          await authApi.updateMe({ displayName });
-        } catch (e) {
-          console.warn('[AvaHui] authApi.updateMe error:', e);
-        }
+        const updated = await authApi.updateMe({ displayName });
+        const current = getLiveOrFallbackState(queryClient);
+        return {
+          ...current,
+          users: current.users.map((u) =>
+            u.id === current.currentUserId
+              ? { ...u, displayName: updated.displayName || displayName }
+              : u,
+          ),
+        };
       }
       return mockUpdateUserProfile(displayName);
     },
@@ -525,7 +599,7 @@ export function useCommitBidMutation() {
       skipMock?: boolean;
     }) => {
       if (skipMock && !isMockMode) {
-        return { state: loadMockState(), txHash: '' };
+        return { state: getLiveOrFallbackState(queryClient), txHash: '' };
       }
       await new Promise((r) => setTimeout(r, 350));
       return mockCommitBid(circleId, roundNumber, commitment);
@@ -552,7 +626,7 @@ export function useRevealBidMutation() {
       skipMock?: boolean;
     }) => {
       if (skipMock && !isMockMode) {
-        return { state: loadMockState(), txHash: '' };
+        return { state: getLiveOrFallbackState(queryClient), txHash: '' };
       }
       await new Promise((r) => setTimeout(r, 350));
       return mockRevealBid(circleId, roundNumber, bidAmountUsdc);
@@ -568,7 +642,7 @@ export function useSwapAvaxToUsdcMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (avaxAmount: number = 0.05) => {
-      const state = loadMockState();
+      const state = getLiveOrFallbackState(queryClient);
       const user =
         state.users.find((u) => u.id === state.currentUserId) || state.users[0];
       const usdcReceived = Math.round(avaxAmount * 5000);
@@ -605,7 +679,7 @@ export function useSwapAvaxToUsdcMutation() {
         const balances = await readOnChainBalances(signer.account);
         if (user && balances.usdcBalance) user.usdcBalance = balances.usdcBalance;
         if (user && balances.avaxBalance) user.avaxBalance = balances.avaxBalance;
-        return { state: saveMockState(state), txHash, usdcReceived };
+        return { state, txHash, usdcReceived };
       }
 
       await new Promise((r) => setTimeout(r, 400));
@@ -622,7 +696,7 @@ export function useVerifyTeam1AttestationMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      const state = loadMockState();
+      const state = getLiveOrFallbackState(queryClient);
       const user =
         state.users.find((u) => u.id === state.currentUserId) || state.users[0];
 
@@ -634,7 +708,7 @@ export function useVerifyTeam1AttestationMutation() {
             user.identityNullifier = status.identityNullifier ?? undefined;
           }
           return {
-            state: saveMockState(state),
+            state,
             txHash: '0x' + '0'.repeat(64),
             nullifier: status.identityNullifier || '',
           };
@@ -652,7 +726,7 @@ export function useVerifyTeam1AttestationMutation() {
           user.isTeam1Verified = true;
           user.identityNullifier = issued.identityNullifier;
           return {
-            state: saveMockState(state),
+            state,
             txHash: issued.txHash || generateMockTxHash(),
             nullifier: issued.identityNullifier,
           };
@@ -665,6 +739,68 @@ export function useVerifyTeam1AttestationMutation() {
 
       await new Promise((r) => setTimeout(r, 400));
       return mockVerifyTeam1Attestation();
+    },
+    onSuccess: ({ state }) => {
+      queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, state);
+      invalidateAllCircleQueries(queryClient);
+    },
+  });
+}
+
+export function useClaimTeam1VoucherMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (voucher: SignedAttestationVoucher) => {
+      if (isMockMode) {
+        return mockVerifyTeam1Attestation();
+      }
+      const state = getLiveOrFallbackState(queryClient);
+      const user =
+        state.users.find((u) => u.id === state.currentUserId) || state.users[0];
+      const verifierAddress = requireConfiguredContractAddress(
+        voucher.verifierAddress || frontendEnv.sybilVerifierAddress,
+        'Team1AttestationVerifier',
+      );
+      const signer = await resolveSignerClient(user?.walletAddress);
+      if (!signer) {
+        throw new Error(
+          'Chưa có ví ký giao dịch. Vui lòng kết nối Core Wallet / MetaMask hoặc đăng nhập Privy.',
+        );
+      }
+      if (signer.account.toLowerCase() !== voucher.account.toLowerCase()) {
+        throw new Error(
+          `Voucher được ký cho ví ${voucher.account}, không khớp ví đang dùng (${signer.account}).`,
+        );
+      }
+      const txHash = await signer.client.writeContract({
+        address: verifierAddress,
+        abi: Team1AttestationVerifierABI,
+        functionName: 'claimAttestationWithSignature',
+        args: [
+          voucher.account,
+          voucher.identityNullifier,
+          Number(voucher.trustTier),
+          BigInt(voucher.deadline),
+          voucher.signature,
+        ],
+        account: signer.account,
+        chain: activeFujiChain,
+        gas: 300_000n,
+      });
+      await publicClient.waitForTransactionReceipt({ hash: txHash });
+      await transactionApi
+        .trackTransaction({
+          txHash,
+          txType: TransactionType.VERIFY_ATTESTATION,
+          contractAddress: verifierAddress,
+          senderAddress: signer.account,
+        })
+        .catch(() => {});
+      return {
+        state,
+        txHash,
+        nullifier: voucher.identityNullifier,
+      };
     },
     onSuccess: ({ state }) => {
       queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, state);

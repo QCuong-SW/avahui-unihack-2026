@@ -115,10 +115,13 @@ export class TransactionsService {
     }
 
     const addrList = Array.from(addresses).filter(Boolean);
+    if (addrList.length === 0) {
+      return [];
+    }
 
     const records = await this.prisma.blockchainTransaction.findMany({
       where: {
-        ...(addrList.length > 0 ? { senderAddress: { in: addrList } } : {}),
+        senderAddress: { in: addrList },
         ...(circleIdFilter && this.isUuid(circleIdFilter)
           ? { circleId: circleIdFilter }
           : {}),

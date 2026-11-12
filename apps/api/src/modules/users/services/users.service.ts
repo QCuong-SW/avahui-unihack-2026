@@ -1,13 +1,18 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { CircleStatus } from '@prisma/client';
+import { UserRole } from '@avahui/shared';
 import { PrismaService } from '../../../database/prisma.service';
 import { AuthenticatedUser } from '../../../common/decorators/current-user.decorator';
 import { formatUsdcUnits, normalizeAddress } from '../../../common/utils/format.util';
 import { UpdateUserDto } from '../dto/update-user.dto';
+import { TokenVerifierService } from '../../auth/services/token-verifier.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly tokenVerifier?: TokenVerifierService,
+  ) {}
 
   async getCurrentUserProfile(authUser: AuthenticatedUser) {
     let user = authUser.id
@@ -29,23 +34,49 @@ export class UsersService {
       user = wallet?.user ?? null;
     }
 
+    const shouldEnrichFromPrivy =
+      authUser.authType === 'privy' &&
+      Boolean(this.tokenVerifier?.hasRealPrivyServerCredentials()) &&
+      (!user || !user.email || user.wallets.length === 0);
+
+    const privyIdentity = shouldEnrichFromPrivy
+      ? await this.tokenVerifier!.fetchPrivyUserIdentity(authUser.privyDid)
+      : null;
+
+    const verifiedEmail = privyIdentity?.email ?? authUser.email ?? null;
+    const isBootstrapAdmin = Boolean(
+      privyIdentity?.email &&
+        this.tokenVerifier?.isBootstrapAdminEmail(privyIdentity.email),
+    );
+    const verifiedWallet = authUser.walletAddress
+      ? normalizeAddress(authUser.walletAddress)
+      : (privyIdentity?.verifiedWallets[0] ?? null);
+
     // Auto-provision user if authenticated for the first time
     if (!user) {
-      const addr = authUser.walletAddress ? normalizeAddress(authUser.walletAddress) : null;
+      const existingWalletOwner = verifiedWallet
+        ? await this.prisma.wallet.findUnique({ where: { address: verifiedWallet } })
+        : null;
+      const attachWallet =
+        verifiedWallet && !existingWalletOwner ? verifiedWallet : null;
+
       user = await this.prisma.user.create({
         data: {
           privyDid: authUser.privyDid,
-          email: authUser.email ?? null,
-          displayName: authUser.email
-            ? authUser.email.split('@')[0]
-            : addr
-              ? `Builder ${addr.slice(0, 6)}`
-              : 'AvaHui Builder',
-          ...(addr
+          email: verifiedEmail,
+          displayName:
+            privyIdentity?.displayName ||
+            (verifiedEmail
+              ? verifiedEmail.split('@')[0]
+              : attachWallet
+                ? `Builder ${attachWallet.slice(0, 6)}`
+                : 'AvaHui Builder'),
+          ...(isBootstrapAdmin ? { role: UserRole.ADMIN } : {}),
+          ...(attachWallet
             ? {
                 wallets: {
                   create: {
-                    address: addr,
+                    address: attachWallet,
                     walletClientType: 'privy',
                     isPrimary: true,
                   },
@@ -55,12 +86,53 @@ export class UsersService {
         },
         include: { wallets: true },
       });
+    } else if (privyIdentity) {
+      const needsEmail = !user.email && Boolean(privyIdentity.email);
+      const needsName =
+        Boolean(privyIdentity.displayName) &&
+        (!user.displayName || user.displayName === 'AvaHui Builder');
+      const needsAdminPromotion =
+        isBootstrapAdmin && user.role !== UserRole.ADMIN;
+
+      if (needsEmail || needsName || needsAdminPromotion) {
+        user = await this.prisma.user.update({
+          where: { id: user.id },
+          data: {
+            ...(needsEmail ? { email: privyIdentity.email } : {}),
+            ...(needsName ? { displayName: privyIdentity.displayName } : {}),
+            ...(needsAdminPromotion ? { role: UserRole.ADMIN } : {}),
+          },
+          include: { wallets: true },
+        });
+      }
+
+      if (user.wallets.length === 0 && privyIdentity.verifiedWallets[0]) {
+        const candidate = privyIdentity.verifiedWallets[0];
+        const taken = await this.prisma.wallet.findUnique({
+          where: { address: candidate },
+        });
+        if (!taken) {
+          await this.prisma.wallet.create({
+            data: {
+              userId: user.id,
+              address: candidate,
+              walletClientType: 'privy',
+              isPrimary: true,
+            },
+          });
+          user =
+            (await this.prisma.user.findUnique({
+              where: { id: user.id },
+              include: { wallets: true },
+            })) ?? user;
+        }
+      }
     }
 
     const primaryWallet =
       user.wallets.find((w) => w.isPrimary)?.address ??
       user.wallets[0]?.address ??
-      authUser.walletAddress ??
+      verifiedWallet ??
       null;
 
     return this.getUserProfileById(user.id, primaryWallet);

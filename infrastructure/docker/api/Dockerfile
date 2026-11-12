@@ -8,7 +8,7 @@ RUN corepack enable
 
 FROM base AS deps
 WORKDIR /app
-COPY package.json pnpm-workspace.yaml ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./
 COPY apps/api/package.json ./apps/api/package.json
 COPY packages/shared/package.json ./packages/shared/package.json
 COPY packages/blockchain/package.json ./packages/blockchain/package.json
@@ -29,4 +29,4 @@ WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app ./
 EXPOSE 3001
-CMD ["pnpm", "--filter", "@avahui/api", "start:prod"]
+CMD ["pnpm", "--filter", "@avahui/api", "start:deploy"]

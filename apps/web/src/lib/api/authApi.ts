@@ -2,7 +2,7 @@ import { apiFetch } from './client';
 import type { UserProfileDto } from '@avahui/shared';
 
 export interface SyncAuthInput {
-  walletAddress: string;
+  walletAddress?: string;
   email?: string;
   displayName?: string;
 }

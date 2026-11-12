@@ -1,16 +1,17 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEmail, IsOptional, IsString, Matches } from 'class-validator';
 
 export class SyncAuthDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     description: 'Privy Embedded Wallet Address',
     example: '0x71C95911E9a5D330f4D621842EC243EE13432921',
   })
+  @IsOptional()
   @IsString()
   @Matches(/^0x[a-fA-F0-9]{40}$/, {
     message: 'walletAddress must be a valid Ethereum address',
   })
-  walletAddress: string;
+  walletAddress?: string;
 
   @ApiPropertyOptional({ example: 'builder@avahui.io' })
   @IsOptional()

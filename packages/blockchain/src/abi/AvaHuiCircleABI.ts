@@ -68,6 +68,13 @@ export const AvaHuiCircleABI = [
   },
   {
     type: 'function',
+    name: 'yieldVault',
+    inputs: [],
+    outputs: [{ name: '', type: 'address', internalType: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     name: 'setYieldVault',
     inputs: [{ name: '_vault', type: 'address', internalType: 'address' }],
     outputs: [],

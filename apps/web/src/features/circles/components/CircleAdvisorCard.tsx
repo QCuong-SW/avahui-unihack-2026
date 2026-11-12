@@ -1,0 +1,130 @@
+'use client';
+
+import React from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { AllocationMode, CircleItem } from '@avahui/shared';
+import { aiApi, CircleAdvisorDto } from '@/lib/api';
+import { Sparkles, ShieldCheck, TrendingUp, Gavel } from 'lucide-react';
+
+const isMockMode = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
+
+function buildLocalFallbackAdvisor(circle: CircleItem): CircleAdvisorDto {
+  const contrib = parseFloat(circle.contributionAmountFormatted) || 0;
+  const col = parseFloat(circle.collateralAmountFormatted) || 0;
+  const collateralRatio = contrib > 0 ? Number((col / contrib).toFixed(2)) : 1;
+  const riskScore = circle.requireTeam1Attestation ? 20 : 35;
+  const riskLevel = riskScore <= 30 ? 'LOW' : 'MEDIUM';
+
+  return {
+    circleId: circle.id,
+    riskScore,
+    riskLevel,
+    collateralRatio,
+    estimatedCycleYieldUsdc: (
+      (col * circle.maxMembers * 0.065 * circle.roundDurationSeconds * circle.maxMembers) /
+      (365 * 86400)
+    ).toFixed(4),
+    bidRecommendation:
+      circle.allocationMode === AllocationMode.BIDDING
+        ? {
+            minBidUsdc: parseFloat(circle.minBidFormatted) || 1,
+            optimalBidUsdc: Number(
+              ((parseFloat(circle.minBidFormatted) || 1) +
+                ((parseFloat(circle.maxBidFormatted) || 20) -
+                  (parseFloat(circle.minBidFormatted) || 1)) *
+                  0.35).toFixed(2),
+            ),
+            maxBidUsdc: parseFloat(circle.maxBidFormatted) || 20,
+            currentHighestBidUsdc: 0,
+            suggestedEffectiveApyPct: '2.50',
+          }
+        : null,
+    highlights: [
+      `Tỷ lệ bảo chứng thế chấp ${collateralRatio}x tiền đóng mỗi kỳ.`,
+    ],
+    summary: `Dây "${circle.name}" đạt mức rủi ro ${riskLevel} (${riskScore}/100) với bảo chứng ${collateralRatio}x.`,
+    aiPowered: false,
+    model: 'deterministic-risk-engine-v1',
+  };
+}
+
+export function CircleAdvisorCard({ circle }: { circle: CircleItem }) {
+  const inviteCode =
+    typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('invite') ||
+        circle.inviteCode ||
+        undefined
+      : circle.inviteCode || undefined;
+
+  const { data } = useQuery<CircleAdvisorDto>({
+    queryKey: ['avahui', 'ai-advisor', circle.id, inviteCode],
+    queryFn: async () => {
+      if (isMockMode) return buildLocalFallbackAdvisor(circle);
+      return await aiApi.getCircleAdvisor(circle.id, inviteCode);
+    },
+    staleTime: 15_000,
+    retry: false,
+  });
+
+  const advisor = data || buildLocalFallbackAdvisor(circle);
+  const badgeClass =
+    advisor.riskLevel === 'LOW'
+      ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+      : advisor.riskLevel === 'MEDIUM'
+        ? 'border-amber-500/40 bg-amber-500/10 text-amber-300'
+        : 'border-rose-500/40 bg-rose-500/10 text-rose-300';
+
+  return (
+    <section className="rounded-none border border-zinc-800 bg-surface-card p-4 space-y-3 font-mono text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-2.5">
+        <div className="flex items-center gap-2 font-bold uppercase tracking-wider text-white">
+          <Sparkles className="h-4 w-4 text-avalanche-red" />
+          <span>AvaHui Risk &amp; Bid Advisor</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className={`rounded-none border px-2 py-0.5 text-[10px] font-bold uppercase ${badgeClass}`}>
+            Risk {advisor.riskLevel} ({advisor.riskScore}/100)
+          </span>
+          <span className="rounded-none border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[10px] text-zinc-400">
+            {advisor.aiPowered ? advisor.model : 'Quant Engine'}
+          </span>
+        </div>
+      </div>
+
+      <p className="text-xs leading-relaxed text-zinc-300">{advisor.summary}</p>
+
+      <div className="grid gap-2 sm:grid-cols-3 text-[11px]">
+        <div className="rounded-none border border-zinc-800 bg-zinc-900/70 p-2.5">
+          <div className="flex items-center gap-1 text-zinc-400">
+            <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+            <span>Bảo chứng</span>
+          </div>
+          <div className="mt-1 font-bold text-white">{advisor.collateralRatio}x</div>
+        </div>
+
+        <div className="rounded-none border border-zinc-800 bg-zinc-900/70 p-2.5">
+          <div className="flex items-center gap-1 text-zinc-400">
+            <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
+            <span>Yield Dự kiến</span>
+          </div>
+          <div className="mt-1 font-bold text-emerald-400">
+            +{advisor.estimatedCycleYieldUsdc} mUSDC
+          </div>
+        </div>
+
+        {advisor.bidRecommendation && (
+          <div className="rounded-none border border-zinc-800 bg-zinc-900/70 p-2.5">
+            <div className="flex items-center gap-1 text-zinc-400">
+              <Gavel className="h-3.5 w-3.5 text-avalanche-red" />
+              <span>Gợi ý Bid</span>
+            </div>
+            <div className="mt-1 font-bold text-amber-300">
+              {advisor.bidRecommendation.optimalBidUsdc} mUSDC
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+

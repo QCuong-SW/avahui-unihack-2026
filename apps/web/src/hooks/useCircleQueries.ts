@@ -1,8 +1,15 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { circleApi, ListCirclesQuery, transactionApi, notificationApi } from '@/lib/api';
+import {
+  AUTH_TOKEN_STORAGE_KEY,
+  circleApi,
+  ListCirclesQuery,
+  transactionApi,
+  notificationApi,
+} from '@/lib/api';
 import { useAvaHuiState } from './useAvaHuiMockQuery';
+import { getSavedCreatorInviteCode } from '@/lib/utils';
 import type { CircleDetailDto, TransactionRecordDto, NotificationItemDto } from '@avahui/shared';
 
 const isMockMode = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
@@ -41,32 +48,36 @@ export function useCircleDetailQuery(idOrAddress: string) {
             ? new URLSearchParams(window.location.search).get('invite') || undefined
             : undefined;
         const liveCircle = await circleApi.getCircleById(idOrAddress, inviteFromUrl);
-        if (liveCircle) return liveCircle;
+        if (liveCircle) {
+          return {
+            ...liveCircle,
+            inviteCode:
+              liveCircle.inviteCode ||
+              getSavedCreatorInviteCode(
+                liveCircle.id,
+                liveCircle.metadataId,
+                liveCircle.contractAddress,
+              ),
+          };
+        }
       } catch (err) {
         console.warn(`[AvaHui] Failed to fetch circle ${idOrAddress} from API:`, err);
       }
 
-      // Fallback to mock state
-      const found = mockState?.circles.find(
-        (c) =>
-          c.id === idOrAddress ||
-          c.metadataId === idOrAddress ||
-          (Boolean(c.contractAddress) &&
-            c.contractAddress?.toLowerCase() === idOrAddress.toLowerCase()),
-      );
-      return found || null;
+      return null;
     },
     refetchInterval: (query) => {
       if (isMockMode) return false;
       const data = query.state.data;
-      if (!data) return 3000;
-      // If recruiting or active, refresh every 4 seconds to sync round & member status
+      if (!data) return 2000;
+      // If recruiting or active, refresh every 2.5 seconds to sync round & member status quickly
       if (data.status === 'RECRUITING' || data.status === 'ACTIVE') {
-        return 4000;
+        return 2500;
       }
       return false;
     },
-    staleTime: isMockMode ? Infinity : 2000,
+    refetchIntervalInBackground: false,
+    staleTime: isMockMode ? Infinity : 1500,
     enabled: Boolean(idOrAddress),
   });
 }
@@ -103,28 +114,22 @@ export function useExploreCirclesQuery(query?: ListCirclesQuery) {
         const res = await circleApi.listCircles(query);
         if (res && res.items) return res;
       } catch (err) {
-        console.warn('[AvaHui] Failed to list circles from API, fallback to mock:', err);
+        console.warn('[AvaHui] Failed to list circles from API:', err);
       }
 
-      let circles = mockState?.circles || [];
-      if (query?.status) {
-        circles = circles.filter((c) => c.status === query.status);
-      }
-      if (query?.mode) {
-        circles = circles.filter((c) => c.allocationMode === query.mode);
-      }
       return {
-        items: circles,
+        items: [],
         meta: {
-          total: circles.length,
+          total: 0,
           page: query?.page || 1,
           limit: query?.limit || 20,
           totalPages: 1,
         },
       };
     },
-    refetchInterval: isMockMode ? false : 5000,
-    staleTime: isMockMode ? Infinity : 3000,
+    refetchInterval: isMockMode ? false : 4000,
+    refetchIntervalInBackground: false,
+    staleTime: isMockMode ? Infinity : 2000,
   });
 }
 
@@ -137,7 +142,10 @@ export function useMyTransactionsQuery(circleId?: string) {
   return useQuery<TransactionRecordDto[]>({
     queryKey: CIRCLE_QUERY_KEYS.myTransactions(circleId),
     queryFn: async () => {
-      if (!isMockMode) {
+      const hasAuthToken =
+        typeof window !== 'undefined' &&
+        Boolean(window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY));
+      if (!isMockMode && hasAuthToken) {
         try {
           const res = await transactionApi.getMyTransactions(circleId);
           if (res && res.length > 0) return res;
@@ -145,11 +153,15 @@ export function useMyTransactionsQuery(circleId?: string) {
           console.warn('[AvaHui] Failed to get transactions from API:', e);
         }
       }
-      return circleId
-        ? (mockState?.transactions || []).filter((t) => t.circleId === circleId)
-        : mockState?.transactions || [];
+      return isMockMode
+        ? circleId
+          ? (mockState?.transactions || []).filter((t) => t.circleId === circleId)
+          : mockState?.transactions || []
+        : [];
     },
-    staleTime: isMockMode ? Infinity : 3000,
+    refetchInterval: isMockMode ? false : 5000,
+    refetchIntervalInBackground: false,
+    staleTime: isMockMode ? Infinity : 2000,
   });
 }
 
@@ -162,7 +174,10 @@ export function useNotificationsQuery() {
   return useQuery<NotificationItemDto[]>({
     queryKey: CIRCLE_QUERY_KEYS.notifications,
     queryFn: async () => {
-      if (!isMockMode) {
+      const hasAuthToken =
+        typeof window !== 'undefined' &&
+        Boolean(window.localStorage.getItem(AUTH_TOKEN_STORAGE_KEY));
+      if (!isMockMode && hasAuthToken) {
         try {
           const res = await notificationApi.getMyNotifications();
           if (res && res.length > 0) return res;
@@ -170,8 +185,10 @@ export function useNotificationsQuery() {
           console.warn('[AvaHui] Failed to get notifications from API:', e);
         }
       }
-      return mockState?.notifications || [];
+      return isMockMode ? mockState?.notifications || [] : [];
     },
-    staleTime: isMockMode ? Infinity : 4000,
+    refetchInterval: isMockMode ? false : 5000,
+    refetchIntervalInBackground: false,
+    staleTime: isMockMode ? Infinity : 2000,
   });
 }

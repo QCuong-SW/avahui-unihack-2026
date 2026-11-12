@@ -205,6 +205,7 @@ export interface CircleDetailDto {
   isPrivateInvite?: boolean;
   inviteCode?: string;
   requireTeam1Attestation?: boolean;
+  isPaused?: boolean;
   creationTxHash?: string | null;
   createdAt: string;
   members: CircleMemberDto[];

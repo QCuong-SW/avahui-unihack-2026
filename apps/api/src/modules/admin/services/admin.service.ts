@@ -229,6 +229,7 @@ export class AdminService {
         collateralAmountFormatted: formatUsdcUnits(c.collateralAmount),
         isPrivateInvite: c.isPrivateInvite,
         requireTeam1Attestation: c.requireTeam1Attestation,
+        isPaused: Boolean(c.isPaused),
         isHiddenByAdmin: c.isHiddenByAdmin,
         moderationReason: c.moderationReason,
         createdAt: c.createdAt.toISOString(),

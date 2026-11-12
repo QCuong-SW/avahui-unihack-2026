@@ -5,10 +5,11 @@ import {
   OnModuleInit,
 } from '@nestjs/common';
 import { CircleStatus, RoundStatus } from '@prisma/client';
-import { createWalletClient, http } from 'viem';
+import { createWalletClient } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { AVALANCHE_FUJI_CHAIN, AvaHuiCircleABI } from '@avahui/blockchain';
 import { PrismaService } from '../../../database/prisma.service';
+import { createFujiRpcTransport } from '../../../common/utils/rpc.util';
 
 /**
  * AutonomousKeeperService — Policy-Enforced Server Agent Wallet Keeper
@@ -22,9 +23,9 @@ export class AutonomousKeeperService implements OnModuleInit, OnModuleDestroy {
   private isExecuting = false;
 
   private readonly rpcUrl =
-    process.env.AVALANCHE_RPC_URL || 'https://api.avax-test.network/ext/bc/C/rpc';
+    process.env.AVALANCHE_RPC_URL || 'https://avalanche-fuji-c-chain-rpc.publicnode.com';
   private readonly keeperIntervalMs = Number(
-    process.env.KEEPER_POLL_INTERVAL_MS || 15000,
+    process.env.KEEPER_POLL_INTERVAL_MS || 4000,
   );
 
   constructor(private readonly prisma: PrismaService) {}
@@ -86,7 +87,7 @@ export class AutonomousKeeperService implements OnModuleInit, OnModuleDestroy {
       const walletClient = createWalletClient({
         account,
         chain: AVALANCHE_FUJI_CHAIN as any,
-        transport: http(this.rpcUrl),
+        transport: createFujiRpcTransport(this.rpcUrl),
       });
 
       for (const round of expiredOpenRounds) {

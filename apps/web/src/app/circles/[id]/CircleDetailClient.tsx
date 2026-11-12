@@ -42,7 +42,8 @@ export function CircleDetailClient({ fallbackId }: CircleDetailClientProps) {
   const fromRouter = extractCircleId(routerPathname);
   const fromBrowser =
     mounted && typeof window !== 'undefined'
-      ? extractCircleId(window.location.pathname)
+      ? extractCircleId(window.location.pathname) ||
+        new URLSearchParams(window.location.search).get('id')
       : null;
 
   return <CircleDetailView circleId={fromRouter || fromBrowser || fallbackId} />;

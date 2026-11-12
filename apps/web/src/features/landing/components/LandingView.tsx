@@ -138,7 +138,7 @@ export function LandingView() {
                   : 'pointer-events-none translate-x-2 border-zinc-800/70 bg-zinc-950/85 text-zinc-400 opacity-0 group-hover:pointer-events-auto group-hover:translate-x-0 group-hover:opacity-100'
               }`}
             >
-              {sec.code} // {sec.label}
+              {sec.code} {'//'} {sec.label}
             </span>
             <span
               className={`pointer-events-auto block h-[3px] cursor-pointer transition-all duration-300 ${

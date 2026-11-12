@@ -88,10 +88,12 @@ model User {
   avatarUrl         String?  @map("avatar_url")
   role              UserRole @default(MEMBER)
   isActive          Boolean  @default(true) @map("is_active")
-  team1Verified     Boolean  @default(false) @map("team1_verified")
-  identityNullifier String?  @unique @map("identity_nullifier") @db.VarChar(66)
-  trustTier         Int      @default(0) @map("trust_tier") @db.SmallInt
-  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  team1Verified     Boolean   @default(false) @map("team1_verified")
+  identityNullifier String?   @unique @map("identity_nullifier") @db.VarChar(66)
+  trustTier         Int       @default(0) @map("trust_tier") @db.SmallInt
+  pendingVoucher    Json?     @map("pending_voucher")
+  lastGasDripAt     DateTime? @map("last_gas_drip_at") @db.Timestamptz(6)
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   wallets       Wallet[]
@@ -153,9 +155,13 @@ model Circle {
   minBid                 Decimal        @default(0) @map("min_bid") @db.Decimal(78, 0)
   maxBid                 Decimal        @default(0) @map("max_bid") @db.Decimal(78, 0)
   totalDiscountPool       Decimal        @default(0) @map("total_discount_pool") @db.Decimal(78, 0)
+  totalYieldEarned        Decimal        @default(0) @map("total_yield_earned") @db.Decimal(78, 0)
+  isSealedBid             Boolean        @default(true) @map("is_sealed_bid")
+  enableYieldVault        Boolean        @default(true) @map("enable_yield_vault")
   isPrivateInvite         Boolean        @default(false) @map("is_private_invite")
   inviteCodeHash          String?        @map("invite_code_hash") @db.VarChar(66)
   requireTeam1Attestation Boolean        @default(false) @map("require_team1_attestation")
+  isPaused                Boolean        @default(false) @map("is_paused")
   isHiddenByAdmin         Boolean        @default(false) @map("is_hidden_by_admin")
   moderationReason        String?        @map("moderation_reason")
   creationTxHash          String?        @map("creation_tx_hash") @db.VarChar(66)

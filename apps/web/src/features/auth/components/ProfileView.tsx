@@ -1,13 +1,17 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { UserRole } from '@avahui/shared';
 import {
   useAvaHuiState,
+  useClaimTeam1VoucherMutation,
   useResetDemoData,
   useSwapAvaxToUsdcMutation,
   useUpdateProfileMutation,
   useVerifyTeam1AttestationMutation,
 } from '@/hooks/useAvaHuiMockQuery';
+import { SignedAttestationVoucher, verifierApi } from '@/lib/api';
 import { useTokenOperations } from '@/hooks/useTokenOperations';
 import { useTxLifecycle } from '@/features/transactions/hooks/useTxLifecycle';
 import { formatUsdc, shortenAddress } from '@/lib/utils';
@@ -36,15 +40,64 @@ export function ProfileView() {
   const { requestFaucet, isOperating: isFaucetOperating } = useTokenOperations();
   const swapMutation = useSwapAvaxToUsdcMutation();
   const verifyTeam1Mutation = useVerifyTeam1AttestationMutation();
+  const claimVoucherMutation = useClaimTeam1VoucherMutation();
   const { runTransaction } = useTxLifecycle();
   const resetMutation = useResetDemoData();
 
   const [displayName, setDisplayName] = useState('');
   const [savedNotice, setSavedNotice] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showVoucherPaste, setShowVoucherPaste] = useState(false);
+  const [voucherJsonInput, setVoucherJsonInput] = useState('');
+  const [voucherParseError, setVoucherParseError] = useState<string | null>(null);
 
   const currentUser =
     state?.users.find((u) => u.id === state.currentUserId) || state?.users[0];
+
+  const attestationStatusQuery = useQuery({
+    queryKey: ['avahui', 'verifier-status', currentUser?.walletAddress],
+    queryFn: () => verifierApi.getMyStatus(),
+    enabled: Boolean(
+      !frontendEnv.useMock &&
+        currentUser?.walletAddress &&
+        !currentUser?.isTeam1Verified,
+    ),
+    retry: false,
+  });
+
+  const pendingVoucher = attestationStatusQuery.data?.pendingVoucher ?? null;
+
+  const handleClaimVoucher = async (voucher: SignedAttestationVoucher) => {
+    await runTransaction({
+      title: 'Claim Team1 Attestation (EIP-712)',
+      description: 'Gửi chữ ký EIP-712 lên Team1AttestationVerifier trên Fuji',
+      action: () => claimVoucherMutation.mutateAsync(voucher),
+      onSuccess: () => {
+        setShowVoucherPaste(false);
+        setVoucherJsonInput('');
+        setVoucherParseError(null);
+      },
+    });
+  };
+
+  const handleClaimManualVoucher = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setVoucherParseError(null);
+    try {
+      const parsed = JSON.parse(voucherJsonInput) as SignedAttestationVoucher;
+      if (
+        !parsed.account ||
+        !parsed.identityNullifier ||
+        !parsed.signature ||
+        !parsed.deadline
+      ) {
+        throw new Error('Voucher JSON thiếu trường bắt buộc.');
+      }
+      await handleClaimVoucher(parsed);
+    } catch (err: any) {
+      setVoucherParseError(err?.message || 'Voucher JSON không hợp lệ.');
+    }
+  };
 
   useEffect(() => {
     if (currentUser) {
@@ -63,8 +116,15 @@ export function ProfileView() {
   const myTxs = state.transactions.filter(
     (tx) =>
       tx.senderAddress.toLowerCase() ===
-      currentUser.walletAddress.toLowerCase()
+      (currentUser.walletAddress || '').toLowerCase()
   );
+  const isTeam1Verified = Boolean(currentUser.isTeam1Verified);
+  const canSelfVerifyTeam1 =
+    frontendEnv.useMock ||
+    currentUser.role === UserRole.ADMIN ||
+    currentUser.role === UserRole.VERIFIER;
+  const canShowDemoReset = frontendEnv.useMock || frontendEnv.enableDevDemoTools;
+  const canShowSwap = frontendEnv.useMock || frontendEnv.isLocalEvm;
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,20 +189,22 @@ export function ProfileView() {
             </div>
           </form>
 
-          <div className="border-t border-zinc-800 pt-4">
-            <HoverHint
-              hint="Khôi phục toàn bộ dây hụi, số dư và lịch sử giao dịch về trạng thái mặc định ban đầu"
-              side="bottom"
-            >
-              <button
-                onClick={() => resetMutation.mutate()}
-                className="inline-flex items-center gap-2 rounded-none border border-zinc-700 bg-zinc-900 px-3.5 py-2 font-mono text-xs font-bold uppercase tracking-wider text-zinc-300 transition hover:border-zinc-500 hover:text-white active:scale-95"
+          {canShowDemoReset && (
+            <div className="border-t border-zinc-800 pt-4">
+              <HoverHint
+                hint="Khôi phục toàn bộ dây hụi, số dư và lịch sử giao dịch về trạng thái mặc định ban đầu"
+                side="bottom"
               >
-                <RefreshCw className="h-3.5 w-3.5" />
-                <span>Reset Demo</span>
-              </button>
-            </HoverHint>
-          </div>
+                <button
+                  onClick={() => resetMutation.mutate()}
+                  className="inline-flex items-center gap-2 rounded-none border border-zinc-700 bg-zinc-900 px-3.5 py-2 font-mono text-xs font-bold uppercase tracking-wider text-zinc-300 transition hover:border-zinc-500 hover:text-white active:scale-95"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  <span>Reset Demo</span>
+                </button>
+              </HoverHint>
+            </div>
+          )}
         </section>
 
         {/* Right: Privy Embedded Wallet Details (7 Cols) */}
@@ -256,57 +318,109 @@ export function ProfileView() {
             </HoverHint>
           </div>
 
-          {/* V2 Team1 Anti-Sybil Attestation & 1-Click DEX Swap */}
+          {/* V2 Team1 Anti-Sybil Attestation & 1-Click DEX Swap (Local/Mock) */}
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-none border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 font-mono text-xs">
             <div className="flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-emerald-400" />
+              <ShieldCheck
+                className={`h-4 w-4 ${isTeam1Verified ? 'text-emerald-400' : 'text-amber-400'}`}
+              />
               <div>
                 <div className="font-bold uppercase text-emerald-300">
                   Team1 Anti-Sybil Attestation
                 </div>
                 <div className="text-[11px] text-zinc-400">
-                  Nullifier:{' '}
-                  {shortenAddress(
-                    currentUser.identityNullifier ||
-                      '0x9999000011112222333344445555666677778888999900001111222233330001',
-                    6
-                  )}
+                  {isTeam1Verified
+                    ? currentUser.identityNullifier
+                      ? `Nullifier: ${shortenAddress(currentUser.identityNullifier, 6)}`
+                      : 'Đã xác minh 1-Human-1-Slot'
+                    : 'Chưa xác minh Team1 (Liên hệ Verifier/Admin tại /admin)'}
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() =>
-                  runTransaction({
-                    title: 'Team1 Sybil Attestation Verification',
-                    description: 'Registering 1-Human-1-Slot Nullifier on Avalanche Fuji',
-                    action: () => verifyTeam1Mutation.mutateAsync(),
-                  })
-                }
-                className="inline-flex items-center gap-1 rounded-none border border-emerald-500/40 bg-emerald-500/15 px-3 py-1.5 font-mono text-xs font-bold uppercase text-emerald-300 hover:bg-emerald-500 hover:text-zinc-950"
-              >
-                <ShieldCheck className="h-3.5 w-3.5" />
-                <span>Re-Verify</span>
-              </button>
+            <div className="flex flex-wrap items-center gap-2">
+              {!isTeam1Verified && !frontendEnv.useMock && pendingVoucher && (
+                <button
+                  type="button"
+                  disabled={claimVoucherMutation.isPending}
+                  onClick={() => handleClaimVoucher(pendingVoucher)}
+                  className="inline-flex items-center gap-1 rounded-none border border-emerald-400 bg-emerald-500 px-3 py-1.5 font-mono text-xs font-bold uppercase text-zinc-950 hover:bg-emerald-400 disabled:opacity-50"
+                >
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  <span>Claim EIP-712 Voucher</span>
+                </button>
+              )}
 
-              <button
-                type="button"
-                onClick={() =>
-                  runTransaction({
-                    title: 'Swap AVAX → mUSDC',
-                    description: '0.05 AVAX → +250.00 mUSDC',
-                    action: () => swapMutation.mutateAsync(0.05),
-                  })
-                }
-                className="inline-flex items-center gap-1 rounded-none border border-sky-500/40 bg-sky-500/15 px-3 py-1.5 font-mono text-xs font-bold uppercase text-sky-300 hover:bg-sky-500 hover:text-zinc-950"
-              >
-                <ArrowLeftRight className="h-3.5 w-3.5" />
-                <span>Swap 0.05 AVAX</span>
-              </button>
+              {!isTeam1Verified && !frontendEnv.useMock && (
+                <button
+                  type="button"
+                  onClick={() => setShowVoucherPaste((v) => !v)}
+                  className="inline-flex items-center gap-1 rounded-none border border-zinc-700 bg-zinc-900 px-3 py-1.5 font-mono text-xs font-bold uppercase text-zinc-300 hover:border-emerald-400 hover:text-white"
+                >
+                  <span>{showVoucherPaste ? 'Đóng Voucher' : 'Nhập Voucher'}</span>
+                </button>
+              )}
+
+              {canSelfVerifyTeam1 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    runTransaction({
+                      title: 'Team1 Sybil Attestation Verification',
+                      description: 'Registering 1-Human-1-Slot Nullifier on Avalanche Fuji',
+                      action: () => verifyTeam1Mutation.mutateAsync(),
+                    })
+                  }
+                  className="inline-flex items-center gap-1 rounded-none border border-emerald-500/40 bg-emerald-500/15 px-3 py-1.5 font-mono text-xs font-bold uppercase text-emerald-300 hover:bg-emerald-500 hover:text-zinc-950"
+                >
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  <span>{isTeam1Verified ? 'Re-Verify' : 'Verify Team1'}</span>
+                </button>
+              )}
+
+              {canShowSwap && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    runTransaction({
+                      title: 'Swap AVAX → mUSDC',
+                      description: '0.05 AVAX → +250.00 mUSDC',
+                      action: () => swapMutation.mutateAsync(0.05),
+                    })
+                  }
+                  className="inline-flex items-center gap-1 rounded-none border border-sky-500/40 bg-sky-500/15 px-3 py-1.5 font-mono text-xs font-bold uppercase text-sky-300 hover:bg-sky-500 hover:text-zinc-950"
+                >
+                  <ArrowLeftRight className="h-3.5 w-3.5" />
+                  <span>Swap 0.05 AVAX</span>
+                </button>
+              )}
             </div>
           </div>
+
+          {!isTeam1Verified && showVoucherPaste && (
+            <form
+              onSubmit={handleClaimManualVoucher}
+              className="space-y-2 rounded-none border border-zinc-800 bg-zinc-950 p-3 font-mono text-xs"
+            >
+              {voucherParseError && (
+                <div className="text-rose-400">{voucherParseError}</div>
+              )}
+              <textarea
+                rows={3}
+                value={voucherJsonInput}
+                onChange={(e) => setVoucherJsonInput(e.target.value)}
+                placeholder='Dán JSON EIP-712 Voucher từ Verifier/Admin ({"verifierAddress":...,"signature":...})'
+                className="w-full rounded-none border border-zinc-700 bg-zinc-900 p-2 text-[11px] text-white focus:border-emerald-400 focus:outline-none"
+              />
+              <button
+                type="submit"
+                disabled={claimVoucherMutation.isPending || !voucherJsonInput.trim()}
+                className="rounded-none bg-emerald-500 px-3 py-1.5 font-bold uppercase text-zinc-950 hover:bg-emerald-400 disabled:opacity-50"
+              >
+                Gửi giao dịch Claim Team1
+              </button>
+            </form>
+          )}
         </section>
       </div>
 

@@ -2,11 +2,14 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAvaHuiState } from '@/hooks/useAvaHuiMockQuery';
 import {
   useAuthSession,
   useCompleteWalletOnboardingMutation,
 } from '@/lib/auth/useAuthSession';
+import { walletApi } from '@/lib/api';
+import { frontendEnv } from '@/config/env';
 import { HoverHint } from '@/components/ui/HoverHint';
 import { AvahuiLogo } from '@/components/ui/AvahuiLogo';
 import {
@@ -14,6 +17,7 @@ import {
   Check,
   CheckCircle2,
   Copy,
+  Fuel,
   Info,
   Loader2,
   ShieldCheck,
@@ -21,19 +25,30 @@ import {
 
 export function WalletSetup() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { data: state } = useAvaHuiState();
   const { data: session } = useAuthSession();
   const completeOnboardingMutation = useCompleteWalletOnboardingMutation();
+  const dripGasMutation = useMutation({
+    mutationFn: () => walletApi.dripGas(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['avahui'] });
+    },
+  });
 
   const [copied, setCopied] = useState(false);
+  const [gasMessage, setGasMessage] = useState<string | null>(null);
+  const [gasError, setGasError] = useState<string | null>(null);
 
   if (!state) return null;
 
   const currentUser =
     state.users.find((u) => u.id === (session?.userId || state.currentUserId)) ||
     state.users[0];
+  const hasWalletAddress = Boolean(currentUser.walletAddress);
 
   const handleCopy = () => {
+    if (!currentUser.walletAddress) return;
     navigator.clipboard.writeText(currentUser.walletAddress);
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
@@ -59,7 +74,10 @@ export function WalletSetup() {
           Your wallet is ready
         </h1>
         <p className="mt-1 font-mono text-xs text-zinc-400">
-          Ví nhúng của <strong className="text-zinc-200">{currentUser.email}</strong>{' '}
+          Ví nhúng của{' '}
+          <strong className="text-zinc-200">
+            {currentUser.email || 'tài khoản của bạn'}
+          </strong>{' '}
           đã được liên kết an toàn mà không cần quản lý Private Key thủ công.
         </p>
 
@@ -67,27 +85,36 @@ export function WalletSetup() {
         <div className="mt-6 space-y-3 rounded-none border border-zinc-800 bg-zinc-900/70 p-4">
           <div className="flex items-center justify-between text-xs">
             <span className="font-mono uppercase tracking-wider text-zinc-400">Wallet Address</span>
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="inline-flex items-center gap-1 rounded-none border border-zinc-700 bg-zinc-800 px-2.5 py-1 font-mono text-xs font-bold uppercase tracking-wider text-zinc-200 transition hover:text-white"
-            >
-              {copied ? (
-                <>
-                  <Check className="h-3.5 w-3.5 text-emerald-400" />
-                  <span>Copied</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="h-3.5 w-3.5" />
-                  <span>Copy address</span>
-                </>
-              )}
-            </button>
+            {hasWalletAddress && (
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="inline-flex items-center gap-1 rounded-none border border-zinc-700 bg-zinc-800 px-2.5 py-1 font-mono text-xs font-bold uppercase tracking-wider text-zinc-200 transition hover:text-white"
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-emerald-400" />
+                    <span>Copied</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3.5 w-3.5" />
+                    <span>Copy address</span>
+                  </>
+                )}
+              </button>
+            )}
           </div>
 
           <code className="block break-all rounded-none border border-zinc-800 bg-zinc-950 px-3 py-2.5 font-mono text-xs font-bold text-white">
-            {currentUser.walletAddress}
+            {hasWalletAddress ? (
+              currentUser.walletAddress
+            ) : (
+              <span className="inline-flex items-center gap-2 text-zinc-400">
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-avalanche-red" />
+                <span>Đang khởi tạo Privy Embedded Wallet trên Avalanche Fuji...</span>
+              </span>
+            )}
           </code>
 
           <div className="grid grid-cols-2 gap-3 border-t border-zinc-800 pt-3 text-xs">
@@ -123,6 +150,42 @@ export function WalletSetup() {
             </span>
           </div>
         </HoverHint>
+
+        {!frontendEnv.useMock &&
+          hasWalletAddress &&
+          parseFloat(currentUser.avaxBalance) < 0.015 && (
+            <div className="mt-4 space-y-2 rounded-none border border-amber-500/30 bg-amber-500/10 p-3 font-mono text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-amber-200">
+                  Ví mới chưa có AVAX làm phí gas trên Fuji?
+                </span>
+                <button
+                  type="button"
+                  disabled={dripGasMutation.isPending}
+                  onClick={async () => {
+                    setGasError(null);
+                    setGasMessage(null);
+                    try {
+                      const res = await dripGasMutation.mutateAsync();
+                      setGasMessage(`Đã gửi +${res.amountAvax} AVAX phí gas vào ví của bạn!`);
+                    } catch (err: any) {
+                      setGasError(err?.message || 'Chưa thể cấp gas lúc này.');
+                    }
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-none border border-amber-400 bg-amber-500 px-3 py-1.5 font-bold uppercase text-zinc-950 transition hover:bg-amber-400 disabled:opacity-50"
+                >
+                  {dripGasMutation.isPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Fuel className="h-3.5 w-3.5" />
+                  )}
+                  <span>Nhận +0.02 AVAX Gas</span>
+                </button>
+              </div>
+              {gasMessage && <div className="text-emerald-300">{gasMessage}</div>}
+              {gasError && <div className="text-rose-300">{gasError}</div>}
+            </div>
+          )}
 
         <button
           type="button"

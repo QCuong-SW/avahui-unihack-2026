@@ -6,6 +6,7 @@ export interface AttestationStatusResponse {
   onChainVerified: boolean;
   identityNullifier: string | null;
   trustTier: number;
+  pendingVoucher?: SignedAttestationVoucher | null;
 }
 
 export interface IssueAttestationResponse {

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile=false",
+  "buildCommand": "cd ../.. && pnpm --filter @avahui/shared build && pnpm --filter @avahui/blockchain build && pnpm --filter @avahui/web run build:server",
+  "env": {
+    "NEXT_PUBLIC_USE_MOCK": "false",
+    "NEXT_PUBLIC_CHAIN_ID": "43113",
+    "NEXT_PUBLIC_AVALANCHE_RPC_URL": "https://avalanche-fuji-c-chain-rpc.publicnode.com",
+    "NEXT_PUBLIC_BLOCK_EXPLORER_URL": "https://testnet.snowtrace.io",
+    "NEXT_PUBLIC_ROSCA_FACTORY_ADDRESS": "0x15846dfb15738c373def01154ea9bd4b0bc685b5",
+    "NEXT_PUBLIC_USDC_TOKEN_ADDRESS": "0x6a69e4639dcf39fec756dcea4b633137d63bbe9f",
+    "NEXT_PUBLIC_YIELD_VAULT_ADDRESS": "0xb677606338081517831e478317660b8b961e2596",
+    "NEXT_PUBLIC_SYBIL_VERIFIER_ADDRESS": "0xccd16a62cd25b5d1744acb35a14b1c7bd65bfa78"
+  }
+}

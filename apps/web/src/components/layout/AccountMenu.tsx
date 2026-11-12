@@ -47,7 +47,7 @@ export function AccountMenu() {
     session?.walletStatus || 'WALLET_CONNECTED_READY';
   const walletMeta = WALLET_STATUS_META[walletStatus];
 
-  const shortName = currentUser.displayName.split(' (')[0];
+  const shortName = (currentUser.displayName || currentUser.email || 'User').split(' (')[0];
   const initials = shortName
     .split(' ')
     .map((w) => w[0])
@@ -56,6 +56,7 @@ export function AccountMenu() {
     .toUpperCase();
 
   const handleCopyAddress = () => {
+    if (!currentUser.walletAddress) return;
     navigator.clipboard.writeText(currentUser.walletAddress);
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
@@ -114,19 +115,23 @@ export function AccountMenu() {
                 <span className="text-zinc-400">Wallet Address</span>
                 <div className="flex items-center gap-1.5">
                   <code className="font-mono font-semibold text-zinc-200">
-                    {shortenAddress(currentUser.walletAddress, 5)}
+                    {currentUser.walletAddress
+                      ? shortenAddress(currentUser.walletAddress, 5)
+                      : 'Đang khởi tạo...'}
                   </code>
-                  <button
-                    type="button"
-                    onClick={handleCopyAddress}
-                    className="rounded-none border border-zinc-800 p-1 text-zinc-400 hover:bg-zinc-800 hover:text-white"
-                  >
-                    {copied ? (
-                      <Check className="h-3 w-3 text-emerald-400" />
-                    ) : (
-                      <Copy className="h-3 w-3" />
-                    )}
-                  </button>
+                  {currentUser.walletAddress && (
+                    <button
+                      type="button"
+                      onClick={handleCopyAddress}
+                      className="rounded-none border border-zinc-800 p-1 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                    >
+                      {copied ? (
+                        <Check className="h-3 w-3 text-emerald-400" />
+                      ) : (
+                        <Copy className="h-3 w-3" />
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -138,9 +143,13 @@ export function AccountMenu() {
                 </span>
               </div>
 
-              {/* 3. Explicit Wallet Status Selector (3 States independent of Auth) */}
+              {/* 3. Explicit Wallet Status Selector (Interactive simulation in Dev/Demo only) */}
               <div className="border-t border-zinc-800/80 pt-2">
-                <div className="mb-1.5 flex items-center justify-between">
+                <div
+                  className={`flex items-center justify-between ${
+                    frontendEnv.enableDevDemoTools ? 'mb-1.5' : ''
+                  }`}
+                >
                   <span className="flex items-center gap-1 font-mono text-[11px] uppercase tracking-wider text-zinc-400">
                     <Wallet className="h-3 w-3 text-avalanche-red" />
                     <span>Wallet Status</span>
@@ -152,33 +161,35 @@ export function AccountMenu() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-1">
-                  {(
-                    [
-                      'WALLET_CREATED',
-                      'WALLET_CONNECTED_READY',
-                      'WALLET_DISCONNECTED',
-                    ] as const
-                  ).map((st) => {
-                    const meta = WALLET_STATUS_META[st];
-                    const active = walletStatus === st;
-                    return (
-                      <HoverHint key={st} side="top" hint={meta.hint}>
-                        <button
-                          type="button"
-                          onClick={() => walletStatusMutation.mutate(st)}
-                          className={`w-full rounded-none border px-1.5 py-1 text-center font-mono text-[10px] font-bold uppercase transition ${
-                            active
-                              ? meta.badgeClass
-                              : 'border-zinc-800 bg-zinc-950/60 text-zinc-500 hover:text-zinc-300'
-                          }`}
-                        >
-                          {meta.shortLabel}
-                        </button>
-                      </HoverHint>
-                    );
-                  })}
-                </div>
+                {frontendEnv.enableDevDemoTools && (
+                  <div className="grid grid-cols-3 gap-1">
+                    {(
+                      [
+                        'WALLET_CREATED',
+                        'WALLET_CONNECTED_READY',
+                        'WALLET_DISCONNECTED',
+                      ] as const
+                    ).map((st) => {
+                      const meta = WALLET_STATUS_META[st];
+                      const active = walletStatus === st;
+                      return (
+                        <HoverHint key={st} side="top" hint={meta.hint}>
+                          <button
+                            type="button"
+                            onClick={() => walletStatusMutation.mutate(st)}
+                            className={`w-full rounded-none border px-1.5 py-1 text-center font-mono text-[10px] font-bold uppercase transition ${
+                              active
+                                ? meta.badgeClass
+                                : 'border-zinc-800 bg-zinc-950/60 text-zinc-500 hover:text-zinc-300'
+                            }`}
+                          >
+                            {meta.shortLabel}
+                          </button>
+                        </HoverHint>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 

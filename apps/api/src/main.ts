@@ -1,31 +1,47 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './filters/all-exceptions.filter';
+import {
+  isAllowedCorsOrigin,
+  parseCorsOrigins,
+} from './common/utils/cors.util';
 
 async function bootstrap() {
   const logger = new Logger('AvaHuiAPI');
   const app = await NestFactory.create(AppModule);
 
+  const isProduction = process.env.NODE_ENV === 'production';
+  const trustProxyFlag = String(process.env.TRUST_PROXY ?? '').toLowerCase();
+  if (
+    trustProxyFlag === 'true' ||
+    (trustProxyFlag !== 'false' && isProduction)
+  ) {
+    // Behind reverse proxies (Cloudflare/Railway/Render/Nginx) so throttler uses X-Forwarded-For
+    const expressInstance = app.getHttpAdapter().getInstance();
+    if (typeof expressInstance?.set === 'function') {
+      expressInstance.set('trust proxy', 1);
+    }
+  }
+
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
+
   app.setGlobalPrefix('api/v1');
 
-  const configuredOrigins = process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
-    : ['http://localhost:3000'];
+  const configuredOrigins = parseCorsOrigins(process.env.CORS_ORIGIN);
 
   app.enableCors({
     origin: (origin, callback) => {
-      if (
-        !origin ||
-        configuredOrigins.includes(origin) ||
-        (process.env.NODE_ENV !== 'production' &&
-          /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin))
-      ) {
-        callback(null, true);
-      } else {
-        callback(null, false);
-      }
+      callback(
+        null,
+        isAllowedCorsOrigin(origin, configuredOrigins, isProduction),
+      );
     },
     credentials: true,
   });

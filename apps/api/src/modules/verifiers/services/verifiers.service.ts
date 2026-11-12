@@ -5,9 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import {
-  createPublicClient,
   createWalletClient,
-  http,
   keccak256,
   toBytes,
 } from 'viem';
@@ -16,9 +14,14 @@ import {
   AVALANCHE_FUJI_CHAIN,
   Team1AttestationVerifierABI,
 } from '@avahui/blockchain';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { AuthenticatedUser } from '../../../common/decorators/current-user.decorator';
 import { normalizeAddress } from '../../../common/utils/format.util';
+import {
+  createFujiPublicClient,
+  createFujiRpcTransport,
+} from '../../../common/utils/rpc.util';
 import {
   IssueAttestationDto,
   RevokeAttestationDto,
@@ -32,7 +35,8 @@ export class VerifiersService {
   private readonly logger = new Logger(VerifiersService.name);
   private readonly chainId = Number(process.env.CHAIN_ID || 43113);
   private readonly rpcUrl =
-    process.env.AVALANCHE_RPC_URL || 'https://api.avax-test.network/ext/bc/C/rpc';
+    process.env.AVALANCHE_RPC_URL || 'https://avalanche-fuji-c-chain-rpc.publicnode.com';
+  private readonly publicClient: any = createFujiPublicClient(this.rpcUrl, 5000);
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -90,11 +94,7 @@ export class VerifiersService {
       !process.env.JEST_WORKER_ID
     ) {
       try {
-        const publicClient: any = createPublicClient({
-          chain: AVALANCHE_FUJI_CHAIN as any,
-          transport: http(this.rpcUrl),
-        });
-        onChainVerified = (await publicClient.readContract({
+        onChainVerified = (await this.publicClient.readContract({
           address: verifierAddress,
           abi: Team1AttestationVerifierABI,
           functionName: 'verifyMemberAttestation',
@@ -108,12 +108,22 @@ export class VerifiersService {
       }
     }
 
+    const rawPending = (user as any)?.pendingVoucher as
+      | { deadline?: string }
+      | null
+      | undefined;
+    const isPendingValid =
+      !user?.team1Verified &&
+      Boolean(rawPending?.deadline) &&
+      Number(rawPending?.deadline) > Math.floor(Date.now() / 1000);
+
     return {
       walletAddress,
       team1Verified: Boolean(user?.team1Verified),
       onChainVerified,
       identityNullifier: user?.identityNullifier ?? null,
       trustTier: user?.trustTier ?? 0,
+      pendingVoucher: isPendingValid ? rawPending : null,
     };
   }
 
@@ -152,14 +162,10 @@ export class VerifiersService {
 
     if (dto.dispatchOnChain !== false && verifierAddress && issuerKey) {
       const account = privateKeyToAccount(issuerKey);
-      const publicClient: any = createPublicClient({
-        chain: AVALANCHE_FUJI_CHAIN as any,
-        transport: http(this.rpcUrl),
-      });
       const walletClient: any = createWalletClient({
         account,
         chain: AVALANCHE_FUJI_CHAIN as any,
-        transport: http(this.rpcUrl),
+        transport: createFujiRpcTransport(this.rpcUrl),
       });
 
       txHash = await walletClient.writeContract({
@@ -170,7 +176,7 @@ export class VerifiersService {
         account,
         chain: null,
       });
-      await publicClient.waitForTransactionReceipt({
+      await this.publicClient.waitForTransactionReceipt({
         hash: txHash as `0x${string}`,
       });
       this.logger.log(
@@ -185,6 +191,7 @@ export class VerifiersService {
           team1Verified: true,
           identityNullifier,
           trustTier,
+          pendingVoucher: Prisma.DbNull,
         },
       });
     }
@@ -221,11 +228,7 @@ export class VerifiersService {
       Math.floor(Date.now() / 1000) + (dto.ttlSeconds ?? 3600),
     );
 
-    const publicClient: any = createPublicClient({
-      chain: AVALANCHE_FUJI_CHAIN as any,
-      transport: http(this.rpcUrl),
-    });
-    const nonce = (await publicClient.readContract({
+    const nonce = (await this.publicClient.readContract({
       address: verifierAddress,
       abi: Team1AttestationVerifierABI,
       functionName: 'nonces',
@@ -263,7 +266,7 @@ export class VerifiersService {
       `Verifier ${actor.privyDid} signed EIP-712 Team1 voucher for ${walletAddress}`,
     );
 
-    return {
+    const voucher = {
       verifierAddress,
       account: walletAddress,
       identityNullifier,
@@ -272,6 +275,29 @@ export class VerifiersService {
       deadline: deadline.toString(),
       signature,
     };
+
+    const walletRecord =
+      typeof this.prisma.wallet?.findUnique === 'function'
+        ? await this.prisma.wallet.findUnique({ where: { address: walletAddress } })
+        : null;
+
+    if (walletRecord && typeof this.prisma.user?.update === 'function') {
+      await this.prisma.user.update({
+        where: { id: walletRecord.userId },
+        data: { pendingVoucher: voucher as unknown as Prisma.InputJsonValue },
+      });
+      if (typeof this.prisma.notification?.create === 'function') {
+        await this.prisma.notification.create({
+          data: {
+            userId: walletRecord.userId,
+            title: 'Đã có Voucher xác minh Team1 (EIP-712)',
+            body: 'Verifier đã ký voucher Anti-Sybil cho ví của bạn. Mở mục Hồ sơ để bấm tự Claim on-chain.',
+          },
+        });
+      }
+    }
+
+    return voucher;
   }
 
   async revokeAttestation(
@@ -286,14 +312,10 @@ export class VerifiersService {
 
     if (dto.dispatchOnChain !== false && verifierAddress && issuerKey) {
       const account = privateKeyToAccount(issuerKey);
-      const publicClient: any = createPublicClient({
-        chain: AVALANCHE_FUJI_CHAIN as any,
-        transport: http(this.rpcUrl),
-      });
       const walletClient: any = createWalletClient({
         account,
         chain: AVALANCHE_FUJI_CHAIN as any,
-        transport: http(this.rpcUrl),
+        transport: createFujiRpcTransport(this.rpcUrl),
       });
       txHash = await walletClient.writeContract({
         address: verifierAddress,
@@ -303,7 +325,7 @@ export class VerifiersService {
         account,
         chain: null,
       });
-      await publicClient.waitForTransactionReceipt({
+      await this.publicClient.waitForTransactionReceipt({
         hash: txHash as `0x${string}`,
       });
     }

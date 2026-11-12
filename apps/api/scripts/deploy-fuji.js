@@ -11,21 +11,23 @@
  */
 const fs = require('fs');
 const path = require('path');
-const solc = require('solc');
 const {
   createPublicClient,
   createWalletClient,
   http,
   formatEther,
+  parseEther,
   decodeEventLog,
   keccak256,
   encodePacked,
 } = require('viem');
 const { privateKeyToAccount, generatePrivateKey } = require('viem/accounts');
 const { defineChain } = require('viem');
+const { compileAvaHuiContracts, getCompilerTag } = require('./solc-config');
 
 const ROOT_DIR = path.resolve(__dirname, '../../..');
 const CONTRACTS_SRC = path.join(ROOT_DIR, 'apps/contracts/src');
+const ROOT_ENV_PATH = path.join(ROOT_DIR, '.env');
 const API_ENV_PATH = path.join(ROOT_DIR, 'apps/api/.env');
 const WEB_ENV_PATH = path.join(ROOT_DIR, 'apps/web/.env.local');
 
@@ -54,72 +56,26 @@ const LOCAL_BUILDER_KEYS = [
 ];
 
 function compileContracts() {
-  console.log('1. Compiling AvaHui V2 Smart Contracts with solc 0.8.24...');
-  const files = [
-    'interfaces/IERC20Minimal.sol',
-    'interfaces/IYieldVault.sol',
-    'interfaces/IAvaHuiFactory.sol',
-    'interfaces/IAvaHuiCircle.sol',
-    'libraries/SecurityLib.sol',
-    'mocks/MockUSDC.sol',
-    'mocks/AvaHuiYieldVault.sol',
-    'verifiers/Team1AttestationVerifier.sol',
-    'AvaHuiCircle.sol',
-    'AvaHuiFactory.sol',
-  ];
-
-  const sources = {};
-  for (const rel of files) {
-    sources[rel] = {
-      content: fs.readFileSync(path.join(CONTRACTS_SRC, rel), 'utf8'),
-    };
-  }
-
-  const input = {
-    language: 'Solidity',
-    sources,
-    settings: {
-      evmVersion: 'paris',
-      optimizer: { enabled: true, runs: 200 },
-      viaIR: true,
-      outputSelection: {
-        '*': {
-          '*': ['abi', 'evm.bytecode.object'],
-        },
-      },
-    },
-  };
-
-  const output = JSON.parse(solc.compile(JSON.stringify(input)));
-  const errors = (output.errors || []).filter((e) => e.severity === 'error');
-  if (errors.length > 0) {
-    console.error('Solc compilation errors:', errors);
-    process.exit(1);
-  }
-
-  return {
-    MockUSDC: output.contracts['mocks/MockUSDC.sol'].MockUSDC,
-    AvaHuiYieldVault:
-      output.contracts['mocks/AvaHuiYieldVault.sol'].AvaHuiYieldVault,
-    Team1AttestationVerifier:
-      output.contracts['verifiers/Team1AttestationVerifier.sol']
-        .Team1AttestationVerifier,
-    AvaHuiCircle: output.contracts['AvaHuiCircle.sol'].AvaHuiCircle,
-    AvaHuiFactory: output.contracts['AvaHuiFactory.sol'].AvaHuiFactory,
-  };
+  console.log(
+    `1. Compiling AvaHui V2 Smart Contracts with solc ${getCompilerTag()}...`,
+  );
+  return compileAvaHuiContracts(CONTRACTS_SRC);
 }
 
-function getOrInitDeployerKey() {
+function getOrInitEnvKey(keyName) {
   let envContent = fs.existsSync(API_ENV_PATH)
     ? fs.readFileSync(API_ENV_PATH, 'utf8')
     : '';
-  const match = envContent.match(/^DEPLOYER_PRIVATE_KEY=(0x[0-9a-fA-F]{64})/m);
+  const match = envContent.match(new RegExp(`^${keyName}=(0x[0-9a-fA-F]{64})`, 'm'));
   if (match && match[1]) {
     return match[1];
   }
 
   const newKey = generatePrivateKey();
-  envContent += `\n# --- Auto-generated Avalanche Fuji Deployer Key ---\nDEPLOYER_PRIVATE_KEY=${newKey}\n`;
+  if (envContent.length > 0 && !envContent.endsWith('\n')) {
+    envContent += '\n';
+  }
+  envContent += `${keyName}=${newKey}\n`;
   fs.writeFileSync(API_ENV_PATH, envContent, 'utf8');
   return newKey;
 }
@@ -157,8 +113,18 @@ function extractCircleCreatedAddress(receipt, factoryAbi) {
 async function main() {
   const privateKey =
     process.env.DEPLOYER_PRIVATE_KEY ||
-    (IS_LOCAL_RPC ? LOCAL_BUILDER_KEYS[0] : getOrInitDeployerKey());
+    (IS_LOCAL_RPC ? LOCAL_BUILDER_KEYS[0] : getOrInitEnvKey('DEPLOYER_PRIVATE_KEY'));
   const account = privateKeyToAccount(privateKey);
+
+  const keeperKey =
+    process.env.KEEPER_PRIVATE_KEY ||
+    (IS_LOCAL_RPC ? LOCAL_BUILDER_KEYS[0] : getOrInitEnvKey('KEEPER_PRIVATE_KEY'));
+  const keeperAccount = privateKeyToAccount(keeperKey);
+
+  const verifierKey =
+    process.env.VERIFIER_ISSUER_PRIVATE_KEY ||
+    (IS_LOCAL_RPC ? LOCAL_BUILDER_KEYS[0] : getOrInitEnvKey('VERIFIER_ISSUER_PRIVATE_KEY'));
+  const verifierAccount = privateKeyToAccount(verifierKey);
 
   const publicClient = createPublicClient({
     chain: activeChain,
@@ -176,8 +142,9 @@ async function main() {
 
   console.log('============================================================');
   console.log(`RPC Endpoint     : ${FUJI_RPC}`);
-  console.log(`Deployer Address : ${account.address}`);
-  console.log(`Balance          : ${balanceAvax} AVAX`);
+  console.log(`Deployer Address : ${account.address} (${balanceAvax} AVAX)`);
+  console.log(`Keeper Address   : ${keeperAccount.address}`);
+  console.log(`Verifier Issuer  : ${verifierAccount.address}`);
   console.log('============================================================');
 
   if (balanceWei === 0n) {
@@ -213,7 +180,7 @@ async function main() {
   const verifierHash = await walletClient.deployContract({
     abi: artifacts.Team1AttestationVerifier.abi,
     bytecode: `0x${artifacts.Team1AttestationVerifier.evm.bytecode.object}`,
-    args: [account.address],
+    args: [IS_LOCAL_RPC ? account.address : verifierAccount.address],
   });
   const verifierReceipt = await publicClient.waitForTransactionReceipt({ hash: verifierHash });
   const verifierAddress = verifierReceipt.contractAddress;
@@ -237,6 +204,32 @@ async function main() {
   });
   await publicClient.waitForTransactionReceipt({ hash: linkHash });
   console.log(`   ✓ Default V2 modules linked`);
+
+  if (!IS_LOCAL_RPC) {
+    const minRoleBalance = parseEther('0.03');
+    const maxTopUp = parseEther('0.05');
+    for (const [roleLabel, roleAddr] of [
+      ['Keeper', keeperAccount.address],
+      ['VerifierIssuer', verifierAccount.address],
+    ]) {
+      if (roleAddr.toLowerCase() === account.address.toLowerCase()) continue;
+      const roleBal = await publicClient.getBalance({ address: roleAddr });
+      if (roleBal < minRoleBalance) {
+        const currentDeployerBal = await publicClient.getBalance({ address: account.address });
+        const reserve = parseEther('0.02');
+        if (currentDeployerBal > reserve + parseEther('0.01')) {
+          const available = currentDeployerBal - reserve;
+          const amount = available > maxTopUp * 2n ? maxTopUp : available / 2n;
+          console.log(`   -> Funding ${roleLabel} (${roleAddr}) with ${formatEther(amount)} AVAX gas...`);
+          const txHash = await walletClient.sendTransaction({
+            to: roleAddr,
+            value: amount,
+          });
+          await publicClient.waitForTransactionReceipt({ hash: txHash });
+        }
+      }
+    }
+  }
 
   if (IS_LOCAL_RPC) {
     console.log('7. Funding & Issuing Team1 Anti-Sybil Attestations for all 5 Builders...');
@@ -427,6 +420,8 @@ async function main() {
   updateEnvVar(API_ENV_PATH, 'ROSCA_FACTORY_ADDRESS', factoryAddress);
   updateEnvVar(API_ENV_PATH, 'YIELD_VAULT_ADDRESS', vaultAddress);
   updateEnvVar(API_ENV_PATH, 'SYBIL_VERIFIER_ADDRESS', verifierAddress);
+  updateEnvVar(API_ENV_PATH, 'KEEPER_ENABLED', 'true');
+  updateEnvVar(API_ENV_PATH, 'INDEXER_ENABLED', 'true');
   updateEnvVar(
     API_ENV_PATH,
     'INDEXER_START_BLOCK',
@@ -444,6 +439,16 @@ async function main() {
   updateEnvVar(WEB_ENV_PATH, 'NEXT_PUBLIC_ROSCA_FACTORY_ADDRESS', factoryAddress);
   updateEnvVar(WEB_ENV_PATH, 'NEXT_PUBLIC_YIELD_VAULT_ADDRESS', vaultAddress);
   updateEnvVar(WEB_ENV_PATH, 'NEXT_PUBLIC_SYBIL_VERIFIER_ADDRESS', verifierAddress);
+
+  updateEnvVar(ROOT_ENV_PATH, 'NEXT_PUBLIC_USE_MOCK', 'false');
+  updateEnvVar(ROOT_ENV_PATH, 'AVALANCHE_RPC_URL', FUJI_RPC);
+  updateEnvVar(ROOT_ENV_PATH, 'NEXT_PUBLIC_AVALANCHE_RPC_URL', FUJI_RPC);
+  updateEnvVar(ROOT_ENV_PATH, 'USDC_TOKEN_ADDRESS', usdcAddress);
+  updateEnvVar(ROOT_ENV_PATH, 'NEXT_PUBLIC_USDC_TOKEN_ADDRESS', usdcAddress);
+  updateEnvVar(ROOT_ENV_PATH, 'ROSCA_FACTORY_ADDRESS', factoryAddress);
+  updateEnvVar(ROOT_ENV_PATH, 'NEXT_PUBLIC_ROSCA_FACTORY_ADDRESS', factoryAddress);
+  updateEnvVar(ROOT_ENV_PATH, 'YIELD_VAULT_ADDRESS', vaultAddress);
+  updateEnvVar(ROOT_ENV_PATH, 'SYBIL_VERIFIER_ADDRESS', verifierAddress);
 
   console.log('\n============================================================');
   console.log('🎉 AVAHUI V2 DEPLOYMENT & SEEDING COMPLETE!');

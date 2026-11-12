@@ -9,7 +9,11 @@ import {
   publicClient,
   resolveSignerClient,
 } from '@/lib/wagmi/client';
-import { frontendEnv } from '@/config/env';
+import {
+  frontendEnv,
+  isConfiguredAddress,
+  requireConfiguredContractAddress,
+} from '@/config/env';
 import { transactionApi } from '@/lib/api';
 import { useTxLifecycle } from '@/features/transactions/hooks/useTxLifecycle';
 import { useAvaHuiState, useFaucetMint } from '@/hooks/useAvaHuiMockQuery';
@@ -37,6 +41,9 @@ export function useTokenOperations() {
    */
   const getBalance = useCallback(
     async (walletAddress: `0x${string}`): Promise<string> => {
+      if (!isConfiguredAddress(frontendEnv.usdcTokenAddress)) {
+        return currentUser?.usdcBalance?.replace(/[^0-9.]/g, '') || '0.00';
+      }
       try {
         const balance = await publicClient.readContract({
           address: frontendEnv.usdcTokenAddress,
@@ -61,6 +68,9 @@ export function useTokenOperations() {
       ownerAddress: `0x${string}`,
       spenderAddress: `0x${string}`,
     ): Promise<bigint> => {
+      if (!isConfiguredAddress(frontendEnv.usdcTokenAddress)) {
+        return 0n;
+      }
       try {
         const allowance = await publicClient.readContract({
           address: frontendEnv.usdcTokenAddress,
@@ -93,6 +103,10 @@ export function useTokenOperations() {
             let liveConfirmed = false;
 
             if (!isMockMode) {
+              const tokenAddress = requireConfiguredContractAddress(
+                frontendEnv.usdcTokenAddress,
+                'MockUSDC',
+              );
               const signer = await resolveSignerClient(currentUser?.walletAddress);
               if (!signer) {
                 throw new Error(
@@ -100,7 +114,7 @@ export function useTokenOperations() {
                 );
               }
               txHash = await signer.client.writeContract({
-                address: frontendEnv.usdcTokenAddress,
+                address: tokenAddress,
                 abi: MockUSDCABI,
                 functionName: 'faucet',
                 args: [amountBaseUnits],
@@ -157,6 +171,10 @@ export function useTokenOperations() {
             let txHash: string | null = null;
 
             if (!isMockMode) {
+              const tokenAddress = requireConfiguredContractAddress(
+                frontendEnv.usdcTokenAddress,
+                'MockUSDC',
+              );
               const signer = await resolveSignerClient(currentUser?.walletAddress);
               if (!signer) {
                 throw new Error(
@@ -164,7 +182,7 @@ export function useTokenOperations() {
                 );
               }
               txHash = await signer.client.writeContract({
-                address: frontendEnv.usdcTokenAddress,
+                address: tokenAddress,
                 abi: MockUSDCABI,
                 functionName: 'approve',
                 args: [spenderAddress, amountBaseUnits],

@@ -12,6 +12,7 @@
     "dev:api": "pnpm --filter @avahui/api start:dev",
     "build": "pnpm -r build",
     "build:web": "pnpm --filter @avahui/web build",
+    "build:web:server": "pnpm --filter @avahui/web run build:server",
     "build:api": "pnpm --filter @avahui/api build",
     "lint": "pnpm -r lint",
     "test": "pnpm -r test",
@@ -21,5 +22,10 @@
     "docker:down": "docker compose --profile deploy down",
     "deploy:fuji": "pnpm --filter @avahui/api run deploy:fuji",
     "db:reset-seed": "pnpm --filter @avahui/api run db:reset-seed"
+  },
+  "pnpm": {
+    "overrides": {
+      "zod": "^3.25.76"
+    }
   }
 }

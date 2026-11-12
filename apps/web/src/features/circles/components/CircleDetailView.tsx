@@ -8,6 +8,7 @@ import {
   useMyTransactionsQuery,
 } from '@/hooks/useCircleQueries';
 import { CircleHeader } from './CircleHeader';
+import { CircleAdvisorCard } from './CircleAdvisorCard';
 import { SmartActionBox } from './SmartActionBox';
 import { CurrentRoundTab } from '@/features/contributions/components/CurrentRoundTab';
 import { MembersCollateralTab } from '@/features/members/components/MembersCollateralTab';
@@ -82,6 +83,8 @@ export function CircleDetailView({ circleId }: CircleDetailViewProps) {
       <div className="animate-fade-down">
         <CircleHeader circle={circle} />
       </div>
+
+      <CircleAdvisorCard circle={circle} />
 
       <div className="grid items-start gap-5 sm:gap-6 lg:grid-cols-12">
         <div className="space-y-4 lg:col-span-7">

@@ -74,6 +74,8 @@ CREATE TABLE IF NOT EXISTS users (
     team1_verified BOOLEAN NOT NULL DEFAULT FALSE,
     identity_nullifier VARCHAR(66) UNIQUE,
     trust_tier SMALLINT NOT NULL DEFAULT 0,
+    pending_voucher JSONB,
+    last_gas_drip_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -127,9 +129,13 @@ CREATE TABLE IF NOT EXISTS circles (
     min_bid NUMERIC(78, 0) NOT NULL DEFAULT 0,
     max_bid NUMERIC(78, 0) NOT NULL DEFAULT 0,
     total_discount_pool NUMERIC(78, 0) NOT NULL DEFAULT 0,
+    total_yield_earned NUMERIC(78, 0) NOT NULL DEFAULT 0,
+    is_sealed_bid BOOLEAN NOT NULL DEFAULT TRUE,
+    enable_yield_vault BOOLEAN NOT NULL DEFAULT TRUE,
     is_private_invite BOOLEAN NOT NULL DEFAULT FALSE,
     invite_code_hash VARCHAR(66),
     require_team1_attestation BOOLEAN NOT NULL DEFAULT FALSE,
+    is_paused BOOLEAN NOT NULL DEFAULT FALSE,
     is_hidden_by_admin BOOLEAN NOT NULL DEFAULT FALSE,
     moderation_reason TEXT,
     creation_tx_hash VARCHAR(66),

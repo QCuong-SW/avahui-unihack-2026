@@ -172,29 +172,75 @@ export class AuthService {
   }
 
   async syncUser(authUser: AuthenticatedUser, dto: SyncAuthDto) {
-    const walletAddress = normalizeAddress(dto.walletAddress);
+    const requestedWallet = dto.walletAddress?.trim()
+      ? normalizeAddress(dto.walletAddress)
+      : null;
     // Always trust the verified identity from JWT rather than trusting client-supplied privyDid
     const privyDid = authUser.privyDid;
 
     if (
+      requestedWallet &&
       authUser.tokenWalletVerified &&
       authUser.walletAddress &&
-      normalizeAddress(authUser.walletAddress) !== walletAddress
+      normalizeAddress(authUser.walletAddress) !== requestedWallet
     ) {
       throw new ForbiddenException(
         'Cannot link a different wallet address than verified token identity',
       );
     }
 
-    const email = authUser.email || dto.email || null;
-    const defaultDisplayName =
-      dto.displayName ||
-      (email ? email.split('@')[0] : `Builder ${walletAddress.slice(0, 6)}`);
+    let verifiedPrivyEmail: string | undefined;
+    let verifiedPrivyName: string | undefined;
+    let verifiedPrivyWallets: string[] = [];
 
-    const existingWallet = await this.prisma.wallet.findUnique({
-      where: { address: walletAddress },
-      include: { user: true },
-    });
+    if (
+      authUser.authType === 'privy' &&
+      this.verifier.hasRealPrivyServerCredentials()
+    ) {
+      const privyIdentity = await this.verifier.fetchPrivyUserIdentity(privyDid);
+      if (!privyIdentity) {
+        throw new UnauthorizedException(
+          'Unable to verify Privy user account with server credentials',
+        );
+      }
+      if (
+        requestedWallet &&
+        !privyIdentity.verifiedWallets.includes(requestedWallet)
+      ) {
+        throw new ForbiddenException(
+          'Wallet address is not linked to your verified Privy account',
+        );
+      }
+      verifiedPrivyWallets = privyIdentity.verifiedWallets;
+      verifiedPrivyEmail = privyIdentity.email;
+      verifiedPrivyName = privyIdentity.displayName;
+    }
+
+    const walletAddress =
+      requestedWallet ??
+      verifiedPrivyWallets[0] ??
+      (authUser.walletAddress ? normalizeAddress(authUser.walletAddress) : null);
+
+    const isBootstrapAdmin = Boolean(
+      verifiedPrivyEmail &&
+        this.verifier.isBootstrapAdminEmail(verifiedPrivyEmail),
+    );
+    const email = verifiedPrivyEmail || authUser.email || dto.email || null;
+    const resolvedDisplayName = verifiedPrivyName || dto.displayName;
+    const defaultDisplayName =
+      resolvedDisplayName ||
+      (email
+        ? email.split('@')[0]
+        : walletAddress
+          ? `Builder ${walletAddress.slice(0, 6)}`
+          : 'AvaHui Builder');
+
+    const existingWallet = walletAddress
+      ? await this.prisma.wallet.findUnique({
+          where: { address: walletAddress },
+          include: { user: true },
+        })
+      : null;
 
     let userId: string;
 
@@ -209,7 +255,8 @@ export class AuthService {
         where: { id: userId },
         data: {
           ...(email ? { email } : {}),
-          ...(dto.displayName ? { displayName: dto.displayName } : {}),
+          ...(resolvedDisplayName ? { displayName: resolvedDisplayName } : {}),
+          ...(isBootstrapAdmin ? { role: UserRole.ADMIN } : {}),
         },
       });
     } else {
@@ -217,31 +264,37 @@ export class AuthService {
         where: { privyDid },
         update: {
           ...(email ? { email } : {}),
-          ...(dto.displayName ? { displayName: dto.displayName } : {}),
+          ...(resolvedDisplayName ? { displayName: resolvedDisplayName } : {}),
+          ...(isBootstrapAdmin ? { role: UserRole.ADMIN } : {}),
         },
         create: {
           privyDid,
           email,
           displayName: defaultDisplayName,
+          ...(isBootstrapAdmin ? { role: UserRole.ADMIN } : {}),
         },
       });
       userId = user.id;
 
-      await this.prisma.wallet.create({
-        data: {
-          userId,
-          address: walletAddress,
-          walletClientType:
-            authUser.authType === 'siwe' ? 'external_siwe' : 'privy',
-          isPrimary: true,
-        },
-      });
+      if (walletAddress) {
+        await this.prisma.wallet.create({
+          data: {
+            userId,
+            address: walletAddress,
+            walletClientType:
+              authUser.authType === 'siwe' ? 'external_siwe' : 'privy',
+            isPrimary: true,
+          },
+        });
+      }
     }
 
-    await this.prisma.circleMember.updateMany({
-      where: { memberAddress: walletAddress, userId: null },
-      data: { userId },
-    });
+    if (walletAddress) {
+      await this.prisma.circleMember.updateMany({
+        where: { memberAddress: walletAddress, userId: null },
+        data: { userId },
+      });
+    }
 
     return this.usersService.getUserProfileById(userId, walletAddress);
   }

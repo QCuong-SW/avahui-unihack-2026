@@ -37,3 +37,37 @@ export function generateMockAddress(): string {
   }
   return result;
 }
+
+const INVITE_STORAGE_PREFIX = 'avahui_creator_invite_';
+
+/** Persists creator's plaintext private invite code locally under one or more circle keys. */
+export function saveCreatorInviteCode(
+  circleKeys: Array<string | null | undefined>,
+  inviteCode?: string | null,
+): void {
+  if (typeof window === 'undefined' || !inviteCode?.trim()) return;
+  const trimmed = inviteCode.trim();
+  for (const key of circleKeys) {
+    if (key) {
+      window.localStorage.setItem(
+        `${INVITE_STORAGE_PREFIX}${key.toLowerCase()}`,
+        trimmed,
+      );
+    }
+  }
+}
+
+/** Reads creator's locally saved invite code by circle id, metadataId, or contractAddress. */
+export function getSavedCreatorInviteCode(
+  ...circleKeys: Array<string | null | undefined>
+): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+  for (const key of circleKeys) {
+    if (!key) continue;
+    const saved = window.localStorage.getItem(
+      `${INVITE_STORAGE_PREFIX}${key.toLowerCase()}`,
+    );
+    if (saved) return saved;
+  }
+  return undefined;
+}

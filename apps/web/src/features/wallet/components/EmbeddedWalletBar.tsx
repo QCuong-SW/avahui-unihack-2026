@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   useAvaHuiState,
   useSwapAvaxToUsdcMutation,
@@ -8,6 +9,7 @@ import {
 import { useAuthSession } from '@/lib/auth/useAuthSession';
 import { useTokenOperations } from '@/hooks/useTokenOperations';
 import { useTxLifecycle } from '@/features/transactions/hooks/useTxLifecycle';
+import { walletApi } from '@/lib/api';
 import { formatUsdc } from '@/lib/utils';
 import { HoverHint } from '@/components/ui/HoverHint';
 import { NetworkStatus } from '@/components/wallet/NetworkStatus';
@@ -23,11 +25,18 @@ import {
 } from 'lucide-react';
 
 export function EmbeddedWalletBar() {
+  const queryClient = useQueryClient();
   const { data: state } = useAvaHuiState();
   const { data: session } = useAuthSession();
   const { requestFaucet, isOperating } = useTokenOperations();
   const swapMutation = useSwapAvaxToUsdcMutation();
   const { runTransaction } = useTxLifecycle();
+  const dripGasMutation = useMutation({
+    mutationFn: () => walletApi.dripGas(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['avahui'] });
+    },
+  });
 
   if (!state) return null;
 
@@ -38,6 +47,17 @@ export function EmbeddedWalletBar() {
 
   const handleFaucet = async () => {
     await requestFaucet(1000);
+  };
+
+  const handleDripGas = async () => {
+    await runTransaction({
+      title: 'Cấp +0.02 AVAX phí gas Fuji',
+      description: 'Nhận AVAX phí gas miễn phí cho ví mới từ AvaHui Gas Dripper',
+      action: async () => {
+        const res = await dripGasMutation.mutateAsync();
+        return { txHash: res.txHash };
+      },
+    });
   };
 
   const handleSwap = async () => {
@@ -57,30 +77,55 @@ export function EmbeddedWalletBar() {
         <NetworkStatus compact />
       </div>
 
-      {/* 2. AVAX Gas Balance (Desktop & Tablet) */}
-      <HoverHint
-        position="bottom"
-        hint={
-          isLowGas
-            ? 'Cảnh báo: Số dư AVAX làm phí gas thấp (< 0.02 AVAX)'
-            : 'Số dư AVAX dùng làm phí gas giao dịch'
-        }
-      >
-        <div
-          className={`hidden items-center gap-1.5 rounded-none border px-2.5 py-1.5 font-mono text-xs font-semibold sm:flex transition-colors ${
+      {/* 2. AVAX Gas Balance (Desktop & Tablet) + Gas Drip for New Privy Wallets */}
+      <div className="hidden items-center gap-1 sm:flex">
+        <HoverHint
+          position="bottom"
+          hint={
             isLowGas
-              ? 'border-amber-500/50 bg-amber-500/10 text-amber-300'
-              : 'border-zinc-800 bg-zinc-900/90 text-zinc-300'
-          }`}
+              ? 'Cảnh báo: Số dư AVAX làm phí gas thấp (< 0.02 AVAX)'
+              : 'Số dư AVAX dùng làm phí gas giao dịch'
+          }
         >
-          {isLowGas ? (
-            <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
-          ) : (
-            <Fuel className="h-3.5 w-3.5 text-zinc-400" />
+          <div
+            className={`flex items-center gap-1.5 rounded-none border px-2.5 py-1.5 font-mono text-xs font-semibold transition-colors ${
+              isLowGas
+                ? 'border-amber-500/50 bg-amber-500/10 text-amber-300'
+                : 'border-zinc-800 bg-zinc-900/90 text-zinc-300'
+            }`}
+          >
+            {isLowGas ? (
+              <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />
+            ) : (
+              <Fuel className="h-3.5 w-3.5 text-zinc-400" />
+            )}
+            <span>{currentUser.avaxBalance} AVAX</span>
+          </div>
+        </HoverHint>
+
+        {!frontendEnv.useMock &&
+          Boolean(currentUser.walletAddress) &&
+          parseFloat(currentUser.avaxBalance) < 0.015 && (
+            <HoverHint
+              position="bottom"
+              hint="Nhận miễn phí +0.02 AVAX làm phí gas giao dịch cho ví mới (1 lần / 24h)"
+            >
+              <button
+                type="button"
+                disabled={dripGasMutation.isPending}
+                onClick={handleDripGas}
+                className="inline-flex items-center gap-1 rounded-none border border-amber-500/50 bg-amber-500/15 px-2 py-1.5 font-mono text-[11px] font-bold uppercase text-amber-300 transition hover:bg-amber-500 hover:text-zinc-950 disabled:opacity-50"
+              >
+                {dripGasMutation.isPending ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Fuel className="h-3 w-3" />
+                )}
+                <span>+Gas</span>
+              </button>
+            </HoverHint>
           )}
-          <span>{currentUser.avaxBalance} AVAX</span>
-        </div>
-      </HoverHint>
+      </div>
 
       {/* 3. mUSDC Balance + Faucet Button (Responsive) */}
       <div className="flex items-center rounded-none border border-zinc-800 bg-zinc-900/90 p-0.5">

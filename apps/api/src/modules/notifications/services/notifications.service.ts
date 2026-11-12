@@ -64,5 +64,14 @@ export class NotificationsService {
       createdAt: updated.createdAt.toISOString(),
     };
   }
+
+  async markAllAsRead(authUser: AuthenticatedUser) {
+    const profile = await this.usersService.getCurrentUserProfile(authUser);
+    const result = await this.prisma.notification.updateMany({
+      where: { userId: profile.id, isRead: false },
+      data: { isRead: true },
+    });
+    return { updatedCount: result.count };
+  }
 }
 

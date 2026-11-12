@@ -214,12 +214,21 @@ export function useVerifyEmailOtpMutation() {
       ) {
         await privy.loginWithEmailCode(code.trim());
         const token = await privy.getAccessToken();
+        const snapshot = privy.getUserSnapshot();
+        const resolvedWallet = snapshot.walletAddress || current.walletAddress;
         if (token && typeof window !== 'undefined') {
           window.localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, token);
+          if (resolvedWallet) {
+            window.localStorage.setItem(
+              ACTIVE_WALLET_STORAGE_KEY,
+              resolvedWallet.toLowerCase(),
+            );
+          }
         }
         const authResult = authenticateWithRealToken({
-          userId: current.pendingOtp.targetUserId,
-          email: current.pendingOtp.email,
+          userId: snapshot.userId || `privy:${current.pendingOtp.email}`,
+          email: snapshot.email || current.pendingOtp.email,
+          walletAddress: resolvedWallet,
           accessToken: token || '',
           authMethod: 'EMAIL_OTP',
         });

@@ -41,7 +41,9 @@ export function LoginForm() {
   const requestOtpMutation = useRequestEmailOtpMutation();
   const siweLoginMutation = useSiweLoginMutation();
 
-  const [email, setEmail] = useState('minh.nguyen@avahui.io');
+  const [email, setEmail] = useState(
+    frontendEnv.enableDevDemoTools ? 'minh.nguyen@avahui.io' : '',
+  );
   const [selectedUserId, setSelectedUserId] = useState('usr_01');
   const [simulateNewWalletSetup, setSimulateNewWalletSetup] = useState(false);
   const [showDemoOptions, setShowDemoOptions] = useState(false);

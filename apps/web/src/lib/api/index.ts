@@ -5,3 +5,5 @@ export * from './transactionApi';
 export * from './notificationApi';
 export * from './adminApi';
 export * from './verifierApi';
+export * from './aiApi';
+export * from './walletApi';

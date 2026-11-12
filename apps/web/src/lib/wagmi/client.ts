@@ -9,35 +9,44 @@ import {
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { avalancheFuji } from 'viem/chains';
+import { getFujiRpcUrls } from '@avahui/blockchain';
 import { frontendEnv } from '@/config/env';
 import { getActiveEmbeddedProvider } from '@/lib/privy/privyBridge';
 
 export const FUJI_CHAIN_ID = avalancheFuji.id; // 43113
 
+const resolvedFujiRpcUrls = getFujiRpcUrls(frontendEnv.rpcUrl, true);
+
 export const activeFujiChain = frontendEnv.isLocalEvm
   ? defineChain({
-      id: 43113,
-      name: 'Avalanche Fuji (Local EVM)',
-      nativeCurrency: { name: 'Avalanche', symbol: 'AVAX', decimals: 18 },
-      rpcUrls: {
-        default: { http: [frontendEnv.rpcUrl] },
-        public: { http: [frontendEnv.rpcUrl] },
-      },
-    })
-  : avalancheFuji;
+    id: 43113,
+    name: 'Avalanche Fuji (Local EVM)',
+    nativeCurrency: { name: 'Avalanche', symbol: 'AVAX', decimals: 18 },
+    rpcUrls: {
+      default: { http: [frontendEnv.rpcUrl] },
+      public: { http: [frontendEnv.rpcUrl] },
+    },
+  })
+  : defineChain({
+    ...avalancheFuji,
+    rpcUrls: {
+      default: { http: resolvedFujiRpcUrls },
+      public: { http: resolvedFujiRpcUrls },
+    },
+  });
 
 /**
  * Public Client for Avalanche Fuji (or Local EVM Node mimicking Chain ID 43113)
+ * Uses 1s receipt polling to match Avalanche ~2s block cadence cleanly.
  */
 export const publicClient = createPublicClient({
   chain: activeFujiChain,
+  pollingInterval: 1_000,
   transport: frontendEnv.isLocalEvm
     ? http(frontendEnv.rpcUrl)
-    : fallback([
-        http(frontendEnv.rpcUrl),
-        http('https://api.avax-test.network/ext/bc/C/rpc'),
-        http('https://avalanche-fuji-c-chain-rpc.publicnode.com'),
-      ]),
+    : fallback(
+      resolvedFujiRpcUrls.map((url) => http(url, { timeout: 5_000 })),
+    ),
 });
 
 /**
@@ -166,7 +175,9 @@ export async function ensureBrowserWalletNetwork(eth: any): Promise<void> {
               symbol: 'AVAX',
               decimals: 18,
             },
-            rpcUrls: [frontendEnv.rpcUrl],
+            rpcUrls: frontendEnv.isLocalEvm
+              ? [frontendEnv.rpcUrl]
+              : resolvedFujiRpcUrls,
             blockExplorerUrls: ['https://testnet.snowtrace.io/'],
           },
         ],

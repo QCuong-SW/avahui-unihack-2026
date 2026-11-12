@@ -10,19 +10,70 @@ import {
   CircleStatus as PrismaCircleStatus,
   Prisma,
 } from '@prisma/client';
-import { getContractAddresses } from '@avahui/blockchain';
+import {
+  AvaHuiCircleABI,
+  getContractAddresses,
+} from '@avahui/blockchain';
 import { USDC_DECIMALS, USDC_SYMBOL, UserRole } from '@avahui/shared';
 import { PrismaService } from '../../../database/prisma.service';
 import { AuthenticatedUser } from '../../../common/decorators/current-user.decorator';
 import { formatUsdcUnits, normalizeAddress } from '../../../common/utils/format.util';
+import { createFujiPublicClient } from '../../../common/utils/rpc.util';
 import { CreateCircleDraftDto, QueryCirclesDto } from '../dto/circle.dto';
 
 const ZERO_BYTES32 =
   '0x0000000000000000000000000000000000000000000000000000000000000000';
+const YIELD_CACHE_TTL_MS = 15_000;
 
 @Injectable()
 export class CirclesService {
+  private readonly rpcUrl =
+    process.env.AVALANCHE_RPC_URL || 'https://avalanche-fuji-c-chain-rpc.publicnode.com';
+  private readonly publicClient: any = process.env.JEST_WORKER_ID
+    ? null
+    : createFujiPublicClient(this.rpcUrl, 3000);
+  private readonly yieldCache = new Map<
+    string,
+    { value: bigint | null; expiresAt: number }
+  >();
+
   constructor(private readonly prisma: PrismaService) {}
+
+  private async readCircleEstimatedYield(
+    contractAddress?: string | null,
+  ): Promise<bigint | null> {
+    if (
+      !contractAddress ||
+      !this.publicClient ||
+      typeof this.publicClient.readContract !== 'function'
+    ) {
+      return null;
+    }
+    const key = normalizeAddress(contractAddress);
+    const cached = this.yieldCache.get(key);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.value;
+    }
+    try {
+      const value = await this.publicClient.readContract({
+        address: contractAddress as `0x${string}`,
+        abi: AvaHuiCircleABI,
+        functionName: 'getEstimatedPoolYield',
+      });
+      const parsed = typeof value === 'bigint' ? value : BigInt(String(value ?? 0));
+      this.yieldCache.set(key, {
+        value: parsed,
+        expiresAt: Date.now() + YIELD_CACHE_TTL_MS,
+      });
+      return parsed;
+    } catch {
+      this.yieldCache.set(key, {
+        value: null,
+        expiresAt: Date.now() + 5_000,
+      });
+      return null;
+    }
+  }
 
   private async getOwnedWalletAddresses(
     authUser?: AuthenticatedUser,
@@ -110,6 +161,9 @@ export class CirclesService {
         minBid: dto.minBid ?? '0',
         maxBid: dto.maxBid ?? '0',
         totalDiscountPool: '0',
+        isSealedBid:
+          dto.isSealedBid ?? (dto.allocationMode as unknown as string) === 'BIDDING',
+        enableYieldVault: dto.enableYieldVault ?? true,
         isPrivateInvite,
         inviteCodeHash: computedInviteHash,
         requireTeam1Attestation: Boolean(dto.requireTeam1Attestation),
@@ -291,8 +345,16 @@ export class CirclesService {
       }
     }
 
+    const estimatedYield =
+      circle.contractAddress &&
+      circle.enableYieldVault !== false &&
+      (circle.status === PrismaCircleStatus.ACTIVE ||
+        circle.status === PrismaCircleStatus.RECRUITING)
+        ? await this.readCircleEstimatedYield(circle.contractAddress)
+        : null;
+
     const addressMap = await this.buildAddressDisplayNameMap([circle]);
-    return this.mapCircleDetail(circle, addressMap);
+    return this.mapCircleDetail(circle, addressMap, estimatedYield);
   }
 
   async getRoundDetail(
@@ -352,12 +414,18 @@ export class CirclesService {
     return map;
   }
 
-  private mapCircleDetail(circle: any, addressNameMap: Record<string, string>) {
+  private mapCircleDetail(
+    circle: any,
+    addressNameMap: Record<string, string>,
+    estimatedYield?: bigint | null,
+  ) {
     const getName = (addr?: string | null) => {
       if (!addr) return null;
       const norm = normalizeAddress(addr);
       return addressNameMap[norm] || `${addr.slice(0, 6)}...${addr.slice(-4)}`;
     };
+
+    const resolvedYield = estimatedYield ?? circle.totalYieldEarned ?? 0;
 
     return {
       id: circle.id,
@@ -390,8 +458,14 @@ export class CirclesService {
       maxBidFormatted: formatUsdcUnits(circle.maxBid),
       totalDiscountPool: circle.totalDiscountPool.toString(),
       totalDiscountPoolFormatted: formatUsdcUnits(circle.totalDiscountPool),
+      isSealedBid:
+        circle.isSealedBid ?? (circle.allocationMode as unknown as string) === 'BIDDING',
+      enableYieldVault: circle.enableYieldVault ?? true,
+      yieldApyBps: 650,
+      accruedYieldFormatted: formatUsdcUnits(resolvedYield),
       isPrivateInvite: Boolean(circle.isPrivateInvite),
       requireTeam1Attestation: Boolean(circle.requireTeam1Attestation),
+      isPaused: Boolean(circle.isPaused),
       isHiddenByAdmin: Boolean(circle.isHiddenByAdmin),
       creationTxHash: circle.creationTxHash,
       createdAt: circle.createdAt.toISOString(),

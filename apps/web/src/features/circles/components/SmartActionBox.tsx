@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   AllocationMode,
   CircleItem,
@@ -8,7 +8,9 @@ import {
   MemberStatus,
   RoundStatus,
   UserProfile,
+  UserRole,
 } from '@avahui/shared';
+import { frontendEnv } from '@/config/env';
 import { useCircleActions } from '@/hooks/useCircleActions';
 import { useVerifyTeam1AttestationMutation } from '@/hooks/useAvaHuiMockQuery';
 import { useTxLifecycle } from '@/features/transactions/hooks/useTxLifecycle';
@@ -76,7 +78,8 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
 
   const myMember = circle.members.find(
     (m) =>
-      m.walletAddress.toLowerCase() === currentUser.walletAddress.toLowerCase()
+      m.walletAddress.toLowerCase() ===
+      (currentUser.walletAddress || '').toLowerCase()
   );
 
   const currentRoundObj = circle.rounds.find(
@@ -100,6 +103,9 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
   const [useSealedMode, setUseSealedMode] = useState<boolean>(
     circle.isSealedBid !== false
   );
+  useEffect(() => {
+    setUseSealedMode(circle.isSealedBid !== false);
+  }, [circle.id, circle.isSealedBid]);
   const [saltCopied, setSaltCopied] = useState(false);
   const [showSaltRecovery, setShowSaltRecovery] = useState(false);
   const [recoveryBidInput, setRecoveryBidInput] = useState(String(suggestedBid));
@@ -130,6 +136,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
   const unpaidMembersCount = currentRoundObj
     ? circle.maxMembers - currentRoundObj.contributionsCount
     : 0;
+  const isPaused = Boolean(circle.isPaused);
 
   const handleJoinCircle = async () => {
     await runTransaction({
@@ -326,6 +333,17 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
         </span>
       </div>
 
+      {circle.isPaused && (
+        <div className="rounded-none border border-rose-500/40 bg-rose-500/10 p-3 font-mono text-xs text-rose-200 space-y-1">
+          <div className="font-bold uppercase text-rose-300">
+            Smart Contract đang tạm dừng (Guardian Pause)
+          </div>
+          <p className="text-[11px] text-rose-200/80">
+            Mọi thao tác tham gia, đóng tiền, đấu giá và kết toán tạm thời bị khóa cho tới khi Guardian mở lại.
+          </p>
+        </div>
+      )}
+
       {!walletMeta.canSignTransactions && (
         <div className="space-y-2.5 rounded-none border border-amber-500/40 bg-amber-500/10 p-3.5 text-xs">
           <div className="font-mono font-bold text-amber-200 uppercase">{walletMeta.label}</div>
@@ -358,9 +376,11 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
               <span>Team1 Sybil Guard</span>
             </span>
-            {currentUser.isTeam1Verified !== false ? (
+            {currentUser.isTeam1Verified ? (
               <span className="text-emerald-400 font-bold">1-Human-1-Slot OK</span>
-            ) : (
+            ) : frontendEnv.useMock ||
+              currentUser.role === UserRole.ADMIN ||
+              currentUser.role === UserRole.VERIFIER ? (
               <button
                 type="button"
                 onClick={handleVerifyTeam1}
@@ -368,6 +388,18 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
               >
                 Verify Now
               </button>
+            ) : (
+              <span
+                className={
+                  circle.requireTeam1Attestation
+                    ? 'text-amber-300 font-bold'
+                    : 'text-zinc-400 font-semibold'
+                }
+              >
+                {circle.requireTeam1Attestation
+                  ? 'Cần Admin duyệt (/admin)'
+                  : 'Không bắt buộc'}
+              </span>
             )}
           </div>
 
@@ -392,8 +424,8 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
               >
                 <button
                   onClick={handleJoinCircle}
-                  disabled={isJoining}
-                  className="flex w-full items-center justify-center gap-2 rounded-none border border-avalanche-red bg-avalanche-red px-4 py-3 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-avalanche-red/25 transition hover:bg-avalanche-darkRed disabled:opacity-50"
+                  disabled={isJoining || isPaused}
+                  className="flex w-full items-center justify-center gap-2 rounded-none border border-avalanche-red bg-avalanche-red px-4 py-3 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-avalanche-red/25 transition hover:bg-avalanche-darkRed disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <UserPlus className="h-4 w-4" />
                   <span>
@@ -493,8 +525,8 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                 >
                   <button
                     onClick={handleContribute}
-                    disabled={isContributing}
-                    className="flex w-full items-center justify-center gap-2 rounded-none border border-avalanche-red bg-avalanche-red px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-avalanche-red/20 transition hover:bg-avalanche-darkRed disabled:opacity-50"
+                    disabled={isContributing || isPaused}
+                    className="flex w-full items-center justify-center gap-2 rounded-none border border-avalanche-red bg-avalanche-red px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-avalanche-red/20 transition hover:bg-avalanche-darkRed disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Coins className="h-4 w-4" />
                     <span>
@@ -585,8 +617,8 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                       <HoverHint hint="Bước 1: Gửi mã băm cam kết (Commitment Hash) lên chuỗi">
                         <button
                           type="submit"
-                          disabled={isCommittingBid || isBidding}
-                          className="shrink-0 inline-flex items-center gap-1 rounded-none border border-avalanche-red bg-avalanche-red/15 px-3 py-2 font-mono text-xs font-bold uppercase tracking-wider text-avalanche-red transition hover:bg-avalanche-red hover:text-white"
+                          disabled={isCommittingBid || isBidding || isPaused}
+                          className="shrink-0 inline-flex items-center gap-1 rounded-none border border-avalanche-red bg-avalanche-red/15 px-3 py-2 font-mono text-xs font-bold uppercase tracking-wider text-avalanche-red transition hover:bg-avalanche-red hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <Lock className="h-3.5 w-3.5" />
                           <span>Commit</span>
@@ -636,8 +668,8 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                         <button
                           type="button"
                           onClick={handleRevealSealedBid}
-                          disabled={isRevealingBid || isBidding}
-                          className="flex w-full items-center justify-center gap-1.5 rounded-none border border-sky-400 bg-sky-500 px-3 py-1.5 font-mono text-xs font-bold uppercase text-zinc-950 transition hover:bg-sky-400"
+                          disabled={isRevealingBid || isBidding || isPaused}
+                          className="flex w-full items-center justify-center gap-1.5 rounded-none border border-sky-400 bg-sky-500 px-3 py-1.5 font-mono text-xs font-bold uppercase text-zinc-950 transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <Eye className="h-3.5 w-3.5" />
                           <span>
@@ -688,8 +720,8 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                         />
                         <button
                           type="submit"
-                          disabled={isRevealingBid || isBidding}
-                          className="w-full rounded-none border border-sky-400 bg-sky-500/20 px-3 py-1.5 font-bold uppercase text-sky-300 hover:bg-sky-500 hover:text-zinc-950"
+                          disabled={isRevealingBid || isBidding || isPaused}
+                          className="w-full rounded-none border border-sky-400 bg-sky-500/20 px-3 py-1.5 font-bold uppercase text-sky-300 hover:bg-sky-500 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           Khôi phục &amp; Reveal Bid
                         </button>
@@ -716,8 +748,8 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                     <HoverHint hint="Gửi mức chiết khấu để dẫn đầu vòng đấu giá">
                       <button
                         type="submit"
-                        disabled={isBidding}
-                        className="shrink-0 rounded-none border border-avalanche-red bg-avalanche-red/15 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-avalanche-red transition hover:bg-avalanche-red hover:text-white"
+                        disabled={isBidding || isPaused}
+                        className="shrink-0 rounded-none border border-avalanche-red bg-avalanche-red/15 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-avalanche-red transition hover:bg-avalanche-red hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         Bid
                       </button>
@@ -768,8 +800,8 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
               >
                 <button
                   onClick={handleSettleRound}
-                  disabled={isSettling}
-                  className="flex w-full items-center justify-center gap-2 rounded-none border border-emerald-500 bg-emerald-500 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-zinc-950 shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400"
+                  disabled={isSettling || isPaused}
+                  className="flex w-full items-center justify-center gap-2 rounded-none border border-emerald-500 bg-emerald-500 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-zinc-950 shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Sparkles className="h-4 w-4" />
                   <span>
@@ -785,8 +817,8 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
               >
                 <button
                   onClick={handleSettleRound}
-                  disabled={isSettling}
-                  className="flex w-full items-center justify-center gap-2 rounded-none border border-amber-500/60 bg-amber-500/15 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-amber-200 transition hover:bg-amber-500 hover:text-zinc-950"
+                  disabled={isSettling || isPaused}
+                  className="flex w-full items-center justify-center gap-2 rounded-none border border-amber-500/60 bg-amber-500/15 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-amber-200 transition hover:bg-amber-500 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <ShieldAlert className="h-4 w-4" />
                   <span>
@@ -920,7 +952,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
               <span>ERC-4626 Yield (6.5% APY)</span>
             </span>
             <span className="font-bold text-emerald-400">
-              +{formatUsdc(circle.accruedYieldFormatted || '4.85')} mUSDC
+              +{formatUsdc(circle.accruedYieldFormatted || '0.00')} mUSDC
             </span>
           </div>
         </HoverHint>

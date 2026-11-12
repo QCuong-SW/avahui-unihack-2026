@@ -62,6 +62,7 @@ export interface AdminCircleItem {
   collateralAmountFormatted: string;
   isPrivateInvite: boolean;
   requireTeam1Attestation: boolean;
+  isPaused?: boolean;
   isHiddenByAdmin: boolean;
   moderationReason: string | null;
   createdAt: string;

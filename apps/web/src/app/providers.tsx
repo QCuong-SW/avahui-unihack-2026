@@ -15,6 +15,8 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
+            staleTime: 3_000,
+            gcTime: 5 * 60 * 1000,
             refetchOnWindowFocus: false,
             retry: 1,
           },
@@ -42,7 +44,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
             defaultChain: avalancheFuji,
             supportedChains: [avalancheFuji],
             embeddedWallets: {
-              createOnLogin: 'users-without-wallets',
+              ethereum: {
+                createOnLogin: 'users-without-wallets',
+              },
             },
           }}
         >

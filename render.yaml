@@ -1,0 +1,55 @@
+services:
+  - type: web
+    name: avahui-api
+    runtime: node
+    plan: free
+    buildCommand: corepack enable && pnpm install --frozen-lockfile=false && pnpm --filter @avahui/api exec prisma generate && pnpm --filter @avahui/shared build && pnpm --filter @avahui/blockchain build && pnpm --filter @avahui/api build
+    startCommand: pnpm --filter @avahui/api start:deploy
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3001"
+      - key: TRUST_PROXY
+        value: "true"
+      - key: CORS_ORIGIN
+        value: https://*.vercel.app,http://localhost:3000
+      - key: DATABASE_URL
+        sync: false
+      - key: AUTH_JWT_SECRET
+        generateValue: true
+      - key: PRIVY_APP_ID
+        sync: false
+      - key: PRIVY_APP_SECRET
+        sync: false
+      - key: CHAIN_ID
+        value: "43113"
+      - key: AVALANCHE_RPC_URL
+        value: https://avalanche-fuji-c-chain-rpc.publicnode.com
+      - key: BLOCK_EXPLORER_URL
+        value: https://testnet.snowtrace.io
+      - key: ROSCA_FACTORY_ADDRESS
+        value: "0x15846dfb15738c373def01154ea9bd4b0bc685b5"
+      - key: USDC_TOKEN_ADDRESS
+        value: "0x6a69e4639dcf39fec756dcea4b633137d63bbe9f"
+      - key: YIELD_VAULT_ADDRESS
+        value: "0xb677606338081517831e478317660b8b961e2596"
+      - key: SYBIL_VERIFIER_ADDRESS
+        value: "0xccd16a62cd25b5d1744acb35a14b1c7bd65bfa78"
+      - key: KEEPER_ENABLED
+        value: "true"
+      - key: KEEPER_PRIVATE_KEY
+        sync: false
+      - key: KEEPER_POLL_INTERVAL_MS
+        value: "4000"
+      - key: VERIFIER_ISSUER_PRIVATE_KEY
+        sync: false
+      - key: INDEXER_ENABLED
+        value: "true"
+      - key: INDEXER_POLL_INTERVAL_MS
+        value: "1500"
+      - key: INDEXER_CONFIRMATION_BLOCKS
+        value: "0"
+      - key: AI_ENABLED
+        value: "false"

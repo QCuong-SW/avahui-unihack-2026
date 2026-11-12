@@ -43,7 +43,7 @@ export function NotificationPopover() {
             </span>
             {unreadCount > 0 && (
               <button
-                onClick={() => markReadMutation.mutate()}
+                onClick={() => markReadMutation.mutate(undefined)}
                 className="inline-flex items-center gap-1 font-mono text-[11px] font-semibold text-avalanche-red hover:underline"
               >
                 <CheckCheck className="h-3.5 w-3.5" />
@@ -61,7 +61,10 @@ export function NotificationPopover() {
               {userNotifs.map((n) => (
                 <div
                   key={n.id}
-                  className={`rounded-none border p-2.5 text-xs transition-colors ${
+                  onClick={() => {
+                    if (!n.isRead) markReadMutation.mutate(n.id);
+                  }}
+                  className={`cursor-pointer rounded-none border p-2.5 text-xs transition-colors ${
                     n.isRead
                       ? 'border-zinc-800/80 bg-zinc-900/40 text-zinc-400'
                       : 'border-avalanche-red/40 bg-avalanche-red/10 text-zinc-100'
@@ -72,7 +75,11 @@ export function NotificationPopover() {
                   {n.circleId && (
                     <Link
                       href={`/circles/${n.circleId}`}
-                      onClick={() => setOpen(false)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!n.isRead) markReadMutation.mutate(n.id);
+                        setOpen(false);
+                      }}
                       className="mt-1.5 inline-block font-mono text-[11px] font-semibold text-avalanche-red hover:underline"
                     >
                       Xem dây hụi →

@@ -3,9 +3,8 @@ import {
   CircleStatus,
   MemberStatus,
   RoundStatus,
-  TransactionType,
 } from '@avahui/shared';
-import { formatUsdcUnits, normalizeAddress } from '../src/common/utils/format.util';
+import { normalizeAddress } from '../src/common/utils/format.util';
 import {
   BlockchainIndexerService,
   IndexedEventInput,

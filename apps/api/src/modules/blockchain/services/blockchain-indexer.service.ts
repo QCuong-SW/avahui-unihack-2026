@@ -14,17 +14,16 @@ import {
   TxType,
 } from '@prisma/client';
 import {
-  createPublicClient,
   decodeEventLog,
-  http,
 } from 'viem';
 import {
-  AVALANCHE_FUJI_CHAIN,
   AvaHuiCircleABI,
   AvaHuiFactoryABI,
+  Team1AttestationVerifierABI,
 } from '@avahui/blockchain';
 import { PrismaService } from '../../../database/prisma.service';
 import { formatUsdcUnits, normalizeAddress } from '../../../common/utils/format.util';
+import { createFujiPublicClient } from '../../../common/utils/rpc.util';
 
 export interface IndexedEventInput {
   chainId: number;
@@ -37,7 +36,9 @@ export interface IndexedEventInput {
   args: Record<string, any>;
 }
 
-const MAX_BLOCK_RANGE = 2000n;
+// Avalanche Fuji public C-Chain RPC caps eth_getLogs at 100 blocks per request.
+const MAX_BLOCK_RANGE = 100n;
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
 @Injectable()
 export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
@@ -48,22 +49,24 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
 
   private readonly chainId = Number(process.env.CHAIN_ID || 43113);
   private readonly rpcUrl =
-    process.env.AVALANCHE_RPC_URL || 'https://api.avax-test.network/ext/bc/C/rpc';
+    process.env.AVALANCHE_RPC_URL || 'https://avalanche-fuji-c-chain-rpc.publicnode.com';
   private readonly factoryAddress = normalizeAddress(
     process.env.ROSCA_FACTORY_ADDRESS || '',
   );
+  private readonly sybilVerifierAddress = normalizeAddress(
+    process.env.SYBIL_VERIFIER_ADDRESS || '',
+  );
   private readonly pollIntervalMs = Number(
-    process.env.INDEXER_POLL_INTERVAL_MS || 3000,
+    process.env.INDEXER_POLL_INTERVAL_MS || 1000,
   );
   private readonly confirmationBlocks = BigInt(
-    process.env.INDEXER_CONFIRMATION_BLOCKS ?? 2,
+    process.env.INDEXER_CONFIRMATION_BLOCKS ?? 0,
   );
 
   constructor(private readonly prisma: PrismaService) {
-    this.publicClient = createPublicClient({
-      chain: AVALANCHE_FUJI_CHAIN as any,
-      transport: http(this.rpcUrl),
-    });
+    this.publicClient = process.env.JEST_WORKER_ID
+      ? null
+      : createFujiPublicClient(this.rpcUrl, 5000);
   }
 
   onModuleInit() {
@@ -149,9 +152,11 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
 
       const targetAddresses = Array.from(
         new Set([
-          ...(this.factoryAddress &&
-          this.factoryAddress !== '0x0000000000000000000000000000000000000000'
+          ...(this.factoryAddress && this.factoryAddress !== ZERO_ADDRESS
             ? [this.factoryAddress as `0x${string}`]
+            : []),
+          ...(this.sybilVerifierAddress && this.sybilVerifierAddress !== ZERO_ADDRESS
+            ? [this.sybilVerifierAddress as `0x${string}`]
             : []),
           ...knownCircles
             .map((c) => normalizeAddress(c.contractAddress))
@@ -161,6 +166,7 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
       );
 
       if (targetAddresses.length > 0) {
+        const blockTimeCache = new Map<bigint, Date>();
         const logs = await this.publicClient.getLogs({
           address: targetAddresses,
           fromBlock,
@@ -168,29 +174,13 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
         });
 
         const newlyCreatedCircles: `0x${string}`[] = [];
-        for (const rawLog of logs) {
-          const decoded = this.tryDecodeLog(rawLog);
-          if (!decoded) continue;
-
-          if (decoded.eventName === 'CircleCreated' && decoded.args?.circleAddress) {
-            const addr = normalizeAddress(decoded.args.circleAddress) as `0x${string}`;
-            if (!targetAddresses.includes(addr)) {
-              newlyCreatedCircles.push(addr);
-            }
-          }
-
-          const didProcess = await this.processDecodedEvent({
-            chainId: this.chainId,
-            txHash: normalizeAddress(rawLog.transactionHash || ''),
-            logIndex: Number(rawLog.logIndex ?? 0),
-            blockNumber: BigInt(rawLog.blockNumber ?? fromBlock),
-            blockTimestamp: new Date(),
-            contractAddress: normalizeAddress(rawLog.address),
-            eventName: decoded.eventName,
-            args: decoded.args,
-          });
-          if (didProcess) processedCount++;
-        }
+        processedCount += await this.processRawLogsBatch(
+          logs,
+          fromBlock,
+          blockTimeCache,
+          targetAddresses,
+          newlyCreatedCircles,
+        );
 
         // Catch same-batch events emitted by circles deployed in this block window
         if (newlyCreatedCircles.length > 0) {
@@ -199,22 +189,12 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
             fromBlock,
             toBlock,
           });
-          for (const rawLog of extraLogs) {
-            const decoded = this.tryDecodeLog(rawLog);
-            if (!decoded) continue;
-
-            const didProcess = await this.processDecodedEvent({
-              chainId: this.chainId,
-              txHash: normalizeAddress(rawLog.transactionHash || ''),
-              logIndex: Number(rawLog.logIndex ?? 0),
-              blockNumber: BigInt(rawLog.blockNumber ?? fromBlock),
-              blockTimestamp: new Date(),
-              contractAddress: normalizeAddress(rawLog.address),
-              eventName: decoded.eventName,
-              args: decoded.args,
-            });
-            if (didProcess) processedCount++;
-          }
+          processedCount += await this.processRawLogsBatch(
+            extraLogs,
+            fromBlock,
+            blockTimeCache,
+            targetAddresses,
+          );
         }
       }
 
@@ -229,10 +209,82 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
+  private async resolveBlockTimestamp(
+    blockNumber: bigint,
+    cache: Map<bigint, Date>,
+  ): Promise<Date> {
+    const cached = cache.get(blockNumber);
+    if (cached) return cached;
+
+    if (this.publicClient && typeof this.publicClient.getBlock === 'function') {
+      try {
+        const block = await this.publicClient.getBlock({ blockNumber });
+        if (block?.timestamp !== undefined) {
+          const tsDate = new Date(Number(block.timestamp) * 1000);
+          cache.set(blockNumber, tsDate);
+          return tsDate;
+        }
+      } catch {
+        // Fallback to local clock if RPC block metadata fails transiently
+      }
+    }
+    const fallback = new Date();
+    cache.set(blockNumber, fallback);
+    return fallback;
+  }
+
+  private async processRawLogsBatch(
+    logs: any[],
+    fallbackBlock: bigint,
+    blockTimeCache: Map<bigint, Date>,
+    knownTargets: `0x${string}`[],
+    newlyCreatedCircles?: `0x${string}`[],
+  ): Promise<number> {
+    let processedCount = 0;
+    for (const rawLog of logs) {
+      const decoded = this.tryDecodeLog(rawLog);
+      if (!decoded) continue;
+
+      if (
+        newlyCreatedCircles &&
+        decoded.eventName === 'CircleCreated' &&
+        decoded.args?.circleAddress
+      ) {
+        const addr = normalizeAddress(decoded.args.circleAddress) as `0x${string}`;
+        if (!knownTargets.includes(addr) && !newlyCreatedCircles.includes(addr)) {
+          newlyCreatedCircles.push(addr);
+        }
+      }
+
+      const blockNumber = BigInt(rawLog.blockNumber ?? fallbackBlock);
+      const blockTimestamp = await this.resolveBlockTimestamp(
+        blockNumber,
+        blockTimeCache,
+      );
+
+      const didProcess = await this.processDecodedEvent({
+        chainId: this.chainId,
+        txHash: normalizeAddress(rawLog.transactionHash || ''),
+        logIndex: Number(rawLog.logIndex ?? 0),
+        blockNumber,
+        blockTimestamp,
+        contractAddress: normalizeAddress(rawLog.address),
+        eventName: decoded.eventName,
+        args: decoded.args,
+      });
+      if (didProcess) processedCount++;
+    }
+    return processedCount;
+  }
+
   private tryDecodeLog(
     rawLog: any,
   ): { eventName: string; args: Record<string, any> } | null {
-    const combinedAbi = [...AvaHuiFactoryABI, ...AvaHuiCircleABI];
+    const combinedAbi = [
+      ...AvaHuiFactoryABI,
+      ...AvaHuiCircleABI,
+      ...Team1AttestationVerifierABI,
+    ];
     try {
       const decoded: any = decodeEventLog({
         abi: combinedAbi,
@@ -334,6 +386,18 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
         case 'CircleCancelled':
           await this.handleCircleCancelled(tx, event, txHash);
           break;
+        case 'CirclePaused':
+          await this.handleCirclePauseState(tx, event, true);
+          break;
+        case 'CircleUnpaused':
+          await this.handleCirclePauseState(tx, event, false);
+          break;
+        case 'AttestationIssued':
+          await this.handleAttestationIssued(tx, event);
+          break;
+        case 'AttestationRevoked':
+          await this.handleAttestationRevoked(tx, event);
+          break;
       }
     });
 
@@ -363,13 +427,29 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
 
     let onChainInviteHash: string | null = null;
     let onChainRequireAttestation = false;
+    let onChainEnableYieldVault: boolean | null = null;
+    let onChainPaused: boolean | null = null;
+    let onChainConfig: {
+      roundDurationSeconds?: number;
+      biddingDurationSeconds?: number;
+      gracePeriodSeconds?: number;
+      startDeadline?: Date;
+      minBid?: string;
+      maxBid?: string;
+    } = {};
+
     if (
-      !process.env.JEST_WORKER_ID &&
       this.publicClient &&
       typeof this.publicClient.readContract === 'function'
     ) {
       try {
-        const [inviteHashRaw, requireAttestRaw] = await Promise.all([
+        const [
+          inviteHashRaw,
+          requireAttestRaw,
+          yieldVaultRaw,
+          circleConfigRaw,
+          pausedRaw,
+        ] = await Promise.all([
           this.publicClient.readContract({
             address: circleAddress as `0x${string}`,
             abi: AvaHuiCircleABI,
@@ -380,6 +460,21 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
             abi: AvaHuiCircleABI,
             functionName: 'requireAttestation',
           }),
+          this.publicClient.readContract({
+            address: circleAddress as `0x${string}`,
+            abi: AvaHuiCircleABI,
+            functionName: 'yieldVault',
+          }).catch(() => undefined),
+          this.publicClient.readContract({
+            address: circleAddress as `0x${string}`,
+            abi: AvaHuiCircleABI,
+            functionName: 'getCircleConfig',
+          }).catch(() => undefined),
+          this.publicClient.readContract({
+            address: circleAddress as `0x${string}`,
+            abi: AvaHuiCircleABI,
+            functionName: 'paused',
+          }).catch(() => undefined),
         ]);
         const normalizedHash = String(inviteHashRaw || '').toLowerCase();
         if (
@@ -390,6 +485,26 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
           onChainInviteHash = normalizedHash;
         }
         onChainRequireAttestation = Boolean(requireAttestRaw);
+        if (typeof yieldVaultRaw === 'string' && /^0x[a-fA-F0-9]{40}$/.test(yieldVaultRaw)) {
+          onChainEnableYieldVault = normalizeAddress(yieldVaultRaw) !== ZERO_ADDRESS;
+        }
+        if (typeof pausedRaw === 'boolean') {
+          onChainPaused = pausedRaw;
+        }
+        if (Array.isArray(circleConfigRaw) && circleConfigRaw.length >= 10) {
+          const roundDur = Number(circleConfigRaw[4] || 0);
+          const bidDur = Number(circleConfigRaw[5] || 0);
+          const graceDur = Number(circleConfigRaw[6] || 0);
+          const startDlSec = Number(circleConfigRaw[7] || 0);
+          onChainConfig = {
+            ...(roundDur > 0 ? { roundDurationSeconds: roundDur } : {}),
+            biddingDurationSeconds: bidDur >= 0 ? bidDur : 0,
+            ...(graceDur > 0 ? { gracePeriodSeconds: graceDur } : {}),
+            ...(startDlSec > 0 ? { startDeadline: new Date(startDlSec * 1000) } : {}),
+            minBid: BigInt(circleConfigRaw[8] ?? 0).toString(),
+            maxBid: BigInt(circleConfigRaw[9] ?? 0).toString(),
+          };
+        }
       } catch {
         // Ignore when offline or in unit tests without live RPC
       }
@@ -405,6 +520,11 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
           ? { isPrivateInvite: true, inviteCodeHash: onChainInviteHash }
           : {}),
         ...(onChainRequireAttestation ? { requireTeam1Attestation: true } : {}),
+        ...(onChainEnableYieldVault !== null
+          ? { enableYieldVault: onChainEnableYieldVault }
+          : {}),
+        ...(onChainPaused !== null ? { isPaused: onChainPaused } : {}),
+        ...onChainConfig,
       },
       create: {
         metadataId,
@@ -422,10 +542,18 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
         contributionAmount,
         collateralAmount,
         totalDiscountPool: '0',
-        roundDurationSeconds: 300,
-        biddingDurationSeconds: allocationMode === AllocationMode.BIDDING ? 180 : 0,
-        gracePeriodSeconds: 60,
-        startDeadline: new Date(Date.now() + 7 * 86400 * 1000),
+        isSealedBid: allocationMode === AllocationMode.BIDDING,
+        enableYieldVault: onChainEnableYieldVault ?? true,
+        isPaused: onChainPaused ?? false,
+        roundDurationSeconds: onChainConfig.roundDurationSeconds ?? 300,
+        biddingDurationSeconds:
+          onChainConfig.biddingDurationSeconds ??
+          (allocationMode === AllocationMode.BIDDING ? 180 : 0),
+        gracePeriodSeconds: onChainConfig.gracePeriodSeconds ?? 60,
+        startDeadline:
+          onChainConfig.startDeadline ?? new Date(Date.now() + 7 * 86400 * 1000),
+        minBid: onChainConfig.minBid ?? '0',
+        maxBid: onChainConfig.maxBid ?? '0',
         isPrivateInvite: Boolean(onChainInviteHash),
         inviteCodeHash: onChainInviteHash,
         requireTeam1Attestation: onChainRequireAttestation,
@@ -1243,12 +1371,17 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
     const currentDiscountPool = circle.totalDiscountPool
       ? circle.totalDiscountPool.toString()
       : '0';
+    const currentYieldEarned = circle.totalYieldEarned
+      ? circle.totalYieldEarned.toString()
+      : '0';
     const updatedBonusPool = (BigInt(currentDiscountPool) + BigInt(yieldEarned)).toString();
+    const updatedYieldEarned = (BigInt(currentYieldEarned) + BigInt(yieldEarned)).toString();
 
     await tx.circle.update({
       where: { id: circle.id },
       data: {
         totalDiscountPool: updatedBonusPool,
+        totalYieldEarned: updatedYieldEarned,
       },
     });
 
@@ -1282,6 +1415,84 @@ export class BlockchainIndexerService implements OnModuleInit, OnModuleDestroy {
       circle?.id ?? null,
       TxType.VERIFY_ATTESTATION,
     );
+  }
+
+  private async handleAttestationIssued(
+    tx: Prisma.TransactionClient,
+    event: IndexedEventInput,
+  ) {
+    const args = event.args;
+    const account = normalizeAddress(args.account);
+    const identityNullifier = args.identityNullifier
+      ? String(args.identityNullifier).toLowerCase()
+      : null;
+    const trustTier = Number(args.trustTier || 1);
+
+    const wallet =
+      typeof tx.wallet?.findUnique === 'function'
+        ? await tx.wallet.findUnique({ where: { address: account } })
+        : null;
+    if (wallet && typeof tx.user?.update === 'function') {
+      await tx.user.update({
+        where: { id: wallet.userId },
+        data: {
+          team1Verified: true,
+          ...(identityNullifier ? { identityNullifier } : {}),
+          trustTier,
+          pendingVoucher: Prisma.DbNull,
+        },
+      });
+    }
+  }
+
+  private async handleCirclePauseState(
+    tx: Prisma.TransactionClient,
+    event: IndexedEventInput,
+    paused: boolean,
+  ) {
+    const circleAddress = normalizeAddress(
+      event.args.circleAddress || event.contractAddress,
+    );
+    const circle = await tx.circle.findUnique({
+      where: { contractAddress: circleAddress },
+    });
+    if (!circle) return;
+
+    await tx.circle.update({
+      where: { id: circle.id },
+      data: { isPaused: paused },
+    });
+
+    await this.notifyCircleMembers(
+      tx,
+      circle.id,
+      paused
+        ? `Guardian đã tạm dừng dây hụi "${circle.name}"`
+        : `Guardian đã mở lại dây hụi "${circle.name}"`,
+      paused
+        ? 'Các thao tác đóng tiền / đấu giá tạm thời bị khóa bởi Guardian.'
+        : 'Dây hụi đã hoạt động bình thường trở lại.',
+    );
+  }
+
+  private async handleAttestationRevoked(
+    tx: Prisma.TransactionClient,
+    event: IndexedEventInput,
+  ) {
+    const account = normalizeAddress(event.args.account);
+    const wallet =
+      typeof tx.wallet?.findUnique === 'function'
+        ? await tx.wallet.findUnique({ where: { address: account } })
+        : null;
+    if (wallet && typeof tx.user?.update === 'function') {
+      await tx.user.update({
+        where: { id: wallet.userId },
+        data: {
+          team1Verified: false,
+          trustTier: 0,
+        },
+      });
+    }
   }
 }
 

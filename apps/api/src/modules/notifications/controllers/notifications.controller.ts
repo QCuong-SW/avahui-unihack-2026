@@ -22,6 +22,12 @@ export class NotificationsController {
     return this.notificationsService.getMyNotifications(user);
   }
 
+  @Patch('read-all')
+  @ApiOperation({ summary: 'Đánh dấu đã đọc tất cả thông báo của user' })
+  async markAllRead(@CurrentUser() user: AuthenticatedUser) {
+    return this.notificationsService.markAllAsRead(user);
+  }
+
   @Patch(':id/read')
   @ApiOperation({ summary: 'Đánh dấu đã đọc thông báo' })
   async markRead(

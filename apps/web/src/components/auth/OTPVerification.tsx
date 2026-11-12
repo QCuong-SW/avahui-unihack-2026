@@ -31,7 +31,9 @@ export function OTPVerification() {
   const emailFromQuery = searchParams?.get('email') || '';
   const forceOnboarding = searchParams?.get('onboarding') === '1';
   const targetEmail =
-    session?.pendingOtp?.email || emailFromQuery || 'minh.nguyen@avahui.io';
+    session?.pendingOtp?.email ||
+    emailFromQuery ||
+    (frontendEnv.enableDevDemoTools ? 'minh.nguyen@avahui.io' : '');
   const targetUserId = session?.pendingOtp?.targetUserId || 'usr_01';
 
   const [digits, setDigits] = useState<string[]>(Array(OTP_LENGTH).fill(''));
@@ -132,16 +134,47 @@ export function OTPVerification() {
   };
 
   const handleResend = async () => {
-    if (countdown > 0 || resendOtpMutation.isPending) return;
+    if (!targetEmail || countdown > 0 || resendOtpMutation.isPending) return;
     setErrorMessage(null);
-    await resendOtpMutation.mutateAsync({
-      email: targetEmail,
-      targetUserId,
-    });
-    setDigits(Array(OTP_LENGTH).fill(''));
-    setCountdown(60);
-    inputRefs.current[0]?.focus();
+    try {
+      await resendOtpMutation.mutateAsync({
+        email: targetEmail,
+        targetUserId,
+      });
+      setDigits(Array(OTP_LENGTH).fill(''));
+      setCountdown(60);
+      inputRefs.current[0]?.focus();
+    } catch (err) {
+      setErrorMessage(
+        err instanceof Error
+          ? err.message
+          : 'Không thể gửi lại mã OTP lúc này. Vui lòng thử lại.',
+      );
+    }
   };
+
+  if (!targetEmail) {
+    return (
+      <div className="mx-auto flex min-h-[75vh] max-w-md items-center justify-center py-4 sm:py-6 animate-fade-in">
+        <div className="w-full rounded-none border border-zinc-800 bg-surface-card p-6 sm:p-8 text-center font-mono space-y-4 shadow-xl">
+          <AlertCircle className="mx-auto h-8 w-8 text-amber-400" />
+          <h1 className="text-lg font-extrabold uppercase text-white">
+            Chưa có phiên xác thực OTP
+          </h1>
+          <p className="text-xs text-zinc-400">
+            Vui lòng nhập email ở trang đăng nhập để nhận mã xác thực 6 chữ số.
+          </p>
+          <Link
+            href="/login"
+            className="inline-flex items-center justify-center gap-2 rounded-none bg-avalanche-red px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-white transition hover:bg-avalanche-darkRed"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>Quay lại đăng nhập</span>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto flex min-h-[75vh] max-w-md items-center justify-center py-4 sm:py-6 animate-fade-in">

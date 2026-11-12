@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import {
+  useCreateWallet,
   useLoginWithEmail,
   useLoginWithOAuth,
   usePrivy,
@@ -21,12 +22,19 @@ interface EmbeddedWalletEntry {
   provider: any;
 }
 
+interface PrivyUserSnapshot {
+  userId?: string;
+  walletAddress?: string;
+  email?: string;
+}
+
 interface PrivyBridgeActions {
   initGoogleOAuth: () => Promise<void>;
   sendEmailCode: (email: string) => Promise<void>;
   loginWithEmailCode: (code: string) => Promise<void>;
   logout: () => Promise<void>;
   getAccessToken: () => Promise<string | null>;
+  getUserSnapshot: () => PrivyUserSnapshot;
 }
 
 let activeEmbeddedWallet: EmbeddedWalletEntry | null = null;
@@ -57,9 +65,11 @@ export function PrivyRuntimeSync() {
   const queryClient = useQueryClient();
   const { ready, authenticated, user, getAccessToken, logout } = usePrivy();
   const { wallets } = useWallets();
+  const { createWallet } = useCreateWallet();
   const { initOAuth } = useLoginWithOAuth();
   const { sendCode, loginWithCode } = useLoginWithEmail();
   const syncedKeyRef = useRef<string | null>(null);
+  const walletProvisionAttemptedRef = useRef<string | null>(null);
 
   useEffect(() => {
     bridgeActions = {
@@ -75,14 +85,24 @@ export function PrivyRuntimeSync() {
       logout: async () => {
         clearActiveEmbeddedProvider();
         syncedKeyRef.current = null;
+        walletProvisionAttemptedRef.current = null;
         await logout();
       },
       getAccessToken,
+      getUserSnapshot: () => {
+        const preferredWallet =
+          wallets.find((w) => w.walletClientType === 'privy') || wallets[0];
+        return {
+          userId: user?.id,
+          walletAddress: preferredWallet?.address || user?.wallet?.address,
+          email: user?.email?.address || user?.google?.email,
+        };
+      },
     };
     return () => {
       bridgeActions = null;
     };
-  }, [getAccessToken, initOAuth, loginWithCode, logout, sendCode]);
+  }, [getAccessToken, initOAuth, loginWithCode, logout, sendCode, user, wallets]);
 
   useEffect(() => {
     if (!ready) return;
@@ -90,6 +110,7 @@ export function PrivyRuntimeSync() {
     if (!authenticated || !user) {
       clearActiveEmbeddedProvider();
       syncedKeyRef.current = null;
+      walletProvisionAttemptedRef.current = null;
       return;
     }
 
@@ -105,6 +126,18 @@ export function PrivyRuntimeSync() {
 
         let walletAddress =
           preferredWallet?.address || user.wallet?.address || '';
+
+        if (!walletAddress && walletProvisionAttemptedRef.current !== user.id) {
+          walletProvisionAttemptedRef.current = user.id;
+          try {
+            const createdWallet = await createWallet();
+            if (!cancelled && createdWallet?.address) {
+              walletAddress = createdWallet.address;
+            }
+          } catch {
+            // Embedded wallet may already exist or creation requires user recovery flow
+          }
+        }
 
         if (preferredWallet) {
           try {
@@ -146,20 +179,22 @@ export function PrivyRuntimeSync() {
         queryClient.setQueryData(['avahui', 'auth-session'], authResult.session);
 
         const syncKey = `${user.id}:${walletAddress.toLowerCase()}`;
-        if (walletAddress && syncedKeyRef.current !== syncKey && !frontendEnv.useMock) {
-          syncedKeyRef.current = syncKey;
-          await authApi
-            .syncUser(
+        if (syncedKeyRef.current !== syncKey && !frontendEnv.useMock) {
+          try {
+            await authApi.syncUser(
               {
-                walletAddress,
+                ...(walletAddress ? { walletAddress } : {}),
                 email: email || undefined,
                 displayName: user.google?.name || undefined,
               },
-              walletAddress,
+              walletAddress || undefined,
               accessToken,
-            )
-            .catch(() => {});
-          queryClient.invalidateQueries({ queryKey: ['avahui'] });
+            );
+            syncedKeyRef.current = syncKey;
+            queryClient.invalidateQueries({ queryKey: ['avahui'] });
+          } catch {
+            // Leave syncedKeyRef unset so transient backend errors retry cleanly
+          }
         }
       } catch {
         // Ignore transient Privy token refresh failures
@@ -170,7 +205,7 @@ export function PrivyRuntimeSync() {
     return () => {
       cancelled = true;
     };
-  }, [authenticated, getAccessToken, queryClient, ready, user, wallets]);
+  }, [authenticated, createWallet, getAccessToken, queryClient, ready, user, wallets]);
 
   return null;
 }

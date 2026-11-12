@@ -43,6 +43,8 @@ export interface CreateCircleDraftInput {
   inviteCode?: string;
   inviteCodeHash?: string;
   requireTeam1Attestation?: boolean;
+  isSealedBid?: boolean;
+  enableYieldVault?: boolean;
 }
 
 export interface CreateCircleDraftResponse {

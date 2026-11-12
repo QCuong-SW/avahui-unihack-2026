@@ -125,6 +125,18 @@ export class CreateCircleDraftDto {
   @Transform(({ value }) => value === true || value === 'true')
   @IsBoolean()
   requireTeam1Attestation?: boolean;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  isSealedBid?: boolean;
+
+  @ApiPropertyOptional({ default: true })
+  @IsOptional()
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  enableYieldVault?: boolean;
 }
 
 export class QueryCirclesDto {

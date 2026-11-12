@@ -7,7 +7,7 @@ import {
   CircleItem,
   CircleStatus,
 } from '@avahui/shared';
-import { formatUsdc, shortenAddress } from '@/lib/utils';
+import { formatUsdc, getSavedCreatorInviteCode, shortenAddress } from '@/lib/utils';
 import { frontendEnv } from '@/config/env';
 import { HoverHint } from '@/components/ui/HoverHint';
 import {
@@ -35,17 +35,25 @@ interface CircleHeaderProps {
 export function CircleHeader({ circle }: CircleHeaderProps) {
   const [copiedInvite, setCopiedInvite] = useState(false);
   const [showInviteBox, setShowInviteBox] = useState(false);
+  const savedInviteCode =
+    circle.inviteCode ||
+    getSavedCreatorInviteCode(circle.id, circle.metadataId, circle.contractAddress) ||
+    '';
+  const [manualInviteCode, setManualInviteCode] = useState(savedInviteCode);
 
   const basePot =
     parseFloat(circle.contributionAmountFormatted) * circle.maxMembers;
-  const inviteCode =
-    circle.inviteCode || `AVAHUI-${circle.id.slice(-4).toUpperCase()}`;
+  const effectiveInviteCode = (manualInviteCode || savedInviteCode).trim();
 
   const getInviteUrl = () => {
-    if (typeof window === 'undefined') {
-      return `http://localhost:3000/circles/${circle.id}?invite=${inviteCode}`;
+    const base =
+      typeof window === 'undefined'
+        ? `http://localhost:3000/circles/${circle.id}`
+        : `${window.location.origin}/circles/${circle.id}`;
+    if (!circle.isPrivateInvite || !effectiveInviteCode) {
+      return base;
     }
-    return `${window.location.origin}/circles/${circle.id}?invite=${inviteCode}`;
+    return `${base}?invite=${encodeURIComponent(effectiveInviteCode)}`;
   };
 
   const handleCopyInvite = () => {
@@ -98,12 +106,20 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
       {showInviteBox && (
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-none border border-emerald-500/40 bg-emerald-500/10 px-3.5 py-2.5 font-mono text-xs animate-fade-in">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-bold uppercase text-emerald-300">
-              Invite Code:
-            </span>
-            <span className="rounded-none border border-emerald-500/40 bg-zinc-950 px-2 py-0.5 font-bold text-white">
-              {inviteCode}
-            </span>
+            {circle.isPrivateInvite && (
+              <>
+                <span className="font-bold uppercase text-emerald-300">
+                  Invite Code:
+                </span>
+                <input
+                  type="text"
+                  value={manualInviteCode}
+                  onChange={(e) => setManualInviteCode(e.target.value)}
+                  placeholder="Nhập mã mời thật..."
+                  className="w-40 rounded-none border border-emerald-500/40 bg-zinc-950 px-2 py-0.5 font-bold text-white focus:border-emerald-300 focus:outline-none"
+                />
+              </>
+            )}
             <span className="text-zinc-300 break-all">{getInviteUrl()}</span>
           </div>
           <button
@@ -161,6 +177,15 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
               {circle.status}
             </span>
           </HoverHint>
+
+          {circle.isPaused && (
+            <HoverHint hint="Dây hụi đang tạm dừng bởi Guardian trên Smart Contract">
+              <span className="inline-flex items-center gap-1.5 rounded-none border border-rose-500/50 bg-rose-500/15 px-2.5 py-1 font-mono text-xs font-bold uppercase tracking-wider text-rose-300">
+                <Lock className="h-3 w-3" />
+                <span>PAUSED</span>
+              </span>
+            </HoverHint>
+          )}
 
           <HoverHint
             hint={

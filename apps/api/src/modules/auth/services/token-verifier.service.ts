@@ -16,6 +16,13 @@ export interface VerifiedTokenPayload {
   tokenWalletVerified: boolean;
 }
 
+export interface PrivyVerifiedUserIdentity {
+  privyDid: string;
+  verifiedWallets: string[];
+  email?: string;
+  displayName?: string;
+}
+
 interface JwkCacheEntry {
   keys: Map<string, crypto.KeyObject>;
   fetchedAt: number;
@@ -35,6 +42,103 @@ export class TokenVerifierService {
       process.env.NODE_ENV !== 'production' &&
       String(process.env.ALLOW_DEV_MOCK_AUTH ?? 'false').toLowerCase() === 'true'
     );
+  }
+
+  hasRealPrivyServerCredentials(): boolean {
+    const appId = process.env.PRIVY_APP_ID?.trim();
+    const secret = process.env.PRIVY_APP_SECRET?.trim();
+    if (
+      !appId ||
+      !secret ||
+      appId.startsWith('mock_') ||
+      appId === 'your_privy_app_id_here' ||
+      secret.startsWith('mock_') ||
+      secret === 'your_privy_app_secret_here'
+    ) {
+      return false;
+    }
+    return true;
+  }
+
+  /** Checks whether a server-verified email is allowlisted as a bootstrap ADMIN. */
+  isBootstrapAdminEmail(email?: string | null): boolean {
+    if (!email) return false;
+    const configured = process.env.BOOTSTRAP_ADMIN_EMAILS || '';
+    const allowlist = configured
+      .split(',')
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean);
+    return allowlist.includes(email.trim().toLowerCase());
+  }
+
+  async fetchPrivyUserIdentity(
+    privyDid: string,
+  ): Promise<PrivyVerifiedUserIdentity | null> {
+    if (!this.hasRealPrivyServerCredentials() || !privyDid) {
+      return null;
+    }
+
+    const appId = process.env.PRIVY_APP_ID!.trim();
+    const secret = process.env.PRIVY_APP_SECRET!.trim();
+    const basicToken = Buffer.from(`${appId}:${secret}`).toString('base64');
+
+    try {
+      const res = await fetch(
+        `https://auth.privy.io/api/v1/users/${encodeURIComponent(privyDid)}`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Basic ${basicToken}`,
+            'privy-app-id': appId,
+          },
+        },
+      );
+      if (!res.ok) {
+        this.logger.warn(
+          `Privy user lookup returned HTTP ${res.status} for ${privyDid}`,
+        );
+        return null;
+      }
+
+      const data = (await res.json()) as {
+        id?: string;
+        linked_accounts?: Array<Record<string, any>>;
+      };
+      const accounts = Array.isArray(data.linked_accounts)
+        ? data.linked_accounts
+        : [];
+
+      const verifiedWallets = accounts
+        .filter(
+          (acc) =>
+            acc?.type === 'wallet' &&
+            typeof acc?.address === 'string' &&
+            /^0x[a-fA-F0-9]{40}$/.test(acc.address),
+        )
+        .map((acc) => normalizeAddress(acc.address));
+
+      const emailAcc = accounts.find(
+        (acc) => acc?.type === 'email' && typeof acc?.address === 'string',
+      );
+      const googleAcc = accounts.find(
+        (acc) => acc?.type === 'google_oauth' && typeof acc?.email === 'string',
+      );
+
+      return {
+        privyDid: data.id || privyDid,
+        verifiedWallets,
+        email: emailAcc?.address || googleAcc?.email || undefined,
+        displayName:
+          typeof googleAcc?.name === 'string' && googleAcc.name.trim()
+            ? googleAcc.name.trim()
+            : undefined,
+      };
+    } catch (err) {
+      this.logger.warn(
+        `Privy user lookup failed for ${privyDid}: ${(err as Error).message}`,
+      );
+      return null;
+    }
   }
 
   private getJwtSecret(): string {
