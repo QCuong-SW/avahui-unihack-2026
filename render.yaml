@@ -3,10 +3,12 @@ services:
     name: avahui-api
     runtime: node
     plan: free
-    buildCommand: corepack enable && pnpm install --frozen-lockfile=false && pnpm --filter @avahui/api exec prisma generate && pnpm --filter @avahui/shared build && pnpm --filter @avahui/blockchain build && pnpm --filter @avahui/api build
+    buildCommand: pnpm install --prod=false --frozen-lockfile=false && pnpm --filter @avahui/api exec prisma generate && pnpm --filter @avahui/shared build && pnpm --filter @avahui/blockchain build && pnpm --filter @avahui/api build
     startCommand: pnpm --filter @avahui/api start:deploy
     healthCheckPath: /api/v1/health
     envVars:
+      - key: NODE_VERSION
+        value: "20"
       - key: NODE_ENV
         value: production
       - key: PORT

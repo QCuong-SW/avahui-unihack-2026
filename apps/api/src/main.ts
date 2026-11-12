@@ -69,7 +69,7 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   const port = Number(process.env.PORT || 3001);
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
   logger.log(`AvaHui Backend API running on http://localhost:${port}/api/v1`);
   logger.log(`Swagger UI available at http://localhost:${port}/api/docs`);
 }
