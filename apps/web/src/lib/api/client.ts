@@ -28,6 +28,7 @@ export interface RequestOptions extends RequestInit {
   walletAddress?: string;
   token?: string;
   params?: Record<string, string | number | boolean | undefined>;
+  timeoutMs?: number;
 }
 
 function resolveStoredAuthToken(): string | undefined {
@@ -122,10 +123,32 @@ export async function apiFetch<T>(
     headers['x-wallet-address'] = activeWallet;
   }
 
-  const response = await fetch(url, {
-    ...fetchOptions,
-    headers,
-  });
+  const timeoutMs = options.timeoutMs ?? 20_000;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
+
+  const signal = options.signal || controller.signal;
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...fetchOptions,
+      headers,
+      signal,
+    });
+  } catch (fetchErr: any) {
+    if (fetchErr?.name === 'AbortError') {
+      throw new ApiError(
+        408,
+        'Yêu cầu tới máy chủ quá thời gian chờ (timeout). Vui lòng thử lại sau giây lát.',
+      );
+    }
+    throw fetchErr;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     let errorData: any;

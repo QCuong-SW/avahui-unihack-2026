@@ -9,6 +9,24 @@ import { AppShell } from '@/components/layout/AppShell';
 import { frontendEnv } from '@/config/env';
 import { PrivyRuntimeSync } from '@/lib/privy/privyBridge';
 
+function BackendKeepAliveWarmup() {
+  React.useEffect(() => {
+    const ping = () => {
+      fetch('https://avahui-api.onrender.com/api/v1/health', {
+        method: 'GET',
+        mode: 'cors',
+        cache: 'no-store',
+      }).catch(() => {});
+    };
+
+    ping();
+    const timer = setInterval(ping, 240_000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return null;
+}
+
 export function AppProviders({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
     () =>
@@ -26,6 +44,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 
   const coreTree = (
     <TxLifecycleProvider>
+      <BackendKeepAliveWarmup />
       <AppShell>{children}</AppShell>
     </TxLifecycleProvider>
   );

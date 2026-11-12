@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAvaHuiState } from '@/hooks/useAvaHuiMockQuery';
 import {
+  isUserRejectedError,
   useProviderLoginMutation,
   useRequestEmailOtpMutation,
   useSiweLoginMutation,
@@ -50,6 +51,15 @@ export function LoginForm() {
   const [uiState, setUiState] = useState<LoginUiState>('DEFAULT');
   const [errorText, setErrorText] = useState<string | null>(null);
 
+  // Pre-warm backend API health silently so cold-start sleep delay is eliminated
+  useEffect(() => {
+    fetch('https://avahui-api.onrender.com/api/v1/health', {
+      method: 'GET',
+      mode: 'cors',
+      cache: 'no-store',
+    }).catch(() => {});
+  }, []);
+
   if (!state) return null;
 
   const isBusy =
@@ -81,9 +91,9 @@ export function LoginForm() {
         result.requiresWalletOnboarding ? '/onboarding/wallet' : '/dashboard'
       );
     } catch (err: any) {
-      setUiState('AUTH_FAILED');
+      setUiState('DEFAULT');
       setErrorText(
-        err?.message || 'Xác thực Google không thành công. Vui lòng thử lại.',
+        err?.message || 'Đăng nhập không thành công: Xác thực Google thất bại. Vui lòng thử lại.',
       );
     }
   };
@@ -117,11 +127,16 @@ export function LoginForm() {
         `/login/verify?email=${encodeURIComponent(email.trim())}${onboardingParam}`
       );
     } catch (err: any) {
-      setUiState('NETWORK_ERROR');
+      setUiState('DEFAULT');
       setErrorText(
-        err?.message || 'Không thể gửi mã OTP lúc này. Vui lòng thử lại.',
+        err?.message || 'Đăng nhập không thành công: Không thể gửi mã OTP lúc này. Vui lòng thử lại.',
       );
     }
+  };
+
+  const handleCancelWalletLogin = () => {
+    setUiState('DEFAULT');
+    setErrorText('Đăng nhập không thành công: Bạn đã hủy kết nối ví.');
   };
 
   const handleExternalWalletLogin = async () => {
@@ -138,9 +153,13 @@ export function LoginForm() {
         result.requiresWalletOnboarding ? '/onboarding/wallet' : '/dashboard'
       );
     } catch (err: any) {
-      setUiState('AUTH_FAILED');
+      // RESET UI BACK TO DEFAULT: SPINNER STOPS IMMEDIATELY, BUTTON IS RE-ENABLED
+      setUiState('DEFAULT');
+      const isRejected = isUserRejectedError(err);
       setErrorText(
-        err?.message || 'Xác thực chữ ký ví (SIWE) thất bại hoặc bị từ chối.',
+        isRejected
+          ? 'Đăng nhập không thành công: Bạn đã hủy hoặc từ chối kết nối ví.'
+          : (err?.message || 'Đăng nhập không thành công: Xác thực ví thất bại hoặc bị gián đoạn.')
       );
     }
   };
@@ -272,19 +291,42 @@ export function LoginForm() {
           />
 
           {/* 3. Connect External Wallet via Cryptographic SIWE Signature */}
-          <button
-            type="button"
-            onClick={handleExternalWalletLogin}
-            disabled={isBusy}
-            className="flex w-full items-center justify-center gap-2 rounded-none border border-zinc-800 bg-zinc-900/70 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-zinc-300 transition hover:border-zinc-700 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {uiState === 'LOADING_WALLET' ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-avalanche-red" />
-            ) : (
-              <Wallet className="h-3.5 w-3.5 text-zinc-400" />
+          <div className="space-y-2">
+            <button
+              type="button"
+              onClick={handleExternalWalletLogin}
+              disabled={isBusy}
+              className="flex w-full items-center justify-center gap-2 rounded-none border border-zinc-800 bg-zinc-900/70 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-zinc-300 transition hover:border-zinc-700 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {uiState === 'LOADING_WALLET' ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-avalanche-red" />
+                  <span>Đang kết nối ví...</span>
+                </>
+              ) : (
+                <>
+                  <Wallet className="h-3.5 w-3.5 text-zinc-400" />
+                  <span>Kết nối Ví Web3 (Core / MetaMask — không tốn gas)</span>
+                </>
+              )}
+            </button>
+
+            {/* Quick Cancel button if user closes popup or wants to cancel midway */}
+            {uiState === 'LOADING_WALLET' && (
+              <div className="flex items-center justify-center gap-2 pt-1 animate-fade-in">
+                <span className="font-mono text-[11px] text-zinc-500">
+                  Chưa thấy popup hoặc muốn hủy?
+                </span>
+                <button
+                  type="button"
+                  onClick={handleCancelWalletLogin}
+                  className="font-mono text-[11px] font-bold text-rose-400 underline hover:text-rose-300 transition"
+                >
+                  Hủy thao tác
+                </button>
+              </div>
             )}
-            <span>Kết nối Ví Web3 (Core / MetaMask — không tốn gas)</span>
-          </button>
+          </div>
         </div>
 
         {/* Collapsible Demo Profile Switcher — ONLY visible in explicit local Dev mode */}

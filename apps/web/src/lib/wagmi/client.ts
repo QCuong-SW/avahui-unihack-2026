@@ -161,6 +161,9 @@ export async function ensureBrowserWalletNetwork(eth: any): Promise<void> {
       params: [{ chainId: chainIdHex }],
     });
   } catch (switchErr: any) {
+    if (switchErr?.code === 4001) {
+      throw switchErr;
+    }
     if (switchErr?.code === 4902) {
       await eth.request({
         method: 'wallet_addEthereumChain',

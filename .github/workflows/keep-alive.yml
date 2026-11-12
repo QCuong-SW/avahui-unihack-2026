@@ -1,0 +1,49 @@
+name: Render Backend Keep-Alive Heartbeat
+
+on:
+  schedule:
+    # Run every 10 minutes to prevent Render free-tier spin-down (inactivity timeout is 15 min)
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual heartbeat ping'
+        required: false
+        default: 'Manual test ping'
+
+concurrency:
+  group: backend-keepalive
+  cancel-in-progress: true
+
+jobs:
+  keep-alive:
+    name: Ping Backend Health Endpoint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Ping Render Backend Health Endpoint
+        run: |
+          echo "=========================================="
+          echo "Triggering Keep-Alive Heartbeat for AvaHui"
+          echo "Target: https://avahui-api.onrender.com/api/v1/health"
+          echo "Timestamp: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          echo "=========================================="
+          
+          # Retry up to 3 times with 5s delay and 45s max request timeout for cold starts
+          RESPONSE=$(curl -sS --fail-with-body \
+            --retry 3 \
+            --retry-delay 5 \
+            --retry-all-errors \
+            --max-time 45 \
+            https://avahui-api.onrender.com/api/v1/health)
+          
+          echo "Response from API:"
+          echo "$RESPONSE"
+          echo "Backend is active and awake!"
+
+      - name: Ping Vercel Frontend Edge Cache
+        run: |
+          echo "Pinging Vercel Web App: https://avahui-unihack-2026-web.vercel.app"
+          curl -sS -I --max-time 15 https://avahui-unihack-2026-web.vercel.app | head -n 5
+
