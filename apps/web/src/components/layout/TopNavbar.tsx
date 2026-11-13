@@ -62,14 +62,9 @@ export function TopNavbar() {
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-avalanche-red/40 bg-avalanche-red/10 shadow-[0_0_12px_rgba(232,65,66,0.2)]">
                   <AvahuiLogo size={28} roundedClass="rounded-sm" />
                 </div>
-                <div>
-                  <span className="text-base sm:text-lg font-black uppercase tracking-wider text-white">
-                    Avahui
-                  </span>
-                  <span className="ml-2 hidden sm:inline-block rounded-md border border-avalanche-red/30 bg-avalanche-red/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-avalanche-red">
-                    V2 ON-CHAIN
-                  </span>
-                </div>
+                <span className="text-base sm:text-lg font-black uppercase tracking-wider text-white">
+                  Avahui
+                </span>
               </Link>
 
               <nav className="hidden items-center gap-5 font-mono text-xs font-bold uppercase tracking-wider md:flex">
@@ -101,12 +96,6 @@ export function TopNavbar() {
                   className="relative py-1 text-zinc-400 transition-colors hover:text-emerald-400"
                 >
                   Dây hụi Live
-                </Link>
-                <Link
-                  href="/guide"
-                  className="relative py-1 text-zinc-400 transition-colors hover:text-white"
-                >
-                  Hướng dẫn
                 </Link>
               </nav>
             </div>
