@@ -32,6 +32,7 @@ const NAV_ITEMS = [
 ];
 
 const LANDING_NAV_ITEMS = [
+  { id: 'giao-dien', label: 'Giao diện' },
   { id: 'co-che', label: 'Cơ chế' },
   { id: 'bao-mat', label: 'Bảo mật V2' },
   { id: 'lo-trinh', label: 'Lộ trình' },

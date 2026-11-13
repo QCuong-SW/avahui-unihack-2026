@@ -17,8 +17,10 @@ import {
   Eye,
   KeyRound,
   Layers,
+  LayoutDashboard,
   Lock,
   LogIn,
+  PlusCircle,
   Share2,
   ShieldCheck,
   Sparkles,
@@ -82,15 +84,17 @@ const TERMINAL_DEMOS: Record<
 const RAIL_SECTIONS = [
   { id: 'hero', code: '00', label: 'Tổng quan' },
   { id: 'metrics', code: '01', label: 'Bảo chứng' },
-  { id: 'co-che', code: '02', label: 'Cơ chế' },
-  { id: 'bao-mat', code: '03', label: 'Bảo mật V2' },
-  { id: 'lo-trinh', code: '04', label: 'Lộ trình' },
-  { id: 'bat-dau', code: '05', label: 'Khởi chạy' },
+  { id: 'giao-dien', code: '02', label: 'Giao diện' },
+  { id: 'co-che', code: '03', label: 'Cơ chế' },
+  { id: 'bao-mat', code: '04', label: 'Bảo mật V2' },
+  { id: 'lo-trinh', code: '05', label: 'Lộ trình' },
+  { id: 'bat-dau', code: '06', label: 'Khởi chạy' },
 ];
 
 export function LandingView() {
   const { data: session } = useAuthSession();
   const [activeTab, setActiveTab] = useState<TerminalTab>('ESCROW');
+  const [previewTab, setPreviewTab] = useState<'DASHBOARD' | 'CREATE'>('DASHBOARD');
   const activeSection = useActiveLandingSection('hero');
   const [mounted, setMounted] = useState(false);
 
@@ -421,6 +425,143 @@ export function LandingView() {
               </div>
             );
           })}
+        </div>
+      </ScrollFocusSection>
+
+      {/* ================================================================= */}
+      {/* SECTION: LIVE INTERACTIVE APP INTERFACE SHOWCASE                  */}
+      {/* ================================================================= */}
+      <ScrollFocusSection
+        id="giao-dien"
+        className="relative border-b border-zinc-800 bg-zinc-950/95 py-20 backdrop-blur-xl"
+      >
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 space-y-10">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-zinc-800/80 pb-8">
+            <div className="max-w-2xl space-y-2.5">
+              <div className="inline-flex items-center gap-2 rounded-full border border-avalanche-red/40 bg-avalanche-red/10 px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-widest text-avalanche-red">
+                <Sparkles className="h-3 w-3" />
+                <span>GIAO DIỆN TƯƠNG TÁC THỰC TẾ</span>
+              </div>
+              <h2 className="text-2xl font-black uppercase tracking-tight text-white sm:text-3xl lg:text-4xl">
+                Trực Quan, Sắc Nét &amp; Đậm Chất Cyber-Fintech
+              </h2>
+              <p className="text-sm sm:text-base leading-relaxed text-zinc-400">
+                Toàn bộ thao tác on-chain (đóng hụi, khóa cọc bảo chứng, đấu giá kín 2 pha và rút vốn sinh lời) được trực quan hóa trên giao diện tối giản, mượt mà và thân thiện với mọi đối tượng người dùng.
+              </p>
+            </div>
+
+            {/* View Selector Tabs */}
+            <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
+              <button
+                type="button"
+                onClick={() => setPreviewTab('DASHBOARD')}
+                className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 shadow-md ${
+                  previewTab === 'DASHBOARD'
+                    ? 'border-avalanche-red bg-avalanche-red/15 text-white shadow-avalanche-red/20'
+                    : 'border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:border-zinc-700 hover:text-white'
+                }`}
+              >
+                <LayoutDashboard className="h-4 w-4 text-avalanche-red" />
+                <span>Bảng Điều Khiển (Dashboard)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPreviewTab('CREATE')}
+                className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 shadow-md ${
+                  previewTab === 'CREATE'
+                    ? 'border-emerald-500 bg-emerald-500/15 text-white shadow-emerald-500/20'
+                    : 'border-zinc-800 bg-zinc-900/80 text-zinc-400 hover:border-zinc-700 hover:text-white'
+                }`}
+              >
+                <PlusCircle className="h-4 w-4 text-emerald-400" />
+                <span>Mở Dây Hụi Mới (Create Circle)</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Browser Window Mockup Frame */}
+          <div className="relative rounded-2xl border border-zinc-700/80 bg-zinc-950 shadow-2xl shadow-black overflow-hidden group">
+            {/* Ambient Corner Glows */}
+            <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-avalanche-red/10 blur-[90px]" />
+            <div className="pointer-events-none absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-emerald-500/10 blur-[90px]" />
+
+            {/* Top Browser Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 bg-zinc-900/90 px-4 py-3 font-mono text-xs backdrop-blur-md">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="h-3 w-3 rounded-full bg-rose-500/80 inline-block" />
+                  <span className="h-3 w-3 rounded-full bg-amber-500/80 inline-block" />
+                  <span className="h-3 w-3 rounded-full bg-emerald-500/80 inline-block" />
+                </div>
+                <div className="ml-2 hidden sm:flex items-center gap-2 rounded-lg border border-zinc-700/70 bg-zinc-950/80 px-3 py-1 text-[11px] text-zinc-300">
+                  <Lock className="h-3 w-3 text-emerald-400" />
+                  <span>
+                    {previewTab === 'DASHBOARD'
+                      ? 'https://avahui.app/dashboard'
+                      : 'https://avahui.app/circles/create'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  AVALANCHE FUJI (43113) • 100% ON-CHAIN
+                </span>
+                <Link
+                  href={previewTab === 'DASHBOARD' ? '/dashboard' : '/circles/create'}
+                  className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold text-zinc-300 hover:text-white transition-colors"
+                >
+                  <span>Mở trang này</span>
+                  <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Screenshot Container with Subtle Hover Zoom */}
+            <div className="relative aspect-[16/9] w-full overflow-hidden bg-zinc-950">
+              <img
+                src={
+                  previewTab === 'DASHBOARD'
+                    ? '/screenshots/dashboard-preview.png'
+                    : '/screenshots/create-circle-preview.png'
+                }
+                alt={
+                  previewTab === 'DASHBOARD'
+                    ? 'AvaHui Dashboard Interface Preview'
+                    : 'AvaHui Create Circle Interface Preview'
+                }
+                className="h-full w-full object-cover object-top transition-transform duration-700 ease-out group-hover:scale-[1.01]"
+              />
+
+              {/* Bottom Gradient Overlay with CTA and Highlights */}
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-zinc-950 via-zinc-950/85 to-transparent p-4 sm:p-6 backdrop-blur-[2px]">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <h3 className="font-mono text-base sm:text-lg font-black uppercase tracking-wider text-white">
+                      {previewTab === 'DASHBOARD'
+                        ? 'Bảng Điều Khiển & Dòng Tiền Thời Gian Thực'
+                        : 'Mở Dây Hụi: Tùy Biến 2 Chế Độ Phân Phối'}
+                    </h3>
+                    <p className="mt-1 text-xs text-zinc-300 font-sans max-w-2xl">
+                      {previewTab === 'DASHBOARD'
+                        ? 'Giám sát chi tiết tiền quỹ đã nhận, cọc thế chấp khóa an toàn trong Smart Contract và tham gia các dây hụi mở chỉ với 1 click.'
+                        : 'Hỗ trợ linh hoạt Đấu giá chiết khấu hoặc Nhận lần lượt theo thứ tự, tích hợp kho sinh lãi ERC-4626 6.5% APY và đấu giá kín 2 pha chống lộ giá.'}
+                    </p>
+                  </div>
+
+                  <Link
+                    href={previewTab === 'DASHBOARD' ? '/dashboard' : '/circles/create'}
+                    className="inline-flex items-center gap-2 rounded-xl border border-avalanche-red bg-avalanche-red px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-avalanche-red/30 hover:brightness-110 active:scale-95 transition-all shrink-0"
+                  >
+                    <span>Trải nghiệm ngay</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </ScrollFocusSection>
 
