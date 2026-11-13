@@ -207,7 +207,7 @@ export function LandingView() {
               <span className="text-white font-semibold">mỗi người thật chỉ giữ một suất</span>.
             </p>
 
-            {/* Primary CTA Buttons */}
+            {/* Primary CTA Button */}
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <Link
                 href="/login"
@@ -216,14 +216,6 @@ export function LandingView() {
                 <LogIn className="h-4 w-4" />
                 <span>Đăng nhập / Đăng ký</span>
                 <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1" />
-              </Link>
-
-              <Link
-                href={isAuthenticated ? '/dashboard' : '/circles'}
-                className="inline-flex items-center gap-2 rounded-lg border border-zinc-700 bg-zinc-900/90 px-6 py-3.5 font-mono text-xs sm:text-sm font-bold uppercase tracking-wider text-white shadow-md transition-all duration-200 hover:border-emerald-400 hover:text-emerald-300 hover:shadow-lg hover:shadow-emerald-500/10 active:scale-95"
-              >
-                <Compass className="h-4 w-4 text-emerald-400" />
-                <span>{isAuthenticated ? 'Vào App Ngay (Dashboard)' : 'Xem Dây Hụi Live'}</span>
               </Link>
             </div>
 
