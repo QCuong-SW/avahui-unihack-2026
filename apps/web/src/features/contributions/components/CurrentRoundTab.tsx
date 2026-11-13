@@ -35,7 +35,7 @@ export function CurrentRoundTab({
         side="top"
         className="flex w-full"
       >
-        <div className="w-full rounded-none border border-amber-500/30 bg-amber-500/5 p-6 text-center">
+        <div className="w-full rounded-xl border border-amber-500/30 bg-amber-500/5 p-6 text-center">
           <Users className="mx-auto h-7 w-7 text-amber-400" />
           <h3 className="mt-2 font-mono text-sm font-bold uppercase tracking-wider text-white">
             Đang tuyển thành viên ({circle.currentMemberCount} / {circle.maxMembers})
@@ -51,7 +51,7 @@ export function CurrentRoundTab({
 
   if (!currentRoundObj) {
     return (
-      <div className="rounded-none border border-zinc-800 bg-zinc-900/40 p-6 text-center font-mono text-xs uppercase tracking-wider text-zinc-400">
+      <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-6 text-center font-mono text-xs uppercase tracking-wider text-zinc-400">
         Đã hoàn tất toàn bộ vòng hụi.
       </div>
     );
@@ -77,7 +77,7 @@ export function CurrentRoundTab({
   return (
     <div className="space-y-5">
       {/* Compact Round Summary Row */}
-      <div className="grid gap-3 rounded-none border border-zinc-800 bg-zinc-900/60 p-4 sm:grid-cols-3">
+      <div className="grid gap-3 rounded-xl border border-zinc-800/80 bg-zinc-900/50 p-4 sm:grid-cols-3">
         <HoverHint
           hint="Số lượng thành viên đã hoàn tất đóng tiền trực tiếp trong vòng này"
           side="top"
@@ -90,9 +90,9 @@ export function CurrentRoundTab({
             <div className="mt-1 font-mono text-lg font-extrabold text-white">
               {currentRoundObj.contributionsCount}/{circle.maxMembers}
             </div>
-            <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-none bg-zinc-800">
+            <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zinc-800">
               <div
-                className="h-full rounded-none bg-emerald-400 transition-all"
+                className="h-full rounded-full bg-emerald-400 transition-all"
                 style={{ width: `${paidPercent}%` }}
               />
             </div>
@@ -174,14 +174,14 @@ export function CurrentRoundTab({
             return (
               <div
                 key={member.slotIndex}
-                className={`flex items-center justify-between rounded-none border p-3 font-mono text-xs ${
+                className={`flex items-center justify-between rounded-xl border p-3 font-mono text-xs transition-all ${
                   contrib
                     ? contrib.isFromCollateralSlash
                       ? 'border-rose-500/40 bg-rose-500/10'
                       : 'border-emerald-500/30 bg-emerald-500/5'
                     : isMe
                     ? 'border-amber-500/50 bg-amber-500/10'
-                    : 'border-zinc-800 bg-zinc-900/50'
+                    : 'border-zinc-800/80 bg-zinc-900/50'
                 }`}
               >
                 <div>
@@ -191,7 +191,7 @@ export function CurrentRoundTab({
                     </span>
                     <span className="font-sans font-bold">{member.displayName}</span>
                     {isMe && (
-                      <span className="rounded-none bg-avalanche-red px-1.5 py-0.5 text-[10px] font-bold text-white uppercase">
+                      <span className="rounded-md bg-avalanche-red px-1.5 py-0.5 text-[10px] font-bold text-white uppercase">
                         BẠN
                       </span>
                     )}
@@ -232,7 +232,7 @@ export function CurrentRoundTab({
                       </div>
                     )
                   ) : (
-                    <span className="inline-flex items-center gap-1 rounded-none bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-300">
+                    <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-300">
                       <Clock className="h-3 w-3" />
                       <span>Chờ</span>
                     </span>
@@ -246,7 +246,7 @@ export function CurrentRoundTab({
 
       {/* Live Bid Feed */}
       {circle.allocationMode === AllocationMode.BIDDING && (
-        <div className="space-y-2.5 border-t border-zinc-800 pt-4">
+        <div className="space-y-2.5 border-t border-zinc-800/80 pt-4">
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1.5 font-mono text-xs font-bold uppercase tracking-wider text-zinc-400">
               <Gavel className="h-3.5 w-3.5 text-avalanche-red" />
@@ -264,7 +264,7 @@ export function CurrentRoundTab({
           </div>
 
           {currentRoundObj.bids.length === 0 ? (
-            <div className="rounded-none border border-zinc-800 bg-zinc-900/40 p-3.5 text-center font-mono text-xs uppercase tracking-wider text-zinc-500">
+            <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-3.5 text-center font-mono text-xs uppercase tracking-wider text-zinc-500">
               Chưa có lượt đặt giá.
             </div>
           ) : (
@@ -278,15 +278,15 @@ export function CurrentRoundTab({
                 .map((bid, idx) => (
                   <div
                     key={`${bid.txHash}_${idx}`}
-                    className={`flex items-center justify-between rounded-none border p-2.5 text-xs ${
+                    className={`flex items-center justify-between rounded-xl border p-2.5 text-xs transition-all ${
                       idx === 0
                         ? 'border-avalanche-red/50 bg-avalanche-red/10'
-                        : 'border-zinc-800 bg-zinc-900/40'
+                        : 'border-zinc-800/80 bg-zinc-900/40'
                     }`}
                   >
                     <div className="flex items-center gap-2">
                       {idx === 0 && (
-                        <span className="inline-flex items-center gap-1 rounded-none bg-avalanche-red px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase text-white">
+                        <span className="inline-flex items-center gap-1 rounded-md bg-avalanche-red px-1.5 py-0.5 font-mono text-[10px] font-bold uppercase text-white">
                           <Sparkles className="h-2.5 w-2.5" />
                           TOP
                         </span>

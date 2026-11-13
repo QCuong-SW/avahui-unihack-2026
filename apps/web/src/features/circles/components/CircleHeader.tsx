@@ -69,13 +69,15 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
   return (
     <section
       data-tour="circle-header-summary"
-      className="rounded-none border border-zinc-800 bg-surface-card p-4 sm:p-6 shadow-xl"
+      className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl p-4 sm:p-6 shadow-xl"
     >
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-avalanche-red/60 to-transparent" />
+
       {/* Top Row: Back & Explorer */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-3.5">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/80 pb-3.5">
         <Link
           href="/circles"
-          className="inline-flex items-center gap-1.5 font-mono text-xs font-bold uppercase tracking-wider text-zinc-400 transition hover:text-white"
+          className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 font-mono text-xs font-bold uppercase tracking-wider text-zinc-400 transition hover:bg-zinc-900/60 hover:text-white"
         >
           <ArrowLeft className="h-4 w-4" />
           <span>Danh sách dây hụi</span>
@@ -86,7 +88,7 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
             <button
               type="button"
               onClick={() => setShowInviteBox((prev) => !prev)}
-              className="inline-flex items-center gap-1.5 rounded-none border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 font-mono text-xs font-bold uppercase tracking-wider text-emerald-300 transition hover:bg-emerald-500 hover:text-zinc-950"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 font-mono text-xs font-bold uppercase tracking-wider text-emerald-300 transition-all hover:bg-emerald-500 hover:text-zinc-950 shadow-sm"
             >
               <Share2 className="h-3.5 w-3.5" />
               <span>Liên kết mời</span>
@@ -99,7 +101,7 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
                 href={`${frontendEnv.explorerUrl}/address/${circle.contractAddress}`}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-none border border-zinc-800 bg-zinc-900 px-2.5 py-1 font-mono text-xs text-zinc-300 transition hover:border-avalanche-red hover:text-white"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-800/80 bg-zinc-900/80 px-2.5 py-1 font-mono text-xs text-zinc-300 transition-all hover:border-avalanche-red/50 hover:text-white shadow-sm"
               >
                 <span>{shortenAddress(circle.contractAddress, 6)}</span>
                 <ExternalLink className="h-3.5 w-3.5 text-avalanche-red" />
@@ -111,8 +113,8 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
 
       {/* Expandable Invite Link Drawer */}
       {showInviteBox && (
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-none border border-emerald-500/40 bg-emerald-500/10 px-3.5 py-2.5 font-mono text-xs animate-fade-in">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="mt-3.5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-500/40 bg-emerald-950/20 backdrop-blur-md p-3.5 font-mono text-xs animate-fade-in shadow-inner">
+          <div className="flex flex-wrap items-center gap-2.5">
             {circle.isPrivateInvite && (
               <>
                 <span className="font-bold uppercase text-emerald-300">
@@ -123,7 +125,7 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
                   value={manualInviteCode}
                   onChange={(e) => setManualInviteCode(e.target.value)}
                   placeholder="Nhập mã mời thật..."
-                  className="w-40 rounded-none border border-emerald-500/40 bg-zinc-950 px-2 py-0.5 font-bold text-white focus:border-emerald-300 focus:outline-none"
+                  className="w-40 rounded-lg border border-emerald-500/40 bg-zinc-950 px-2.5 py-1 font-bold text-white focus:border-emerald-300 focus:outline-none"
                 />
               </>
             )}
@@ -132,7 +134,7 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
           <button
             type="button"
             onClick={handleCopyInvite}
-            className="inline-flex items-center gap-1.5 rounded-none border border-emerald-400 bg-emerald-500 px-3 py-1 font-mono text-xs font-bold uppercase text-zinc-950 transition hover:bg-emerald-400"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-400 bg-emerald-500 px-3.5 py-1.5 font-mono text-xs font-bold uppercase text-zinc-950 transition-all hover:brightness-110 active:scale-95 shadow-md shadow-emerald-500/20"
           >
             {copiedInvite ? (
               <>
@@ -166,7 +168,7 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
             hint={CIRCLE_STATUS_META[circle.status]?.description || circle.status}
           >
             <span
-              className={`inline-flex items-center gap-1.5 rounded-none border px-2.5 py-1 font-mono text-xs font-bold uppercase tracking-wider ${
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wider ${
                 circle.status === CircleStatus.Active
                   ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-400'
                   : circle.status === CircleStatus.Recruiting
@@ -174,14 +176,14 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
                   : 'border-sky-500/40 bg-sky-500/15 text-sky-400'
               }`}
             >
-              <span className="h-1.5 w-1.5 bg-current" />
+              <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
               {CIRCLE_STATUS_META[circle.status]?.label || circle.status}
             </span>
           </HoverHint>
 
           {circle.isPaused && (
             <HoverHint hint="Dây hụi đang tạm dừng khẩn cấp bởi Guardian trên Hợp đồng thông minh">
-              <span className="inline-flex items-center gap-1.5 rounded-none border border-rose-500/50 bg-rose-500/15 px-2.5 py-1 font-mono text-xs font-bold uppercase tracking-wider text-rose-300">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-500/50 bg-rose-500/15 px-3 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wider text-rose-300">
                 <Lock className="h-3 w-3" />
                 <span>Tạm dừng</span>
               </span>
@@ -194,15 +196,15 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
               circle.allocationMode
             }
           >
-            <span className="inline-flex items-center gap-1.5 rounded-none border border-zinc-700 bg-zinc-900 px-2.5 py-1 font-mono text-xs font-bold uppercase tracking-wider text-zinc-200">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-700/80 bg-zinc-900/80 px-3 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wider text-zinc-200">
               {circle.allocationMode === AllocationMode.BIDDING ? (
                 <>
-                  <Gavel className="h-3.5 w-3.5 text-avalanche-red" />
+                  <Gavel className="h-3 w-3 text-avalanche-red" />
                   <span>{ALLOCATION_MODE_META[AllocationMode.BIDDING].label}</span>
                 </>
               ) : (
                 <>
-                  <Repeat className="h-3.5 w-3.5 text-emerald-400" />
+                  <Repeat className="h-3 w-3 text-emerald-400" />
                   <span>{ALLOCATION_MODE_META[AllocationMode.FIXED].label}</span>
                 </>
               )}
@@ -212,16 +214,16 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
           <HoverHint
             hint={`Thời lượng vòng: ${circle.roundDurationSeconds}s • Ân hạn: ${circle.gracePeriodSeconds}s`}
           >
-            <span className="inline-flex items-center gap-1 rounded-none border border-zinc-800 bg-zinc-900 px-2.5 py-1 font-mono text-xs text-zinc-400">
-              <Clock className="h-3.5 w-3.5 text-zinc-500" />
+            <span className="inline-flex items-center gap-1 rounded-full border border-zinc-800 bg-zinc-900/80 px-2.5 py-0.5 font-mono text-[11px] text-zinc-400">
+              <Clock className="h-3 w-3 text-zinc-500" />
               <span>{circle.roundDurationSeconds}s</span>
             </span>
           </HoverHint>
 
           {circle.allocationMode === AllocationMode.BIDDING && (
             <HoverHint hint="Đấu giá kín 2 pha Niêm phong / Mở niêm phong (keccak256) chống nhìn trộm giá trên mạng">
-              <span className="inline-flex items-center gap-1 rounded-none border border-sky-500/40 bg-sky-500/10 px-2.5 py-1 font-mono text-xs font-bold uppercase text-sky-300">
-                <Lock className="h-3.5 w-3.5 text-sky-400" />
+              <span className="inline-flex items-center gap-1 rounded-full border border-sky-500/40 bg-sky-500/10 px-2.5 py-0.5 font-mono text-[11px] font-bold uppercase text-sky-300">
+                <Lock className="h-3 w-3 text-sky-400" />
                 <span>Đấu giá kín</span>
               </span>
             </HoverHint>
@@ -229,8 +231,8 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
 
           {circle.enableYieldVault !== false && (
             <HoverHint hint="Tài sản thế chấp và quỹ chưa giải ngân tự động sinh lãi 6.50% APY trong kho ERC-4626">
-              <span className="inline-flex items-center gap-1 rounded-none border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-1 font-mono text-xs font-bold uppercase text-emerald-300">
-                <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
+              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2.5 py-0.5 font-mono text-[11px] font-bold uppercase text-emerald-300">
+                <TrendingUp className="h-3 w-3 text-emerald-400" />
                 <span>Kho lãi 6.5% APY</span>
               </span>
             </HoverHint>
@@ -238,8 +240,8 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
 
           {circle.requireTeam1Attestation !== false && (
             <HoverHint hint="Bảo vệ chống tạo nhiều ví bằng chứng thực định danh Team1 (1 người / 1 vị trí)">
-              <span className="inline-flex items-center gap-1 rounded-none border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 font-mono text-xs font-bold uppercase text-amber-300">
-                <ShieldCheck className="h-3.5 w-3.5 text-amber-400" />
+              <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-0.5 font-mono text-[11px] font-bold uppercase text-amber-300">
+                <ShieldCheck className="h-3 w-3 text-amber-400" />
                 <span>Xác thực Team1</span>
               </span>
             </HoverHint>
@@ -253,7 +255,8 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
           hint={`Số tiền cố định đóng mỗi vòng xuyên suốt ${circle.totalRounds} vòng`}
           className="w-full"
         >
-          <div className="w-full rounded-none border border-zinc-800 bg-zinc-900/60 p-4">
+          <div className="relative overflow-hidden w-full rounded-xl border border-zinc-800/80 bg-zinc-900/50 p-4 transition-all hover:border-zinc-700/80">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-avalanche-red/50 to-transparent" />
             <div className="flex items-center justify-between text-xs text-zinc-400 uppercase tracking-wider">
               <span>Mức đóng / Kỳ</span>
               <Coins className="h-4 w-4 text-avalanche-red" />
@@ -271,7 +274,8 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
           hint={`${circle.maxMembers} thành viên × ${formatUsdc(circle.contributionAmountFormatted)} mUSDC`}
           className="w-full"
         >
-          <div className="w-full rounded-none border border-zinc-800 bg-zinc-900/60 p-4">
+          <div className="relative overflow-hidden w-full rounded-xl border border-zinc-800/80 bg-zinc-900/50 p-4 transition-all hover:border-zinc-700/80">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent" />
             <div className="flex items-center justify-between text-xs text-zinc-400 uppercase tracking-wider">
               <span>Tổng quỹ / Kỳ</span>
               <Layers className="h-4 w-4 text-emerald-400" />
@@ -289,7 +293,8 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
           hint="Khóa khi tham gia dây hụi • Hoàn trả khi kết thúc"
           className="w-full"
         >
-          <div className="w-full rounded-none border border-zinc-800 bg-zinc-900/60 p-4">
+          <div className="relative overflow-hidden w-full rounded-xl border border-zinc-800/80 bg-zinc-900/50 p-4 transition-all hover:border-zinc-700/80">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-amber-400/50 to-transparent" />
             <div className="flex items-center justify-between text-xs text-zinc-400 uppercase tracking-wider">
               <span>Thế chấp khóa</span>
               <Lock className="h-4 w-4 text-amber-400" />
@@ -307,7 +312,8 @@ export function CircleHeader({ circle }: CircleHeaderProps) {
           hint={`Quỹ lời chiết khấu tích lũy: ${formatUsdc(circle.totalDiscountPoolFormatted)} mUSDC`}
           className="w-full"
         >
-          <div className="w-full rounded-none border border-zinc-800 bg-zinc-900/60 p-4">
+          <div className="relative overflow-hidden w-full rounded-xl border border-zinc-800/80 bg-zinc-900/50 p-4 transition-all hover:border-zinc-700/80">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-sky-400/50 to-transparent" />
             <div className="flex items-center justify-between text-xs text-zinc-400 uppercase tracking-wider">
               <span>
                 {circle.status === CircleStatus.Recruiting

@@ -111,8 +111,10 @@ export function HowItWorksView() {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header Banner */}
-      <section className="rounded-none border border-zinc-800 bg-surface-card p-6 sm:p-8 shadow-xl space-y-4">
-        <div className="inline-flex items-center gap-2 rounded-none border border-avalanche-red/40 bg-avalanche-red/10 px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-wider text-avalanche-red">
+      <section className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl p-6 sm:p-8 shadow-xl space-y-4">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-avalanche-red/60 to-transparent" />
+
+        <div className="inline-flex items-center gap-2 rounded-full border border-avalanche-red/40 bg-avalanche-red/10 px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-wider text-avalanche-red">
           <BookOpen className="h-3.5 w-3.5" />
           <span>Cẩm nang Sử dụng AvaHui</span>
         </div>
@@ -127,25 +129,25 @@ export function HowItWorksView() {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2.5">
             <button
               type="button"
               onClick={() => tour.startTour()}
-              className="inline-flex items-center gap-1.5 rounded-none border border-amber-500/60 bg-amber-500/15 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-amber-200 transition hover:bg-amber-500 hover:text-zinc-950"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-amber-500/60 bg-amber-500/15 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-amber-200 transition-all hover:bg-amber-500 hover:text-zinc-950 active:scale-95 shadow-md shadow-amber-500/10"
             >
               <Play className="h-3.5 w-3.5" />
               <span>Bắt đầu Hướng dẫn trực tiếp trên UI</span>
             </button>
             <Link
               href="/circles"
-              className="inline-flex items-center gap-1.5 rounded-none border border-zinc-700 bg-zinc-900 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-zinc-200 transition hover:border-zinc-500 hover:text-white"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-700/80 bg-zinc-900/80 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-zinc-200 transition hover:border-zinc-500 hover:text-white active:scale-95 shadow-sm"
             >
               <Compass className="h-3.5 w-3.5 text-avalanche-red" />
               <span>Xem Dây hụi</span>
             </Link>
             <Link
               href="/dashboard"
-              className="inline-flex items-center gap-1.5 rounded-none border border-avalanche-red bg-avalanche-red px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-white transition hover:bg-avalanche-darkRed"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-avalanche-red/60 bg-gradient-to-r from-avalanche-red to-red-600 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-white transition hover:brightness-110 active:scale-95 shadow-md shadow-avalanche-red/20"
             >
               <span>Vào Tổng quan</span>
               <ArrowRight className="h-3.5 w-3.5" />
@@ -167,12 +169,12 @@ export function HowItWorksView() {
             return (
               <div
                 key={item.step}
-                className="flex flex-col justify-between rounded-none border border-zinc-800 bg-surface-card p-5 space-y-4 transition hover:border-zinc-700"
+                className="flex flex-col justify-between rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl p-5 sm:p-6 space-y-4 transition-all duration-300 hover:border-zinc-700/80 shadow-lg relative overflow-hidden group"
               >
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+                  <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
                     <div className="flex items-center gap-2.5">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-none border border-avalanche-red/40 bg-avalanche-red/15 font-mono text-xs font-extrabold text-avalanche-red">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-avalanche-red/40 bg-avalanche-red/15 font-mono text-xs font-extrabold text-avalanche-red shadow-inner">
                         {item.step}
                       </span>
                       <h2 className="font-mono text-sm sm:text-base font-extrabold text-white">
@@ -212,13 +214,13 @@ export function HowItWorksView() {
       </section>
 
       {/* Safety Rules */}
-      <section className="rounded-none border border-amber-500/30 bg-amber-500/5 p-5 sm:p-6 space-y-3">
+      <section className="rounded-xl border border-amber-500/30 bg-amber-950/15 p-5 sm:p-6 space-y-3">
         <div className="flex items-center gap-2 font-mono text-sm font-extrabold uppercase tracking-wider text-amber-300">
           <AlertTriangle className="h-4 w-4" />
           <span>3 Nguyên tắc an toàn khi dùng hệ thống</span>
         </div>
         <div className="grid gap-3 md:grid-cols-3 text-xs text-zinc-300">
-          <div className="rounded-none border border-zinc-800 bg-zinc-900/70 p-3.5 space-y-1">
+          <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/60 p-4 space-y-1.5">
             <div className="flex items-center gap-1.5 font-mono font-bold text-white">
               <Fuel className="h-3.5 w-3.5 text-amber-400" />
               <span>Luôn giữ sẵn AVAX Gas</span>
@@ -227,7 +229,7 @@ export function HowItWorksView() {
               Mỗi thao tác on-chain tiêu tốn lượng nhỏ AVAX. Hãy kiểm tra số dư &ge; 0.005 AVAX trước khi đóng tiền hoặc đấu giá.
             </p>
           </div>
-          <div className="rounded-none border border-zinc-800 bg-zinc-900/70 p-3.5 space-y-1">
+          <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/60 p-4 space-y-1.5">
             <div className="flex items-center gap-1.5 font-mono font-bold text-white">
               <Lock className="h-3.5 w-3.5 text-sky-400" />
               <span>Luôn sao lưu Salt JSON</span>
@@ -236,7 +238,7 @@ export function HowItWorksView() {
               Sau khi Niêm phong giá đấu (2/3 thời gian đầu), hãy tải ngay file Salt dự phòng để chắc chắn Mở niêm phong đúng hạn ở 1/3 thời gian cuối.
             </p>
           </div>
-          <div className="rounded-none border border-zinc-800 bg-zinc-900/70 p-3.5 space-y-1">
+          <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/60 p-4 space-y-1.5">
             <div className="flex items-center gap-1.5 font-mono font-bold text-white">
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
               <span>Ưu tiên thế chấp 2x với nhóm mới</span>
@@ -257,13 +259,13 @@ export function HowItWorksView() {
           {ROSCA_GLOSSARY_ITEMS.map((item) => (
             <div
               key={item.term}
-              className="rounded-none border border-zinc-800 bg-surface-card p-4 space-y-1.5"
+              className="rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl p-4 sm:p-5 space-y-1.5 shadow-sm"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="font-mono text-xs sm:text-sm font-bold text-white">
                   {item.term}
                 </h3>
-                <span className="rounded-none border border-zinc-700 bg-zinc-900 px-2 py-0.5 font-mono text-[10px] text-zinc-400">
+                <span className="rounded-full border border-zinc-700/80 bg-zinc-900/80 px-2.5 py-0.5 font-mono text-[10px] text-zinc-400">
                   {item.englishAlias}
                 </span>
               </div>
@@ -284,7 +286,7 @@ export function HowItWorksView() {
           {FAQS.map((faq) => (
             <div
               key={faq.q}
-              className="rounded-none border border-zinc-800 bg-surface-card p-4 space-y-1.5"
+              className="rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl p-4 sm:p-5 space-y-1.5 shadow-sm"
             >
               <h3 className="font-mono text-xs sm:text-sm font-bold text-white">
                 {faq.q}

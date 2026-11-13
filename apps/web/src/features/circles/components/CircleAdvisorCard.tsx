@@ -84,17 +84,19 @@ export function CircleAdvisorCard({ circle }: { circle: CircleItem }) {
         : 'border-rose-500/40 bg-rose-500/10 text-rose-300';
 
   return (
-    <section className="rounded-none border border-zinc-800 bg-surface-card p-4 space-y-3 font-mono text-xs">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-2.5">
+    <section className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl p-4 sm:p-5 space-y-3.5 font-mono text-xs shadow-xl">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-sky-400/50 to-transparent" />
+
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/80 pb-3">
         <div className="flex items-center gap-2 font-bold uppercase tracking-wider text-white">
-          <Sparkles className="h-4 w-4 text-avalanche-red" />
+          <Sparkles className="h-4 w-4 text-sky-400" />
           <span>Trợ lý Rủi ro &amp; Đấu giá AvaHui</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className={`rounded-none border px-2 py-0.5 text-[10px] font-bold uppercase ${badgeClass}`}>
+          <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${badgeClass}`}>
             Rủi ro {RISK_LEVEL_LABEL[advisor.riskLevel] || advisor.riskLevel} ({advisor.riskScore}/100)
           </span>
-          <span className="rounded-none border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-[10px] text-zinc-400">
+          <span className="rounded-full border border-zinc-700/80 bg-zinc-900/80 px-2.5 py-0.5 text-[10px] text-zinc-400">
             {advisor.aiPowered ? advisor.model : 'Phân tích định lượng'}
           </span>
         </div>
@@ -102,32 +104,32 @@ export function CircleAdvisorCard({ circle }: { circle: CircleItem }) {
 
       <p className="text-xs leading-relaxed text-zinc-300">{advisor.summary}</p>
 
-      <div className="grid gap-2 sm:grid-cols-3 text-[11px]">
-        <div className="rounded-none border border-zinc-800 bg-zinc-900/70 p-2.5">
-          <div className="flex items-center gap-1 text-zinc-400">
+      <div className="grid gap-2.5 sm:grid-cols-3 text-[11px]">
+        <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/50 p-3">
+          <div className="flex items-center gap-1.5 text-zinc-400">
             <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
             <span>Mức bảo chứng</span>
           </div>
-          <div className="mt-1 font-bold text-white">{advisor.collateralRatio}x</div>
+          <div className="mt-1 font-bold text-white text-sm">{advisor.collateralRatio}x</div>
         </div>
 
-        <div className="rounded-none border border-zinc-800 bg-zinc-900/70 p-2.5">
-          <div className="flex items-center gap-1 text-zinc-400">
+        <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/50 p-3">
+          <div className="flex items-center gap-1.5 text-zinc-400">
             <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
             <span>Lãi Vault dự kiến</span>
           </div>
-          <div className="mt-1 font-bold text-emerald-400">
+          <div className="mt-1 font-bold text-emerald-400 text-sm">
             +{advisor.estimatedCycleYieldUsdc} mUSDC
           </div>
         </div>
 
         {advisor.bidRecommendation && (
-          <div className="rounded-none border border-zinc-800 bg-zinc-900/70 p-2.5">
-            <div className="flex items-center gap-1 text-zinc-400">
+          <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/50 p-3">
+            <div className="flex items-center gap-1.5 text-zinc-400">
               <Gavel className="h-3.5 w-3.5 text-avalanche-red" />
               <span>Giá đấu gợi ý</span>
             </div>
-            <div className="mt-1 font-bold text-amber-300">
+            <div className="mt-1 font-bold text-amber-300 text-sm">
               {advisor.bidRecommendation.optimalBidUsdc} mUSDC
               <span className="ml-1 text-[10px] font-normal text-zinc-400">
                 (chiết khấu {advisor.bidRecommendation.suggestedEffectiveApyPct}%)

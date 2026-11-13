@@ -159,7 +159,7 @@ export function CreateCircleView() {
       <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4 animate-fade-down">
         <Link
           href="/circles"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-400 transition hover:text-white active:scale-95"
+          className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-zinc-400 transition hover:bg-zinc-900/60 hover:text-white active:scale-95"
         >
           <ArrowLeft className="h-4 w-4" />
           <span>Danh sách dây hụi</span>
@@ -173,7 +173,7 @@ export function CreateCircleView() {
             <button
               type="button"
               onClick={() => applyPreset('BIDDING_DEMO')}
-              className="inline-flex items-center gap-1.5 rounded-none border border-avalanche-red/50 bg-avalanche-red/10 px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider text-avalanche-red transition hover:bg-avalanche-red hover:text-white active:scale-95"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-avalanche-red/50 bg-avalanche-red/10 px-3.5 py-2 font-mono text-xs font-bold uppercase tracking-wider text-avalanche-red transition-all hover:bg-avalanche-red hover:text-white active:scale-95 shadow-sm"
             >
               <Zap className="h-3.5 w-3.5" />
               <span>Mẫu: Đấu giá</span>
@@ -187,7 +187,7 @@ export function CreateCircleView() {
             <button
               type="button"
               onClick={() => applyPreset('FIXED_DEMO')}
-              className="inline-flex items-center gap-1.5 rounded-none border border-zinc-700 bg-zinc-900 px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider text-zinc-300 transition hover:border-zinc-500 hover:text-white active:scale-95"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-700/80 bg-zinc-900/80 px-3.5 py-2 font-mono text-xs font-bold uppercase tracking-wider text-zinc-300 transition-all hover:border-zinc-500 hover:text-white active:scale-95 shadow-sm"
             >
               <Repeat className="h-3.5 w-3.5 text-emerald-400" />
               <span>Mẫu: Cố định</span>
@@ -201,8 +201,10 @@ export function CreateCircleView() {
         onSubmit={handleSubmit(onSubmit)}
         className="grid items-start gap-5 sm:gap-6 lg:grid-cols-12 animate-fade-up"
       >
-        <div className="space-y-5 rounded-none border border-zinc-800 bg-surface-card p-4 sm:p-6 lg:col-span-7">
-          <h1 className="border-b border-zinc-800 pb-3.5 font-mono text-xl font-extrabold uppercase tracking-wider text-white">
+        <div className="relative overflow-hidden space-y-5 rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl p-4 sm:p-6 lg:col-span-7 shadow-xl">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-avalanche-red/60 to-transparent" />
+
+          <h1 className="border-b border-zinc-800/80 pb-3.5 font-mono text-xl font-extrabold uppercase tracking-wider text-white">
             Mở Dây Hụi Mới
           </h1>
 
@@ -215,7 +217,7 @@ export function CreateCircleView() {
               <input
                 type="text"
                 {...register('name')}
-                className="mt-1 w-full rounded-none border border-zinc-700 bg-zinc-900 px-3.5 py-2 font-mono text-sm text-white focus:border-avalanche-red focus:outline-none"
+                className="mt-1.5 w-full rounded-lg border border-zinc-700/80 bg-zinc-900/80 px-3.5 py-2 font-mono text-sm text-white focus:border-avalanche-red/60 focus:ring-1 focus:ring-avalanche-red/30 focus:outline-none transition-all"
               />
               {errors.name && (
                 <p className="mt-1 font-mono text-xs text-rose-400">
@@ -231,7 +233,7 @@ export function CreateCircleView() {
               <textarea
                 rows={2}
                 {...register('description')}
-                className="mt-1 w-full rounded-none border border-zinc-700 bg-zinc-900 px-3.5 py-2 text-xs text-white focus:border-avalanche-red focus:outline-none"
+                className="mt-1.5 w-full rounded-lg border border-zinc-700/80 bg-zinc-900/80 px-3.5 py-2 text-xs text-white focus:border-avalanche-red/60 focus:ring-1 focus:ring-avalanche-red/30 focus:outline-none transition-all"
               />
               {errors.description && (
                 <p className="mt-1 font-mono text-xs text-rose-400">
@@ -257,10 +259,10 @@ export function CreateCircleView() {
                       shouldValidate: true,
                     })
                   }
-                  className={`flex w-full cursor-pointer items-center gap-2 rounded-none border p-3.5 font-mono text-sm font-bold uppercase tracking-wider transition ${
+                  className={`flex w-full cursor-pointer items-center gap-2 rounded-xl border p-3.5 font-mono text-sm font-bold uppercase tracking-wider transition-all ${
                     watchedValues.allocationMode === AllocationMode.BIDDING
-                      ? 'border-avalanche-red bg-avalanche-red/10 text-white'
-                      : 'border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:border-zinc-700'
+                      ? 'border-avalanche-red/60 bg-avalanche-red/10 text-white shadow-md shadow-avalanche-red/15'
+                      : 'border-zinc-800/80 bg-zinc-900/60 text-zinc-400 hover:border-zinc-700'
                   }`}
                 >
                   <Gavel className="h-4 w-4 text-avalanche-red" />
@@ -278,10 +280,10 @@ export function CreateCircleView() {
                       shouldValidate: true,
                     })
                   }
-                  className={`flex w-full cursor-pointer items-center gap-2 rounded-none border p-3.5 font-mono text-sm font-bold uppercase tracking-wider transition ${
+                  className={`flex w-full cursor-pointer items-center gap-2 rounded-xl border p-3.5 font-mono text-sm font-bold uppercase tracking-wider transition-all ${
                     watchedValues.allocationMode === AllocationMode.FIXED
-                      ? 'border-emerald-500 bg-emerald-500/10 text-white'
-                      : 'border-zinc-800 bg-zinc-900/60 text-zinc-400 hover:border-zinc-700'
+                      ? 'border-emerald-500/60 bg-emerald-500/10 text-white shadow-md shadow-emerald-500/15'
+                      : 'border-zinc-800/80 bg-zinc-900/60 text-zinc-400 hover:border-zinc-700'
                   }`}
                 >
                   <Repeat className="h-4 w-4 text-emerald-400" />
@@ -299,7 +301,7 @@ export function CreateCircleView() {
               </label>
               <select
                 {...register('maxMembers', { valueAsNumber: true })}
-                className="mt-1 w-full rounded-none border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm font-semibold text-white focus:border-avalanche-red focus:outline-none"
+                className="mt-1.5 w-full rounded-lg border border-zinc-700/80 bg-zinc-900/80 px-3 py-2 font-mono text-sm font-semibold text-white focus:border-avalanche-red focus:outline-none"
               >
                 {[5, 6, 7, 8, 9, 10].map((num) => (
                   <option key={num} value={num}>
@@ -317,7 +319,7 @@ export function CreateCircleView() {
                 type="number"
                 step="10"
                 {...register('contributionAmountUsdc', { valueAsNumber: true })}
-                className="mt-1 w-full rounded-none border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm font-semibold text-white focus:border-avalanche-red focus:outline-none"
+                className="mt-1.5 w-full rounded-lg border border-zinc-700/80 bg-zinc-900/80 px-3 py-2 font-mono text-sm font-semibold text-white focus:border-avalanche-red focus:outline-none"
               />
               {errors.contributionAmountUsdc && (
                 <p className="mt-1 font-mono text-xs text-rose-400">
@@ -332,7 +334,7 @@ export function CreateCircleView() {
               </label>
               <select
                 {...register('collateralMultiplier', { valueAsNumber: true })}
-                className="mt-1 w-full rounded-none border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm font-semibold text-amber-300 focus:border-avalanche-red focus:outline-none"
+                className="mt-1.5 w-full rounded-lg border border-zinc-700/80 bg-zinc-900/80 px-3 py-2 font-mono text-sm font-semibold text-amber-300 focus:border-avalanche-red focus:outline-none"
               >
                 <option value={1}>1x (100%)</option>
                 <option value={2}>2x (200%)</option>
@@ -348,7 +350,7 @@ export function CreateCircleView() {
 
           {/* Bid Bounds */}
           {watchedValues.allocationMode === AllocationMode.BIDDING && (
-            <div className="grid gap-4 rounded-none border border-avalanche-red/30 bg-avalanche-red/5 p-3.5 sm:grid-cols-2">
+            <div className="grid gap-4 rounded-xl border border-avalanche-red/30 bg-avalanche-red/5 p-4 sm:grid-cols-2">
               <div>
                 <label className="block font-mono text-xs font-bold uppercase tracking-wider text-zinc-300">
                   Min Bid (mUSDC)
@@ -356,7 +358,7 @@ export function CreateCircleView() {
                 <input
                   type="number"
                   {...register('minBidUsdc', { valueAsNumber: true })}
-                  className="mt-1 w-full rounded-none border border-zinc-700 bg-zinc-900 px-3 py-1.5 font-mono text-sm text-white"
+                  className="mt-1.5 w-full rounded-lg border border-zinc-700/80 bg-zinc-900 px-3 py-1.5 font-mono text-sm text-white"
                 />
                 {errors.minBidUsdc && (
                   <p className="mt-1 font-mono text-xs text-rose-400">
@@ -372,7 +374,7 @@ export function CreateCircleView() {
                 <input
                   type="number"
                   {...register('maxBidUsdc', { valueAsNumber: true })}
-                  className="mt-1 w-full rounded-none border border-zinc-700 bg-zinc-900 px-3 py-1.5 font-mono text-sm text-white"
+                  className="mt-1.5 w-full rounded-lg border border-zinc-700/80 bg-zinc-900 px-3 py-1.5 font-mono text-sm text-white"
                 />
                 {errors.maxBidUsdc && (
                   <p className="mt-1 font-mono text-xs text-rose-400">
@@ -384,7 +386,7 @@ export function CreateCircleView() {
           )}
 
           {/* Timing */}
-          <div className="grid gap-3 rounded-none border border-zinc-800 bg-zinc-900/50 p-3.5 sm:grid-cols-3">
+          <div className="grid gap-3 rounded-xl border border-zinc-800/80 bg-zinc-900/50 p-4 sm:grid-cols-3">
             <div>
               <label className="flex items-center gap-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
                 <Clock className="h-3 w-3 text-emerald-400" />
@@ -393,7 +395,7 @@ export function CreateCircleView() {
               <input
                 type="number"
                 {...register('roundDurationSeconds', { valueAsNumber: true })}
-                className="mt-1 w-full rounded-none border border-zinc-700 bg-zinc-900 px-3 py-1.5 font-mono text-xs text-white"
+                className="mt-1.5 w-full rounded-lg border border-zinc-700/80 bg-zinc-900 px-3 py-1.5 font-mono text-xs text-white"
               />
             </div>
 
@@ -407,7 +409,7 @@ export function CreateCircleView() {
                   {...register('biddingDurationSeconds', {
                     valueAsNumber: true,
                   })}
-                  className="mt-1 w-full rounded-none border border-zinc-700 bg-zinc-900 px-3 py-1.5 font-mono text-xs text-white"
+                  className="mt-1.5 w-full rounded-lg border border-zinc-700/80 bg-zinc-900 px-3 py-1.5 font-mono text-xs text-white"
                 />
                 {errors.biddingDurationSeconds && (
                   <p className="mt-1 font-mono text-[11px] text-rose-400">
@@ -424,18 +426,18 @@ export function CreateCircleView() {
               <input
                 type="number"
                 {...register('gracePeriodSeconds', { valueAsNumber: true })}
-                className="mt-1 w-full rounded-none border border-zinc-700 bg-zinc-900 px-3 py-1.5 font-mono text-xs text-white"
+                className="mt-1.5 w-full rounded-lg border border-zinc-700/80 bg-zinc-900 px-3 py-1.5 font-mono text-xs text-white"
               />
             </div>
           </div>
 
           {/* V2 Protocol Security & DeFi Yield Options */}
-          <div className="space-y-2.5 rounded-none border border-emerald-500/30 bg-emerald-500/5 p-3.5 font-mono">
+          <div className="space-y-3 rounded-xl border border-emerald-500/30 bg-emerald-950/15 p-4 font-mono">
             <div className="text-xs font-bold uppercase tracking-wider text-emerald-300">
               Cơ chế Bảo mật &amp; Kho Sinh Lời V2
             </div>
             <div className="grid gap-2.5 sm:grid-cols-2 text-xs">
-              <label className="flex cursor-pointer items-center gap-2 rounded-none border border-zinc-800 bg-zinc-900/80 px-3 py-2 text-zinc-200 hover:border-zinc-700">
+              <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-zinc-800/80 bg-zinc-900/80 px-3 py-2.5 text-zinc-200 hover:border-zinc-700 transition-colors">
                 <input
                   type="checkbox"
                   {...register('isSealedBid')}
@@ -444,7 +446,7 @@ export function CreateCircleView() {
                 <span>Đấu giá kín 2 pha (Chống lộ giá)</span>
               </label>
 
-              <label className="flex cursor-pointer items-center gap-2 rounded-none border border-zinc-800 bg-zinc-900/80 px-3 py-2 text-zinc-200 hover:border-zinc-700">
+              <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-zinc-800/80 bg-zinc-900/80 px-3 py-2.5 text-zinc-200 hover:border-zinc-700 transition-colors">
                 <input
                   type="checkbox"
                   {...register('enableYieldVault')}
@@ -453,7 +455,7 @@ export function CreateCircleView() {
                 <span>Kho sinh lời ERC-4626 (6.5% APY)</span>
               </label>
 
-              <label className="flex cursor-pointer items-center gap-2 rounded-none border border-zinc-800 bg-zinc-900/80 px-3 py-2 text-zinc-200 hover:border-zinc-700">
+              <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-zinc-800/80 bg-zinc-900/80 px-3 py-2.5 text-zinc-200 hover:border-zinc-700 transition-colors">
                 <input
                   type="checkbox"
                   {...register('requireTeam1Attestation')}
@@ -462,7 +464,7 @@ export function CreateCircleView() {
                 <span>Xác thực Team1 (1 người / 1 suất)</span>
               </label>
 
-              <label className="flex cursor-pointer items-center gap-2 rounded-none border border-zinc-800 bg-zinc-900/80 px-3 py-2 text-zinc-200 hover:border-zinc-700">
+              <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-zinc-800/80 bg-zinc-900/80 px-3 py-2.5 text-zinc-200 hover:border-zinc-700 transition-colors">
                 <input
                   type="checkbox"
                   {...register('isPrivateInvite')}
@@ -473,7 +475,7 @@ export function CreateCircleView() {
             </div>
 
             {team1Blocked && (
-              <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-none border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-200">
+              <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-[11px] text-amber-200">
                 <span>
                   Tài khoản của bạn chưa xác thực Team1 nên không thể tự join Slot #1 khi bật tùy chọn này.
                 </span>
@@ -487,7 +489,7 @@ export function CreateCircleView() {
             )}
 
             {watchedValues.isPrivateInvite && (
-              <div className="mt-2 space-y-1 rounded-none border border-sky-500/30 bg-sky-500/5 p-3">
+              <div className="mt-2 space-y-1.5 rounded-lg border border-sky-500/30 bg-sky-500/5 p-3">
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-sky-300">
                   Mã mời riêng tư (Invite Code)
                 </label>
@@ -495,7 +497,7 @@ export function CreateCircleView() {
                   type="text"
                   {...register('inviteCode')}
                   placeholder="Ví dụ: AVAHUI-VIP-2026"
-                  className="w-full rounded-none border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-xs font-bold text-white focus:border-sky-400 focus:outline-none"
+                  className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-xs font-bold text-white focus:border-sky-400 focus:outline-none"
                 />
                 <p className="text-[11px] text-zinc-400">
                   Mã này được băm <code className="text-sky-300">keccak256</code> lên Smart Contract &amp; Backend để ẩn dây khỏi danh sách công khai.
@@ -506,8 +508,10 @@ export function CreateCircleView() {
         </div>
 
         {/* Right Live Summary Box */}
-        <div className="sticky top-24 space-y-4 rounded-none border border-zinc-800 bg-surface-card p-6 shadow-2xl lg:col-span-5">
-          <div className="flex items-center justify-between border-b border-zinc-800 pb-3.5">
+        <div className="sticky top-24 space-y-4 rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl p-6 shadow-2xl lg:col-span-5 relative overflow-hidden">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
+
+          <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3.5">
             <h2 className="font-mono text-base font-bold uppercase tracking-wider text-white">Tóm tắt Hợp đồng</h2>
             <Layers className="h-4 w-4 text-avalanche-red" />
           </div>
@@ -516,7 +520,7 @@ export function CreateCircleView() {
             hint={`${watchedValues.maxMembers || 5} thành viên × ${formatUsdc(watchedValues.contributionAmountUsdc || 0)} mUSDC / kỳ`}
             className="w-full"
           >
-            <div className="w-full rounded-none border border-emerald-500/30 bg-emerald-500/10 p-4 text-center">
+            <div className="w-full rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-center">
               <div className="font-mono text-xs uppercase tracking-wider text-emerald-300">Tổng quỹ / Kỳ</div>
               <div className="mt-1 font-mono text-3xl font-extrabold text-white">
                 {formatUsdc(basePotUsdc)}{' '}
@@ -528,7 +532,7 @@ export function CreateCircleView() {
           </HoverHint>
 
           <div className="space-y-2 text-xs">
-            <div className="flex items-center justify-between rounded-none border border-zinc-800/80 bg-zinc-900/80 px-3.5 py-2.5">
+            <div className="flex items-center justify-between rounded-lg border border-zinc-800/80 bg-zinc-900/80 px-3.5 py-2.5">
               <span className="flex items-center gap-1.5 font-mono text-zinc-400 uppercase tracking-wider text-[11px]">
                 <Users className="h-3.5 w-3.5 text-avalanche-red" />
                 <span>Tổng số kỳ</span>
@@ -538,7 +542,7 @@ export function CreateCircleView() {
               </span>
             </div>
 
-            <div className="flex items-center justify-between rounded-none border border-zinc-800/80 bg-zinc-900/80 px-3.5 py-2.5">
+            <div className="flex items-center justify-between rounded-lg border border-zinc-800/80 bg-zinc-900/80 px-3.5 py-2.5">
               <span className="flex items-center gap-1.5 font-mono text-zinc-400 uppercase tracking-wider text-[11px]">
                 <Lock className="h-3.5 w-3.5 text-amber-400" />
                 <span>Thế chấp yêu cầu</span>
@@ -548,7 +552,7 @@ export function CreateCircleView() {
               </span>
             </div>
 
-            <div className="flex items-center justify-between rounded-none border border-zinc-800/80 bg-zinc-900/80 px-3.5 py-2.5">
+            <div className="flex items-center justify-between rounded-lg border border-zinc-800/80 bg-zinc-900/80 px-3.5 py-2.5">
               <span className="flex items-center gap-1.5 font-mono text-zinc-400 uppercase tracking-wider text-[11px]">
                 <Coins className="h-3.5 w-3.5 text-emerald-400" />
                 <span>Số dư ví hiện tại</span>
@@ -564,7 +568,7 @@ export function CreateCircleView() {
           </div>
 
           {!hasEnoughCollateral && (
-            <div className="flex items-center justify-between rounded-none border border-rose-500/40 bg-rose-500/10 p-3 text-xs text-rose-200">
+            <div className="flex items-center justify-between rounded-lg border border-rose-500/40 bg-rose-500/10 p-3 text-xs text-rose-200">
               <span className="flex items-center gap-1.5 font-mono font-semibold text-[11px] uppercase tracking-wider">
                 <AlertTriangle className="h-4 w-4 text-rose-400" />
                 <span>Thiếu mUSDC thế chấp</span>
@@ -573,7 +577,7 @@ export function CreateCircleView() {
                 type="button"
                 disabled={isFaucetOperating}
                 onClick={() => requestFaucet(1000)}
-                className="rounded-none bg-avalanche-red px-2.5 py-1 font-mono text-xs font-bold uppercase tracking-wider text-white transition hover:bg-avalanche-darkRed disabled:opacity-60"
+                className="rounded-lg bg-avalanche-red px-2.5 py-1 font-mono text-xs font-bold uppercase tracking-wider text-white transition hover:bg-avalanche-darkRed disabled:opacity-60"
               >
                 Nhận +1,000 mUSDC
               </button>
@@ -587,7 +591,7 @@ export function CreateCircleView() {
             <button
               type="submit"
               disabled={isSubmitting || isCreating || !hasEnoughCollateral || team1Blocked}
-              className="flex w-full items-center justify-center gap-2 rounded-none bg-avalanche-red px-5 py-3.5 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-xl shadow-avalanche-red/25 transition hover:bg-avalanche-darkRed disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-avalanche-red to-red-600 px-5 py-3.5 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-xl shadow-avalanche-red/30 transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Rocket className="h-4 w-4" />
               <span>

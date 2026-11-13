@@ -27,9 +27,9 @@ export function MembersCollateralTab({
   const slots = Array.from({ length: circle.maxMembers }, (_, i) => i + 1);
 
   return (
-    <div className="overflow-x-auto rounded-none border border-zinc-800 bg-zinc-900/50">
+    <div className="overflow-x-auto rounded-xl border border-zinc-800/80 bg-zinc-900/50 shadow-inner">
       <table className="w-full text-left font-mono text-xs">
-        <thead className="border-b border-zinc-800 bg-zinc-900/90 text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+        <thead className="border-b border-zinc-800/80 bg-zinc-900/90 text-[11px] font-bold uppercase tracking-wider text-zinc-400">
           <tr>
             <th className="px-3.5 py-3">Vị trí</th>
             <th className="px-3.5 py-3">Thành viên</th>
@@ -103,13 +103,13 @@ export function MembersCollateralTab({
                   <div className="flex items-center gap-1.5 font-bold text-white">
                     <span className="font-sans font-bold">{member.displayName}</span>
                     {isMe && (
-                      <span className="rounded-none bg-avalanche-red px-1.5 py-0.5 text-[10px] font-bold text-white uppercase">
+                      <span className="rounded-md bg-avalanche-red px-1.5 py-0.5 text-[10px] font-bold text-white uppercase">
                         BẠN
                       </span>
                     )}
                     {isCreator && (
                       <HoverHint hint="Người khởi tạo dây hụi" side="top">
-                        <span className="inline-flex items-center rounded-none bg-amber-500/20 p-1 text-amber-300">
+                        <span className="inline-flex items-center rounded-md bg-amber-500/20 p-1 text-amber-300">
                           <Crown className="h-3 w-3" />
                         </span>
                       </HoverHint>
@@ -119,7 +119,7 @@ export function MembersCollateralTab({
                         hint={`Đã xác thực Team1 (Tier ${member.trustTier || 1})`}
                         side="top"
                       >
-                        <span className="inline-flex items-center gap-0.5 rounded-none border border-emerald-500/30 bg-emerald-500/15 px-1.5 py-0.5 font-mono text-[10px] font-bold text-emerald-300">
+                        <span className="inline-flex items-center gap-0.5 rounded-md border border-emerald-500/30 bg-emerald-500/15 px-1.5 py-0.5 font-mono text-[10px] font-bold text-emerald-300">
                           <ShieldCheck className="h-3 w-3" />
                           <span>T{member.trustTier || 1}</span>
                         </span>
@@ -133,12 +133,12 @@ export function MembersCollateralTab({
 
                 <td className="px-3.5 py-3">
                   {member.hasReceivedPayout ? (
-                    <span className="inline-flex items-center gap-1 rounded-none bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-400 uppercase">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-400 uppercase">
                       <CheckCircle2 className="h-3 w-3" />
                       <span>Vòng #{member.wonRoundNumber}</span>
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 rounded-none bg-zinc-800 px-2 py-0.5 text-[11px] text-zinc-400 uppercase">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-zinc-800 px-2.5 py-0.5 text-[11px] text-zinc-400 uppercase">
                       <Clock className="h-3 w-3" />
                       <span>Chưa nhận</span>
                     </span>
@@ -165,7 +165,7 @@ export function MembersCollateralTab({
 
                 <td className="px-3.5 py-3">
                   <span
-                    className={`rounded-none px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${
+                    className={`rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${
                       member.status === MemberStatus.Active
                         ? 'bg-emerald-500/15 text-emerald-400'
                         : member.status === MemberStatus.Defaulted

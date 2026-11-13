@@ -65,22 +65,25 @@ export function TransactionLifecycleModal() {
     modalState.step === TxLifecycleStep.ERROR;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-md rounded-none border border-zinc-800 bg-surface-card p-5 shadow-2xl animate-scale-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md animate-fade-in">
+      <div className="relative overflow-hidden w-full max-w-md rounded-2xl border border-zinc-800/90 bg-zinc-950/90 backdrop-blur-2xl p-6 shadow-2xl animate-scale-in">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-avalanche-red/70 to-transparent" />
+
         {/* Header */}
-        <div className="flex items-start justify-between gap-3 border-b border-zinc-800 pb-3.5">
+        <div className="flex items-start justify-between gap-3 border-b border-zinc-800/80 pb-3.5">
           <div>
-            <span className="inline-flex items-center gap-1 rounded-none bg-avalanche-red/15 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-avalanche-red">
+            <span className="inline-flex items-center gap-1 rounded-full bg-avalanche-red/15 border border-avalanche-red/30 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-avalanche-red shadow-sm">
+              <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
               FUJI C-CHAIN TX
             </span>
-            <h3 className="mt-1.5 font-mono text-base font-bold uppercase tracking-wider text-white">
+            <h3 className="mt-2 font-mono text-base font-bold uppercase tracking-wider text-white">
               {modalState.title}
             </h3>
           </div>
           {isFinished && (
             <button
               onClick={closeModal}
-              className="rounded-none p-1 text-zinc-400 transition hover:bg-zinc-800 hover:text-white"
+              className="rounded-lg p-1 text-zinc-400 transition hover:bg-zinc-800/80 hover:text-white"
             >
               <X className="h-4 w-4" />
             </button>
@@ -105,11 +108,11 @@ export function TransactionLifecycleModal() {
                 className="flex w-full"
               >
                 <div
-                  className={`flex w-full items-center gap-3 rounded-none border px-3.5 py-2.5 font-mono transition ${
+                  className={`flex w-full items-center gap-3 rounded-xl border px-3.5 py-2.5 font-mono transition-all duration-300 ${
                     isCompleted
-                      ? 'border-emerald-500/30 bg-emerald-500/5'
+                      ? 'border-emerald-500/30 bg-emerald-500/10 shadow-sm'
                       : isActive
-                      ? 'border-avalanche-red/60 bg-avalanche-red/10'
+                      ? 'border-avalanche-red/60 bg-avalanche-red/15 shadow-md shadow-avalanche-red/10'
                       : 'border-zinc-800/80 bg-zinc-900/40 opacity-50'
                   }`}
                 >
@@ -141,7 +144,7 @@ export function TransactionLifecycleModal() {
 
         {/* Error Box if Failed */}
         {modalState.step === TxLifecycleStep.ERROR && (
-          <div className="mt-3 flex items-start gap-2.5 rounded-none border border-rose-500/40 bg-rose-500/10 p-3 font-mono text-xs text-rose-300">
+          <div className="mt-3.5 flex items-start gap-2.5 rounded-xl border border-rose-500/40 bg-rose-500/10 p-3.5 font-mono text-xs text-rose-300">
             <AlertTriangle className="h-4 w-4 shrink-0 text-rose-400" />
             <div>{modalState.errorMessage}</div>
           </div>
@@ -149,13 +152,13 @@ export function TransactionLifecycleModal() {
 
         {/* Transaction Hash & Block Info */}
         {modalState.txHash && (
-          <div className="mt-3 flex items-center justify-between gap-2 rounded-none border border-zinc-800 bg-zinc-900/80 px-3 py-2 text-xs">
+          <div className="mt-3.5 flex items-center justify-between gap-2 rounded-xl border border-zinc-800/80 bg-zinc-900/60 px-3.5 py-2.5 text-xs">
             <div className="flex items-center gap-2 text-zinc-400">
               <code className="font-mono text-zinc-200">
                 {shortenAddress(modalState.txHash, 6)}
               </code>
               {modalState.blockNumber && (
-                <span className="rounded-none bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-emerald-400">
+                <span className="rounded-md bg-zinc-800 px-1.5 py-0.5 font-mono text-[10px] text-emerald-400">
                   #{modalState.blockNumber}
                 </span>
               )}
@@ -177,7 +180,7 @@ export function TransactionLifecycleModal() {
           <button
             onClick={closeModal}
             disabled={!isFinished}
-            className="w-full rounded-none bg-avalanche-red px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-white transition hover:bg-avalanche-darkRed disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:text-zinc-500"
+            className="w-full rounded-xl bg-gradient-to-r from-avalanche-red to-red-600 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-avalanche-red/25 transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-zinc-800 disabled:from-zinc-800 disabled:to-zinc-800 disabled:text-zinc-500 disabled:shadow-none"
           >
             {modalState.step === TxLifecycleStep.SYNCED
               ? 'Đóng'

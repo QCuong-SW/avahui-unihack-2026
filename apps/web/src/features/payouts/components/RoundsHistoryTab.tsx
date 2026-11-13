@@ -42,7 +42,7 @@ export function RoundsHistoryTab({ circle }: RoundsHistoryTabProps) {
             hint="Tổng tiền chiết khấu tích lũy từ các vòng đấu giá, chia đều cho mọi thành viên khi hoàn tất dây hụi"
             side="left"
           >
-            <div className="cursor-help rounded-none border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider text-emerald-300">
+            <div className="cursor-help rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider text-emerald-300">
               Quỹ Lời Chiết Khấu: {formatUsdc(circle.totalDiscountPoolFormatted)}{' '}
               mUSDC
             </div>
@@ -62,9 +62,9 @@ export function RoundsHistoryTab({ circle }: RoundsHistoryTabProps) {
                 side="top"
                 className="flex w-full"
               >
-                <div className="flex w-full items-center justify-between rounded-none border border-zinc-800/70 bg-zinc-950/40 p-3.5 font-mono text-xs text-zinc-500">
+                <div className="flex w-full items-center justify-between rounded-xl border border-zinc-800/70 bg-zinc-950/40 p-3.5 font-mono text-xs text-zinc-500">
                   <div className="flex items-center gap-3">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-none bg-zinc-900 font-mono font-bold text-zinc-500">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-900 font-mono font-bold text-zinc-500">
                       #{rNum}
                     </span>
                     <span className="font-bold uppercase tracking-wider text-zinc-400">
@@ -86,7 +86,7 @@ export function RoundsHistoryTab({ circle }: RoundsHistoryTabProps) {
           return (
             <div
               key={rNum}
-              className={`rounded-none border p-4 transition ${
+              className={`rounded-xl border p-4 transition-all ${
                 round.status === RoundStatus.Settled
                   ? 'border-emerald-500/30 bg-emerald-500/5'
                   : 'border-avalanche-red/50 bg-avalanche-red/10'
@@ -95,7 +95,7 @@ export function RoundsHistoryTab({ circle }: RoundsHistoryTabProps) {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-none font-mono text-xs font-extrabold ${
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg font-mono text-xs font-extrabold ${
                       round.status === RoundStatus.Settled
                         ? 'bg-emerald-500/20 text-emerald-400'
                         : 'bg-avalanche-red text-white'
@@ -107,7 +107,7 @@ export function RoundsHistoryTab({ circle }: RoundsHistoryTabProps) {
                   <div>
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span
-                        className={`inline-flex items-center gap-1 rounded-none px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${
+                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${
                           round.status === RoundStatus.Settled
                             ? 'bg-emerald-500/20 text-emerald-300'
                             : 'bg-amber-500/20 text-amber-300'
@@ -131,7 +131,7 @@ export function RoundsHistoryTab({ circle }: RoundsHistoryTabProps) {
                           hint={`Đã trích thế chấp của ${slashedInRound.length} thành viên trễ hạn để bù đủ quỹ vòng này`}
                           side="top"
                         >
-                          <span className="inline-flex items-center gap-1 rounded-none bg-rose-500/20 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-rose-300">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-rose-500/20 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-rose-300">
                             <ShieldAlert className="h-3 w-3" />
                             <span>Trích thế chấp ({slashedInRound.length})</span>
                           </span>

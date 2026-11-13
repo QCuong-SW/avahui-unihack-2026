@@ -147,9 +147,11 @@ export function ProfileView() {
     <div className="space-y-5 sm:space-y-6 animate-fade-in">
       <div className="grid gap-5 sm:gap-6 lg:grid-cols-12">
         {/* Left: User Profile Settings (5 Cols) */}
-        <section className="rounded-none border border-zinc-800 bg-surface-card p-4 sm:p-6 lg:col-span-5 space-y-4 sm:space-y-5 animate-fade-up">
-          <div className="flex items-center gap-3 border-b border-zinc-800 pb-3.5 sm:pb-4">
-            <div className="flex h-11 w-11 items-center justify-center rounded-none border border-avalanche-red/30 bg-avalanche-red/15 text-avalanche-red">
+        <section className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl p-4 sm:p-6 lg:col-span-5 space-y-4 sm:space-y-5 shadow-xl animate-fade-up">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-avalanche-red/60 to-transparent" />
+
+          <div className="flex items-center gap-3 border-b border-zinc-800/80 pb-3.5 sm:pb-4">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-avalanche-red/30 bg-avalanche-red/15 text-avalanche-red shadow-inner">
               <UserCircle className="h-6 w-6" />
             </div>
             <div>
@@ -167,14 +169,14 @@ export function ProfileView() {
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                className="mt-1.5 w-full rounded-none border border-zinc-700 bg-zinc-900 px-3.5 py-2 font-mono text-sm font-semibold text-white focus:border-avalanche-red focus:outline-none"
+                className="mt-1.5 w-full rounded-lg border border-zinc-700/80 bg-zinc-900/80 px-3.5 py-2 font-mono text-sm font-semibold text-white focus:border-avalanche-red/60 focus:ring-1 focus:ring-avalanche-red/30 focus:outline-none transition-all"
               />
             </div>
 
             <div className="flex items-center justify-between gap-3">
               <button
                 type="submit"
-                className="inline-flex items-center gap-1.5 rounded-none bg-avalanche-red px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-white transition hover:bg-avalanche-darkRed active:scale-95 shadow-sm shadow-avalanche-red/20"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-avalanche-red to-red-600 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-avalanche-red/20 transition hover:brightness-110 active:scale-95"
               >
                 <Save className="h-3.5 w-3.5" />
                 <span>Lưu</span>
@@ -192,14 +194,14 @@ export function ProfileView() {
           {/* On-Chain ROSCA Credit Score */}
           <div
             data-tour="profile-credit-score"
-            className="rounded-none border border-zinc-800 bg-zinc-900/70 p-3.5 font-mono text-xs space-y-2.5"
+            className="rounded-xl border border-zinc-800/80 bg-zinc-900/50 p-4 font-mono text-xs space-y-3"
           >
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
                 Điểm Tín Nhiệm Hụi
               </span>
               <span
-                className={`rounded-none border px-2 py-0.5 text-[10px] font-bold uppercase ${
+                className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                   currentUser.stats?.creditTier === 'EXPERT'
                     ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
                     : currentUser.stats?.creditTier === 'TRUSTED'
@@ -217,19 +219,19 @@ export function ProfileView() {
             </div>
 
             <div className="grid grid-cols-3 gap-2 text-center text-[11px]">
-              <div className="rounded-none border border-zinc-800 bg-zinc-950/70 p-2">
+              <div className="rounded-lg border border-zinc-800/80 bg-zinc-950/70 p-2">
                 <div className="text-[10px] text-zinc-500 uppercase">Đúng hạn</div>
                 <div className="mt-0.5 font-bold text-emerald-400">
                   {currentUser.stats?.onTimePaymentsCount ?? 0}
                 </div>
               </div>
-              <div className="rounded-none border border-zinc-800 bg-zinc-950/70 p-2">
+              <div className="rounded-lg border border-zinc-800/80 bg-zinc-950/70 p-2">
                 <div className="text-[10px] text-zinc-500 uppercase">Hoàn thành</div>
                 <div className="mt-0.5 font-bold text-white">
                   {currentUser.stats?.completedCirclesCount ?? 0}
                 </div>
               </div>
-              <div className="rounded-none border border-zinc-800 bg-zinc-950/70 p-2">
+              <div className="rounded-lg border border-zinc-800/80 bg-zinc-950/70 p-2">
                 <div className="text-[10px] text-zinc-500 uppercase">Trễ hạn</div>
                 <div className="mt-0.5 font-bold text-rose-400">
                   {currentUser.stats?.defaultCount ?? 0}
@@ -239,14 +241,14 @@ export function ProfileView() {
           </div>
 
           {canShowDemoReset && (
-            <div className="border-t border-zinc-800 pt-4">
+            <div className="border-t border-zinc-800/80 pt-4">
               <HoverHint
                 hint="Khôi phục toàn bộ dây hụi, số dư và lịch sử giao dịch về trạng thái mặc định ban đầu"
                 side="bottom"
               >
                 <button
                   onClick={() => resetMutation.mutate()}
-                  className="inline-flex items-center gap-2 rounded-none border border-zinc-700 bg-zinc-900 px-3.5 py-2 font-mono text-xs font-bold uppercase tracking-wider text-zinc-300 transition hover:border-zinc-500 hover:text-white active:scale-95"
+                  className="inline-flex items-center gap-2 rounded-lg border border-zinc-700/80 bg-zinc-900/80 px-3.5 py-2 font-mono text-xs font-bold uppercase tracking-wider text-zinc-300 transition hover:border-zinc-500 hover:text-white active:scale-95 shadow-sm"
                 >
                   <RefreshCw className="h-3.5 w-3.5" />
                   <span>Reset Demo</span>
@@ -257,10 +259,12 @@ export function ProfileView() {
         </section>
 
         {/* Right: Privy Embedded Wallet Details (7 Cols) */}
-        <section className="rounded-none border border-zinc-800 bg-surface-card p-4 sm:p-6 lg:col-span-7 space-y-4 sm:space-y-5 animate-fade-up animation-delay-100">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-3.5 sm:pb-4">
+        <section className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl p-4 sm:p-6 lg:col-span-7 space-y-4 sm:space-y-5 shadow-xl animate-fade-up animation-delay-100">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
+
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/80 pb-3.5 sm:pb-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-none border border-emerald-500/30 bg-emerald-500/15 text-emerald-400">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-500/15 text-emerald-400 shadow-inner">
                 <Wallet className="h-5 w-5" />
               </div>
               <div>
@@ -272,7 +276,7 @@ export function ProfileView() {
                     hint="Ví không lưu ký: khóa cá nhân được phân tách bảo mật qua MPC"
                     side="top"
                   >
-                    <span className="cursor-help rounded-none border border-emerald-500/30 bg-emerald-500/15 px-2 py-0.5 font-mono text-[10px] font-bold text-emerald-400">
+                    <span className="cursor-help rounded-full border border-emerald-500/30 bg-emerald-500/15 px-2 py-0.5 font-mono text-[10px] font-bold text-emerald-400">
                       MPC
                     </span>
                   </HoverHint>
@@ -288,7 +292,7 @@ export function ProfileView() {
               <button
                 onClick={handleFaucet}
                 disabled={isFaucetOperating}
-                className="inline-flex items-center gap-1.5 rounded-none bg-avalanche-red px-3.5 py-2 font-mono text-xs font-bold uppercase tracking-wider text-white transition hover:bg-avalanche-darkRed disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-avalanche-red to-red-600 px-3.5 py-2 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-avalanche-red/20 transition hover:brightness-110 active:scale-95 disabled:opacity-60"
               >
                 <Coins className="h-3.5 w-3.5" />
                 <span>+1,000 mUSDC</span>
@@ -297,7 +301,7 @@ export function ProfileView() {
           </div>
 
           {/* Wallet Address Box */}
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-none border border-zinc-800 bg-zinc-900/70 px-4 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-zinc-800/80 bg-zinc-900/60 px-4 py-3">
             <code className="break-all font-mono text-xs font-bold text-white">
               {currentUser.walletAddress}
             </code>
@@ -305,7 +309,7 @@ export function ProfileView() {
               <HoverHint hint="Sao chép địa chỉ ví" side="top">
                 <button
                   onClick={handleCopyAddress}
-                  className="inline-flex items-center gap-1 rounded-none border border-zinc-700 bg-zinc-800 px-2.5 py-1 font-mono text-xs font-semibold text-zinc-200 hover:text-white"
+                  className="inline-flex items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800/80 px-2.5 py-1 font-mono text-xs font-semibold text-zinc-200 hover:text-white transition-colors"
                 >
                   {copied ? (
                     <Check className="h-3.5 w-3.5 text-emerald-400" />
@@ -320,7 +324,7 @@ export function ProfileView() {
                   href={`${frontendEnv.explorerUrl}/address/${currentUser.walletAddress}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 rounded-none border border-zinc-700 bg-zinc-800 px-2.5 py-1 font-mono text-xs font-semibold text-avalanche-red hover:underline"
+                  className="inline-flex items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-800/80 px-2.5 py-1 font-mono text-xs font-semibold text-avalanche-red hover:underline transition-colors"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
                 </a>
@@ -330,7 +334,7 @@ export function ProfileView() {
 
           {/* Balances Row */}
           <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-none border border-zinc-800 bg-zinc-900/50 p-3.5">
+            <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/50 p-3.5">
               <div className="flex items-center justify-between font-mono text-xs uppercase tracking-wider text-zinc-400">
                 <span>mUSDC</span>
                 <Coins className="h-3.5 w-3.5 text-emerald-400" />
@@ -340,7 +344,7 @@ export function ProfileView() {
               </div>
             </div>
 
-            <div className="rounded-none border border-zinc-800 bg-zinc-900/50 p-3.5">
+            <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/50 p-3.5">
               <div className="flex items-center justify-between font-mono text-xs uppercase tracking-wider text-zinc-400">
                 <span>Fuji AVAX</span>
                 <Fuel className="h-3.5 w-3.5 text-amber-400" />
@@ -355,7 +359,7 @@ export function ProfileView() {
               side="top"
               className="flex"
             >
-              <div className="w-full rounded-none border border-zinc-800 bg-zinc-900/50 p-3.5">
+              <div className="w-full rounded-xl border border-zinc-800/80 bg-zinc-900/50 p-3.5">
                 <div className="flex items-center justify-between font-mono text-xs uppercase tracking-wider text-zinc-400">
                   <span>Cơ chế Khóa</span>
                   <KeyRound className="h-3.5 w-3.5 text-avalanche-red" />
@@ -368,7 +372,7 @@ export function ProfileView() {
           </div>
 
           {/* V2 Team1 Anti-Sybil Attestation & 1-Click DEX Swap (Local/Mock) */}
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-none border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 font-mono text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-500/30 bg-emerald-950/20 px-4 py-3 font-mono text-xs">
             <div className="flex items-center gap-2">
               <ShieldCheck
                 className={`h-4 w-4 ${isTeam1Verified ? 'text-emerald-400' : 'text-amber-400'}`}
@@ -393,7 +397,7 @@ export function ProfileView() {
                   type="button"
                   disabled={claimVoucherMutation.isPending}
                   onClick={() => handleClaimVoucher(pendingVoucher)}
-                  className="inline-flex items-center gap-1 rounded-none border border-emerald-400 bg-emerald-500 px-3 py-1.5 font-mono text-xs font-bold uppercase text-zinc-950 hover:bg-emerald-400 disabled:opacity-50"
+                  className="inline-flex items-center gap-1 rounded-lg border border-emerald-400 bg-emerald-500 px-3 py-1.5 font-mono text-xs font-bold uppercase text-zinc-950 hover:bg-emerald-400 active:scale-95 disabled:opacity-50 shadow-md shadow-emerald-500/20"
                 >
                   <ShieldCheck className="h-3.5 w-3.5" />
                   <span>Claim EIP-712 Voucher</span>
@@ -404,7 +408,7 @@ export function ProfileView() {
                 <button
                   type="button"
                   onClick={() => setShowVoucherPaste((v) => !v)}
-                  className="inline-flex items-center gap-1 rounded-none border border-zinc-700 bg-zinc-900 px-3 py-1.5 font-mono text-xs font-bold uppercase text-zinc-300 hover:border-emerald-400 hover:text-white"
+                  className="inline-flex items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 font-mono text-xs font-bold uppercase text-zinc-300 hover:border-emerald-400 hover:text-white active:scale-95"
                 >
                   <span>{showVoucherPaste ? 'Đóng Voucher' : 'Nhập Voucher'}</span>
                 </button>
@@ -420,7 +424,7 @@ export function ProfileView() {
                       action: () => verifyTeam1Mutation.mutateAsync(),
                     })
                   }
-                  className="inline-flex items-center gap-1 rounded-none border border-emerald-500/40 bg-emerald-500/15 px-3 py-1.5 font-mono text-xs font-bold uppercase text-emerald-300 hover:bg-emerald-500 hover:text-zinc-950"
+                  className="inline-flex items-center gap-1 rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-3 py-1.5 font-mono text-xs font-bold uppercase text-emerald-300 hover:bg-emerald-500 hover:text-zinc-950 active:scale-95 transition-all"
                 >
                   <ShieldCheck className="h-3.5 w-3.5" />
                   <span>{isTeam1Verified ? 'Xác thực lại' : 'Xác thực Team1'}</span>
@@ -437,7 +441,7 @@ export function ProfileView() {
                       action: () => swapMutation.mutateAsync(0.05),
                     })
                   }
-                  className="inline-flex items-center gap-1 rounded-none border border-sky-500/40 bg-sky-500/15 px-3 py-1.5 font-mono text-xs font-bold uppercase text-sky-300 hover:bg-sky-500 hover:text-zinc-950"
+                  className="inline-flex items-center gap-1 rounded-lg border border-sky-500/40 bg-sky-500/15 px-3 py-1.5 font-mono text-xs font-bold uppercase text-sky-300 hover:bg-sky-500 hover:text-zinc-950 active:scale-95 transition-all"
                 >
                   <ArrowLeftRight className="h-3.5 w-3.5" />
                   <span>Đổi 0.05 AVAX</span>
@@ -449,7 +453,7 @@ export function ProfileView() {
           {!isTeam1Verified && showVoucherPaste && (
             <form
               onSubmit={handleClaimManualVoucher}
-              className="space-y-2 rounded-none border border-zinc-800 bg-zinc-950 p-3 font-mono text-xs"
+              className="space-y-2 rounded-xl border border-zinc-800 bg-zinc-950 p-3 font-mono text-xs"
             >
               {voucherParseError && (
                 <div className="text-rose-400">{voucherParseError}</div>
@@ -459,12 +463,12 @@ export function ProfileView() {
                 value={voucherJsonInput}
                 onChange={(e) => setVoucherJsonInput(e.target.value)}
                 placeholder='Dán JSON EIP-712 Voucher từ Verifier/Admin ({"verifierAddress":...,"signature":...})'
-                className="w-full rounded-none border border-zinc-700 bg-zinc-900 p-2 text-[11px] text-white focus:border-emerald-400 focus:outline-none"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-900 p-2 text-[11px] text-white focus:border-emerald-400 focus:outline-none"
               />
               <button
                 type="submit"
                 disabled={claimVoucherMutation.isPending || !voucherJsonInput.trim()}
-                className="rounded-none bg-emerald-500 px-3 py-1.5 font-bold uppercase text-zinc-950 hover:bg-emerald-400 disabled:opacity-50"
+                className="rounded-lg bg-emerald-500 px-3 py-1.5 font-bold uppercase text-zinc-950 hover:bg-emerald-400 disabled:opacity-50"
               >
                 Gửi giao dịch Claim Team1
               </button>
@@ -474,19 +478,21 @@ export function ProfileView() {
       </div>
 
       {/* Personal On-Chain Transaction History */}
-      <section className="rounded-none border border-zinc-800 bg-surface-card p-6 space-y-4">
+      <section className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl p-6 space-y-4 shadow-xl">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-zinc-600/50 to-transparent" />
+
         <h2 className="font-mono text-base font-bold uppercase tracking-wider text-white">
           Giao dịch của {currentUser.displayName} ({myTxs.length})
         </h2>
 
         {myTxs.length === 0 ? (
-          <div className="rounded-none border border-zinc-800 bg-zinc-900/40 p-6 text-center font-mono text-xs uppercase tracking-wider text-zinc-500">
+          <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-6 text-center font-mono text-xs uppercase tracking-wider text-zinc-500">
             Chưa có giao dịch.
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-none border border-zinc-800 bg-zinc-900/50">
+          <div className="overflow-x-auto rounded-xl border border-zinc-800/80 bg-zinc-900/50 shadow-inner">
             <table className="w-full text-left font-mono text-xs">
-              <thead className="border-b border-zinc-800 bg-zinc-900/90 text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+              <thead className="border-b border-zinc-800/80 bg-zinc-900/90 text-[11px] font-bold uppercase tracking-wider text-zinc-400">
                 <tr>
                   <th className="px-3.5 py-3">Sự kiện</th>
                   <th className="px-3.5 py-3">Dây hụi</th>
@@ -499,7 +505,7 @@ export function ProfileView() {
                 {myTxs.map((tx) => (
                   <tr key={tx.id} className="hover:bg-zinc-900/40">
                     <td className="px-3.5 py-3">
-                      <span className="inline-flex items-center gap-1 rounded-none border border-zinc-700 bg-zinc-900 px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-white">
+                      <span className="inline-flex items-center gap-1 rounded-md border border-zinc-700 bg-zinc-900 px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-white">
                         <CheckCircle2 className="h-3 w-3 text-emerald-400" />
                         {tx.txType}
                       </span>

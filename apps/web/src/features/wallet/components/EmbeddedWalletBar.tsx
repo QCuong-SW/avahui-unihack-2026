@@ -100,7 +100,7 @@ export function EmbeddedWalletBar() {
           }
         >
           <div
-            className={`flex items-center gap-1.5 rounded-none border px-2.5 py-1.5 font-mono text-xs font-semibold transition-colors ${
+            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 font-mono text-xs font-semibold transition-colors ${
               isLowGas
                 ? 'border-amber-500/50 bg-amber-500/10 text-amber-300'
                 : 'border-zinc-800 bg-zinc-900/90 text-zinc-300'
@@ -127,7 +127,7 @@ export function EmbeddedWalletBar() {
                 type="button"
                 disabled={dripGasMutation.isPending}
                 onClick={handleDripGas}
-                className="inline-flex items-center gap-1 rounded-none border border-amber-500/50 bg-amber-500/15 px-2 py-1.5 font-mono text-[11px] font-bold uppercase text-amber-300 transition hover:bg-amber-500 hover:text-zinc-950 disabled:opacity-50"
+                className="inline-flex items-center gap-1 rounded-lg border border-amber-500/50 bg-amber-500/15 px-2 py-1.5 font-mono text-[11px] font-bold uppercase text-amber-300 transition hover:bg-amber-500 hover:text-zinc-950 disabled:opacity-50"
               >
                 {dripGasMutation.isPending ? (
                   <Loader2 className="h-3 w-3 animate-spin" />
@@ -143,7 +143,7 @@ export function EmbeddedWalletBar() {
       {/* 3. mUSDC Balance + Faucet Button (Responsive) */}
       <div
         data-tour="wallet-faucet-bar"
-        className="flex items-center rounded-none border border-zinc-800 bg-zinc-900/90 p-0.5"
+        className="flex items-center rounded-lg border border-zinc-800/90 bg-zinc-900/90 p-0.5 shadow-sm"
       >
         <HoverHint position="bottom" hint="Số dư token đóng hụi hiện khả dụng">
           <div className="px-2 sm:px-2.5 py-1 font-mono text-xs font-bold text-emerald-400">
@@ -161,7 +161,7 @@ export function EmbeddedWalletBar() {
               type="button"
               disabled={swapMutation.isPending}
               onClick={handleSwap}
-              className="hidden sm:inline-flex items-center gap-1 rounded-none border border-zinc-700 bg-zinc-800 px-2 py-1 font-mono text-xs font-bold uppercase text-sky-300 transition hover:border-sky-400 hover:text-white active:scale-95 mr-0.5"
+              className="hidden sm:inline-flex items-center gap-1 rounded-md border border-zinc-700 bg-zinc-800 px-2 py-1 font-mono text-xs font-bold uppercase text-sky-300 transition hover:border-sky-400 hover:text-white active:scale-95 mr-0.5"
             >
               <ArrowLeftRight className="h-3 w-3 text-sky-400" />
               <span>Swap</span>
@@ -177,7 +177,7 @@ export function EmbeddedWalletBar() {
             type="button"
             disabled={isOperating}
             onClick={handleFaucet}
-            className="inline-flex items-center gap-1 rounded-none border border-avalanche-red bg-avalanche-red px-2 sm:px-2.5 py-1 font-mono text-xs font-bold uppercase text-white transition hover:bg-avalanche-darkRed active:scale-95 disabled:opacity-60"
+            className="inline-flex items-center gap-1 rounded-md border border-avalanche-red bg-gradient-to-r from-avalanche-red to-red-600 px-2 sm:px-2.5 py-1 font-mono text-xs font-bold uppercase text-white shadow-sm shadow-avalanche-red/20 transition hover:brightness-110 active:scale-95 disabled:opacity-60"
           >
             {isOperating ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />

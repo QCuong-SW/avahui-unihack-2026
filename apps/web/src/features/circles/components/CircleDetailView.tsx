@@ -67,12 +67,12 @@ export function CircleDetailView({ circleId }: CircleDetailViewProps) {
   if (!circle || !currentUser) {
     if (!isLoadingLive && !isLoadingState) {
       return (
-        <div className="rounded-none border border-zinc-800 bg-surface-card p-10 text-center space-y-4">
+        <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl p-10 text-center space-y-4 shadow-xl">
           <h2 className="font-mono text-lg font-bold uppercase text-white">Không tìm thấy Dây hụi</h2>
           <p className="text-sm text-zinc-400 font-mono">Dây hụi với mã &ldquo;{circleId}&rdquo; không tồn tại hoặc đã bị hủy.</p>
           <Link
             href="/circles"
-            className="inline-block rounded-none border border-avalanche-red bg-avalanche-red px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-white"
+            className="inline-block rounded-lg border border-avalanche-red/50 bg-gradient-to-r from-avalanche-red to-red-600 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-avalanche-red/20 transition hover:brightness-110"
           >
             Quay lại danh sách
           </Link>
@@ -109,7 +109,7 @@ export function CircleDetailView({ circleId }: CircleDetailViewProps) {
       <div className="grid items-start gap-5 sm:gap-6 lg:grid-cols-12">
         <div className="space-y-4 lg:col-span-7">
           {/* Responsive Scrollable Tab Switcher with Hover Hints */}
-          <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto rounded-none border border-zinc-800 bg-surface-card p-1.5 scrollbar-none font-mono">
+          <div className="flex items-center gap-1.5 overflow-x-auto rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl p-1.5 scrollbar-none font-mono shadow-xl">
             {(
               [
                 {
@@ -144,10 +144,10 @@ export function CircleDetailView({ circleId }: CircleDetailViewProps) {
                 <HoverHint key={tab.key} hint={tab.hint} side="bottom">
                   <button
                     onClick={() => setActiveTab(tab.key)}
-                    className={`inline-flex shrink-0 items-center gap-1.5 rounded-none border px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold uppercase tracking-wider transition-all duration-150 active:scale-95 whitespace-nowrap ${
+                    className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-3 sm:px-3.5 py-1.5 sm:py-2 text-xs font-bold uppercase tracking-wider transition-all duration-150 active:scale-95 whitespace-nowrap ${
                       isActive
-                        ? 'border-avalanche-red bg-avalanche-red text-white shadow-sm'
-                        : 'border-transparent text-zinc-400 hover:border-zinc-800 hover:bg-zinc-900 hover:text-white'
+                        ? 'border-avalanche-red/60 bg-avalanche-red text-white shadow-md shadow-avalanche-red/20'
+                        : 'border-transparent text-zinc-400 hover:border-zinc-800 hover:bg-zinc-900/60 hover:text-white'
                     }`}
                   >
                     <Icon className="h-3.5 w-3.5" />
@@ -160,7 +160,7 @@ export function CircleDetailView({ circleId }: CircleDetailViewProps) {
 
           <div
             key={activeTab}
-            className="rounded-none border border-zinc-800 bg-surface-card p-4 sm:p-5 animate-tab-enter"
+            className="rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl p-4 sm:p-5 shadow-xl animate-tab-enter"
           >
             {activeTab === 'CURRENT_ROUND' && (
               <CurrentRoundTab

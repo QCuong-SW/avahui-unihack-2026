@@ -380,19 +380,21 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
   return (
     <aside
       data-tour="action-console"
-      className="sticky top-24 space-y-4 rounded-none border border-zinc-800 bg-surface-card p-4 sm:p-5 shadow-2xl"
+      className="sticky top-24 space-y-4 rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl p-4 sm:p-5 shadow-2xl relative overflow-hidden"
     >
-      <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-avalanche-red/60 to-transparent" />
+
+      <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3">
         <h2 className="font-mono text-xs font-bold uppercase tracking-wider text-white">Bảng Thao Tác</h2>
         <span
-          className={`rounded-none border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${walletMeta.badgeClass}`}
+          className={`rounded-full border px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${walletMeta.badgeClass}`}
         >
           {walletMeta.shortLabel}
         </span>
       </div>
 
       {circle.isPaused && (
-        <div className="rounded-none border border-rose-500/40 bg-rose-500/10 p-3 font-mono text-xs text-rose-200 space-y-1">
+        <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-3.5 font-mono text-xs text-rose-200 space-y-1">
           <div className="font-bold uppercase text-rose-300">
             Smart Contract đang tạm dừng (Guardian Pause)
           </div>
@@ -403,7 +405,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
       )}
 
       {!walletMeta.canSignTransactions && (
-        <div className="space-y-2.5 rounded-none border border-amber-500/40 bg-amber-500/10 p-3.5 text-xs">
+        <div className="space-y-2.5 rounded-xl border border-amber-500/40 bg-amber-500/10 p-3.5 text-xs">
           <div className="font-mono font-bold text-amber-200 uppercase">{walletMeta.label}</div>
           <p className="text-[11px] text-zinc-300">{walletMeta.hint}</p>
           <button
@@ -411,7 +413,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
             onClick={() =>
               walletStatusMutation.mutate('WALLET_CONNECTED_READY')
             }
-            className="w-full rounded-none border border-avalanche-red bg-avalanche-red px-3 py-2 font-mono text-xs font-bold uppercase tracking-wider text-white transition hover:bg-avalanche-darkRed"
+            className="w-full rounded-lg border border-avalanche-red/60 bg-gradient-to-r from-avalanche-red to-red-600 px-3 py-2 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-avalanche-red/25 transition hover:brightness-110 active:scale-95"
           >
             Kích hoạt ví để giao dịch
           </button>
@@ -421,7 +423,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
       {/* CASE 1: RECRUITING */}
       {circle.status === CircleStatus.Recruiting && (
         <div className="space-y-3">
-          <div className="flex items-center justify-between rounded-none border border-amber-500/30 bg-amber-500/10 px-4 py-3 font-mono text-xs">
+          <div className="flex items-center justify-between rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 font-mono text-xs">
             <span className="font-bold text-amber-300 uppercase tracking-wider">Đang gom thành viên</span>
             <span className="font-bold text-white">
               {circle.currentMemberCount} / {circle.maxMembers} vị trí
@@ -429,7 +431,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
           </div>
 
           {/* Team1 Anti-Sybil Attestation Status */}
-          <div className="flex items-center justify-between rounded-none border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 font-mono text-[11px]">
+          <div className="flex items-center justify-between rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 font-mono text-[11px]">
             <span className="flex items-center gap-1.5 text-emerald-300 font-semibold">
               <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
               <span>Bảo vệ định danh Team1</span>
@@ -464,14 +466,14 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
           {!myMember ? (
             <div className="space-y-2.5">
               {(circle.isPrivateInvite || inviteCodeInput) && (
-                <div className="flex items-center justify-between gap-2 rounded-none border border-sky-500/30 bg-sky-500/5 px-3 py-2 font-mono text-[11px]">
+                <div className="flex items-center justify-between gap-2 rounded-xl border border-sky-500/30 bg-sky-500/5 px-3 py-2 font-mono text-[11px]">
                   <span className="text-sky-300 font-semibold">Mã mời:</span>
                   <input
                     type="text"
                     value={inviteCodeInput}
                     onChange={(e) => setInviteCodeInput(e.target.value)}
                     placeholder="AVAHUI-XXXX"
-                    className="w-32 rounded-none border border-zinc-700 bg-zinc-900 px-2 py-0.5 font-mono text-xs font-bold text-white focus:border-sky-400 focus:outline-none text-right"
+                    className="w-32 rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1 font-mono text-xs font-bold text-white focus:border-sky-400 focus:outline-none text-right"
                   />
                 </div>
               )}
@@ -483,7 +485,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                 <button
                   onClick={handleJoinCircle}
                   disabled={isJoining || isPaused}
-                  className="flex w-full items-center justify-center gap-2 rounded-none border border-avalanche-red bg-avalanche-red px-4 py-3 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-avalanche-red/25 transition hover:bg-avalanche-darkRed disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border border-avalanche-red/60 bg-gradient-to-r from-avalanche-red to-red-600 px-4 py-3 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-avalanche-red/25 transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <UserPlus className="h-4 w-4" />
                   <span>
@@ -498,7 +500,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
               hint="Đã giữ chỗ thành công. Chờ đủ thành viên để dây hụi tự động kích hoạt Vòng #1"
               className="w-full"
             >
-              <div className="flex w-full items-center justify-between rounded-none border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 font-mono text-xs font-bold text-emerald-300">
+              <div className="flex w-full items-center justify-between rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 font-mono text-xs font-bold text-emerald-300">
                 <span className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4" />
                   <span>Đã tham gia</span>
@@ -516,7 +518,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
             const isExpired =
               deadlineMs !== null && Number.isFinite(deadlineMs) && Date.now() > deadlineMs;
             return (
-              <div className="rounded-none border border-zinc-800 bg-zinc-950/60 p-3 space-y-2 font-mono text-[11px]">
+              <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/60 p-3 space-y-2 font-mono text-[11px]">
                 <div className="flex items-center justify-between text-zinc-400">
                   <span>Hạn tuyển thành viên:</span>
                   <span className={isExpired ? 'font-bold text-rose-400' : 'text-zinc-300'}>
@@ -537,7 +539,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                     type="button"
                     onClick={handleCancelExpiredCircle}
                     disabled={isCancelling || !isExpired}
-                    className="flex w-full items-center justify-center gap-1.5 rounded-none border border-rose-500/40 bg-rose-500/10 px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-rose-300 transition hover:bg-rose-500 hover:text-white disabled:cursor-not-allowed disabled:opacity-45"
+                    className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 font-mono text-[11px] font-bold uppercase tracking-wider text-rose-300 transition-all hover:bg-rose-500 hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-45"
                   >
                     <XCircle className="h-3.5 w-3.5" />
                     <span>
@@ -558,18 +560,18 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
         <div className="space-y-3.5">
           {/* 1. CONTRIBUTION */}
           {myMember && (
-            <div className="rounded-none border border-zinc-800 bg-zinc-900/70 p-4 space-y-2.5">
+            <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/50 p-4 space-y-2.5">
               <div className="flex items-center justify-between font-mono text-xs">
                 <span className="font-bold uppercase tracking-wider text-zinc-300">
                   1. Đóng tiền Vòng #{currentRoundObj.roundNumber}
                 </span>
-                <span className="rounded-none border border-zinc-700 bg-zinc-800 px-2 py-0.5 text-[11px] font-bold text-white">
+                <span className="rounded-md border border-zinc-700/80 bg-zinc-800/80 px-2 py-0.5 text-[11px] font-bold text-white">
                   Slot #{myMember.slotIndex}
                 </span>
               </div>
 
               {hasPaidCurrentRound ? (
-                <div className="flex items-center gap-2 rounded-none border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 font-mono text-xs font-semibold text-emerald-300">
+                <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2.5 font-mono text-xs font-semibold text-emerald-300">
                   <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
                   <span>
                     Đã đóng {formatUsdc(circle.contributionAmountFormatted)}{' '}
@@ -584,7 +586,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                   <button
                     onClick={handleContribute}
                     disabled={isContributing || isPaused}
-                    className="flex w-full items-center justify-center gap-2 rounded-none border border-avalanche-red bg-avalanche-red px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-avalanche-red/20 transition hover:bg-avalanche-darkRed disabled:cursor-not-allowed disabled:opacity-50"
+                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-avalanche-red/60 bg-gradient-to-r from-avalanche-red to-red-600 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-avalanche-red/20 transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <Coins className="h-4 w-4" />
                     <span>
@@ -599,7 +601,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
 
           {/* 2. BIDDING (Supports Sealed-Bid Commit-Reveal & Open Bid) */}
           {circle.allocationMode === AllocationMode.BIDDING && myMember && (
-            <div className="rounded-none border border-zinc-800 bg-zinc-900/70 p-4 space-y-2.5">
+            <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/50 p-4 space-y-2.5">
               <div className="flex items-center justify-between font-mono text-xs">
                 <span className="flex items-center gap-1.5 font-bold uppercase tracking-wider text-zinc-300">
                   <Gavel className="h-3.5 w-3.5 text-avalanche-red" />
@@ -613,7 +615,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
               {/* Enforced Bidding Mode Indicator (Matches Circle Configuration) */}
               {!myMember.hasReceivedPayout && (
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between rounded-none border border-zinc-800 bg-zinc-950 px-2.5 py-1.5 font-mono text-[10px]">
+                  <div className="flex items-center justify-between rounded-lg border border-zinc-800/80 bg-zinc-950/80 px-2.5 py-1.5 font-mono text-[10px]">
                     <span className="flex items-center gap-1 font-bold uppercase text-zinc-200">
                       {useSealedMode ? (
                         <>
@@ -642,7 +644,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                   hint="Mỗi thành viên chỉ được nhận quỹ 1 lần duy nhất trong suốt dây hụi"
                   className="w-full"
                 >
-                  <div className="flex w-full items-center justify-between rounded-none border border-zinc-800 bg-zinc-950/60 px-3 py-2.5 font-mono text-xs text-zinc-400">
+                  <div className="flex w-full items-center justify-between rounded-lg border border-zinc-800/80 bg-zinc-950/60 px-3 py-2.5 font-mono text-xs text-zinc-400">
                     <span className="flex items-center gap-1.5">
                       <Trophy className="h-4 w-4 text-amber-400" />
                       <span>Đã nhận quỹ</span>
@@ -665,7 +667,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                           step="1"
                           value={bidInput}
                           onChange={(e) => setBidInput(e.target.value)}
-                          className="w-full rounded-none border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm font-bold text-white focus:border-avalanche-red focus:outline-none"
+                          className="w-full rounded-lg border border-zinc-700/80 bg-zinc-900 px-3 py-2 font-mono text-sm font-bold text-white focus:border-avalanche-red focus:outline-none"
                         />
                       </HoverHint>
 
@@ -673,7 +675,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                         <button
                           type="submit"
                           disabled={isCommittingBid || isBidding || isPaused}
-                          className="shrink-0 inline-flex items-center gap-1 rounded-none border border-avalanche-red bg-avalanche-red/15 px-3 py-2 font-mono text-xs font-bold uppercase tracking-wider text-avalanche-red transition hover:bg-avalanche-red hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                          className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-avalanche-red/60 bg-avalanche-red/15 px-3 py-2 font-mono text-xs font-bold uppercase tracking-wider text-avalanche-red transition hover:bg-avalanche-red hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <Lock className="h-3.5 w-3.5" />
                           <span>Niêm phong</span>
@@ -683,7 +685,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                   </form>
 
                   {savedSealedBid && (
-                    <div className="rounded-none border border-sky-500/30 bg-sky-500/10 p-2.5 font-mono text-[11px] space-y-2">
+                    <div className="rounded-lg border border-sky-500/30 bg-sky-500/10 p-2.5 font-mono text-[11px] space-y-2">
                       <div className="flex items-center justify-between text-sky-300">
                         <span>Mã niêm phong:</span>
                         <span className="font-bold">
@@ -695,7 +697,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                         <button
                           type="button"
                           onClick={handleCopySalt}
-                          className="flex-1 inline-flex items-center justify-center gap-1 rounded-none border border-zinc-700 bg-zinc-900 px-2 py-1 text-[10px] font-bold uppercase text-zinc-200 hover:border-sky-400 hover:text-white"
+                          className="flex-1 inline-flex items-center justify-center gap-1 rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1 text-[10px] font-bold uppercase text-zinc-200 hover:border-sky-400 hover:text-white transition-colors"
                         >
                           {saltCopied ? (
                             <Check className="h-3 w-3 text-emerald-400" />
@@ -707,7 +709,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                         <button
                           type="button"
                           onClick={handleDownloadSaltBackup}
-                          className="flex-1 inline-flex items-center justify-center gap-1 rounded-none border border-zinc-700 bg-zinc-900 px-2 py-1 text-[10px] font-bold uppercase text-sky-300 hover:border-sky-400 hover:text-white"
+                          className="flex-1 inline-flex items-center justify-center gap-1 rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1 text-[10px] font-bold uppercase text-sky-300 hover:border-sky-400 hover:text-white transition-colors"
                         >
                           <Download className="h-3 w-3" />
                           <span>Sao lưu JSON</span>
@@ -724,7 +726,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                           type="button"
                           onClick={handleRevealSealedBid}
                           disabled={isRevealingBid || isBidding || isPaused}
-                          className="flex w-full items-center justify-center gap-1.5 rounded-none border border-sky-400 bg-sky-500 px-3 py-1.5 font-mono text-xs font-bold uppercase text-zinc-950 transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-sky-400 bg-sky-500 px-3 py-1.5 font-mono text-xs font-bold uppercase text-zinc-950 transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50 shadow-md shadow-sky-500/20"
                         >
                           <Eye className="h-3.5 w-3.5" />
                           <span>
@@ -753,7 +755,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                     {showSaltRecovery && (
                       <form
                         onSubmit={handleRevealRecoveredSalt}
-                        className="mt-2 space-y-2 rounded-none border border-zinc-800 bg-zinc-950 p-2.5 font-mono text-[11px]"
+                        className="mt-2 space-y-2 rounded-lg border border-zinc-800 bg-zinc-950 p-2.5 font-mono text-[11px]"
                       >
                         {recoveryError && (
                           <div className="text-rose-400">{recoveryError}</div>
@@ -764,19 +766,19 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                           value={recoveryBidInput}
                           onChange={(e) => setRecoveryBidInput(e.target.value)}
                           placeholder="Giá đã đấu (mUSDC)"
-                          className="w-full rounded-none border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-white focus:border-sky-400 focus:outline-none"
+                          className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-white focus:border-sky-400 focus:outline-none"
                         />
                         <input
                           type="text"
                           value={recoverySaltInput}
                           onChange={(e) => setRecoverySaltInput(e.target.value)}
                           placeholder="0x... (Salt 64 hex ký tự)"
-                          className="w-full rounded-none border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-white focus:border-sky-400 focus:outline-none"
+                          className="w-full rounded-md border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-white focus:border-sky-400 focus:outline-none"
                         />
                         <button
                           type="submit"
                           disabled={isRevealingBid || isBidding || isPaused}
-                          className="w-full rounded-none border border-sky-400 bg-sky-500/20 px-3 py-1.5 font-bold uppercase text-sky-300 hover:bg-sky-500 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-50"
+                          className="w-full rounded-lg border border-sky-400 bg-sky-500/20 px-3 py-1.5 font-bold uppercase text-sky-300 hover:bg-sky-500 hover:text-zinc-950 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           Khôi phục &amp; Reveal Bid
                         </button>
@@ -796,7 +798,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                         step="1"
                         value={bidInput}
                         onChange={(e) => setBidInput(e.target.value)}
-                        className="w-full rounded-none border border-zinc-700 bg-zinc-900 px-3 py-2 font-mono text-sm font-bold text-white focus:border-avalanche-red focus:outline-none"
+                        className="w-full rounded-lg border border-zinc-700/80 bg-zinc-900 px-3 py-2 font-mono text-sm font-bold text-white focus:border-avalanche-red focus:outline-none"
                       />
                     </HoverHint>
 
@@ -804,7 +806,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                       <button
                         type="submit"
                         disabled={isBidding || isPaused}
-                        className="shrink-0 rounded-none border border-avalanche-red bg-avalanche-red/15 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-avalanche-red transition hover:bg-avalanche-red hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                        className="shrink-0 rounded-lg border border-avalanche-red/60 bg-avalanche-red/15 px-4 py-2 font-mono text-xs font-bold uppercase tracking-wider text-avalanche-red transition hover:bg-avalanche-red hover:text-white active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         Đặt giá
                       </button>
@@ -825,7 +827,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                           key={inc}
                           type="button"
                           onClick={() => setBidInput(String(nextVal))}
-                          className="flex-1 rounded-none border border-zinc-800 bg-zinc-950 py-1 text-[11px] font-semibold text-zinc-300 hover:border-zinc-600 hover:text-white"
+                          className="flex-1 rounded-md border border-zinc-800 bg-zinc-950 py-1 text-[11px] font-semibold text-zinc-300 hover:border-zinc-600 hover:text-white transition-colors"
                         >
                           +{inc}
                         </button>
@@ -838,7 +840,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
           )}
 
           {/* 3. SETTLEMENT & AUTO-SLASH */}
-          <div className="rounded-none border border-zinc-800 bg-zinc-900/70 p-4 space-y-2.5">
+          <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/50 p-4 space-y-2.5">
             <div className="flex items-center justify-between font-mono text-xs">
               <span className="font-bold uppercase tracking-wider text-zinc-300">
                 3. Tất toán Kỳ #{currentRoundObj.roundNumber}
@@ -856,7 +858,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                 <button
                   onClick={handleSettleRound}
                   disabled={isSettling || isPaused}
-                  className="flex w-full items-center justify-center gap-2 rounded-none border border-emerald-500 bg-emerald-500 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-zinc-950 shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-500 bg-emerald-500 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-zinc-950 shadow-lg shadow-emerald-500/20 transition-all hover:brightness-110 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Sparkles className="h-4 w-4" />
                   <span>
@@ -873,7 +875,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                 <button
                   onClick={handleSettleRound}
                   disabled={isSettling || isPaused}
-                  className="flex w-full items-center justify-center gap-2 rounded-none border border-amber-500/60 bg-amber-500/15 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-amber-200 transition hover:bg-amber-500 hover:text-zinc-950 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-amber-500/60 bg-amber-500/15 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-amber-200 transition-all hover:bg-amber-500 hover:text-zinc-950 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <ShieldAlert className="h-4 w-4" />
                   <span>
@@ -891,7 +893,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
         <div className="space-y-3 font-mono">
           {myMember ? (
             myMember.status === MemberStatus.Withdrawn ? (
-              <div className="flex items-center justify-between rounded-none border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-xs font-bold text-emerald-300">
+              <div className="flex items-center justify-between rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-xs font-bold text-emerald-300">
                 <span className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                   <span>Đã rút Thế chấp &amp; Lời</span>
@@ -900,7 +902,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
               </div>
             ) : (
               <div className="space-y-2.5">
-                <div className="rounded-none border border-zinc-800 bg-zinc-900/80 p-3 text-xs space-y-1.5">
+                <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/80 p-3.5 text-xs space-y-1.5">
                   <div className="flex justify-between">
                     <span className="text-zinc-400">Thế chấp gốc:</span>
                     <span className="font-bold text-white">
@@ -931,7 +933,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                   <button
                     onClick={handleWithdrawCollateral}
                     disabled={isWithdrawing}
-                    className="flex w-full items-center justify-center gap-2 rounded-none border border-emerald-500 bg-emerald-500 px-4 py-3 font-mono text-xs font-bold uppercase tracking-wider text-zinc-950 shadow-xl shadow-emerald-500/20 transition hover:bg-emerald-400"
+                    className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-500 bg-emerald-500 px-4 py-3 font-mono text-xs font-bold uppercase tracking-wider text-zinc-950 shadow-xl shadow-emerald-500/20 transition-all hover:brightness-110 active:scale-95"
                   >
                     <Unlock className="h-4 w-4" />
                     <span>
@@ -948,13 +950,13 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
       {/* CASE 4: CANCELLED — Refund Collateral */}
       {circle.status === CircleStatus.Cancelled && (
         <div className="space-y-3 font-mono">
-          <div className="flex items-center justify-between rounded-none border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs font-bold text-rose-300">
+          <div className="flex items-center justify-between rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs font-bold text-rose-300">
             <span>Dây hụi đã hủy (Cancelled)</span>
             <span>Hoàn 100% cọc</span>
           </div>
           {myMember &&
             (myMember.status === MemberStatus.Withdrawn ? (
-              <div className="flex items-center justify-between rounded-none border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-xs font-bold text-emerald-300">
+              <div className="flex items-center justify-between rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-xs font-bold text-emerald-300">
                 <span className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                   <span>Đã hoàn trả tiền thế chấp</span>
@@ -966,7 +968,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
                 type="button"
                 onClick={handleWithdrawCollateral}
                 disabled={isWithdrawing}
-                className="flex w-full items-center justify-center gap-2 rounded-none border border-emerald-500 bg-emerald-500 px-4 py-3 font-mono text-xs font-bold uppercase tracking-wider text-zinc-950 transition hover:bg-emerald-400"
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-emerald-500 bg-emerald-500 px-4 py-3 font-mono text-xs font-bold uppercase tracking-wider text-zinc-950 transition-all hover:brightness-110 active:scale-95"
               >
                 <Unlock className="h-4 w-4" />
                 <span>
@@ -982,7 +984,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
         hint="Tổng tài sản thế chấp đang được khóa bảo chứng trong Smart Contract"
         className="w-full"
       >
-        <div className="flex w-full items-center justify-between rounded-none border border-zinc-800 bg-zinc-950/60 px-3.5 py-2.5 font-mono text-xs">
+        <div className="flex w-full items-center justify-between rounded-xl border border-zinc-800/80 bg-zinc-950/60 px-3.5 py-2.5 font-mono text-xs">
           <span className="flex items-center gap-1.5 text-zinc-400 uppercase tracking-wider text-[11px]">
             <Lock className="h-3.5 w-3.5 text-amber-400" />
             <span>Tổng thế chấp đang khóa</span>
@@ -999,7 +1001,7 @@ export function SmartActionBox({ circle, currentUser }: SmartActionBoxProps) {
           hint="Tiền thế chấp và phần quỹ chưa giải ngân được tự động gửi vào AvaHuiYieldVault (ERC-4626) sinh lãi 6.50% APY và chia đều cho thành viên cuối kỳ"
           className="w-full"
         >
-          <div className="flex w-full items-center justify-between rounded-none border border-emerald-500/30 bg-emerald-500/5 px-3.5 py-2.5 font-mono text-xs">
+          <div className="flex w-full items-center justify-between rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-3.5 py-2.5 font-mono text-xs">
             <span className="flex items-center gap-1.5 text-emerald-300 uppercase tracking-wider text-[11px]">
               <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
               <span>Kho sinh lãi (6.5% APY)</span>

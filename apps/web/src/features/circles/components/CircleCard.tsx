@@ -61,7 +61,10 @@ export function CircleCard({ circle, currentUserAddress }: CircleCardProps) {
   );
 
   return (
-    <div className="group flex flex-col justify-between rounded-none border border-zinc-800 bg-surface-card p-4 sm:p-5 shadow-lg transition-all duration-200 hover:-translate-y-1 hover:border-avalanche-red/80 hover:shadow-xl hover:shadow-avalanche-red/5">
+    <div className="group relative flex flex-col justify-between rounded-xl border border-zinc-800/80 bg-zinc-950/70 p-4 sm:p-5 backdrop-blur-xl shadow-xl transition-all duration-300 hover:-translate-y-1 hover:border-avalanche-red/70 hover:shadow-2xl hover:shadow-avalanche-red/10 overflow-hidden">
+      {/* Top subtle highlight beam */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-avalanche-red/60 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
       <div>
         {/* Top Badges Row */}
         <div className="flex items-center justify-between gap-2">
@@ -76,7 +79,7 @@ export function CircleCard({ circle, currentUserAddress }: CircleCardProps) {
               }
             >
               <span
-                className={`inline-flex items-center gap-1.5 rounded-none border px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider ${
                   circle.status === CircleStatus.Active
                     ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400'
                     : circle.status === CircleStatus.Recruiting
@@ -84,7 +87,7 @@ export function CircleCard({ circle, currentUserAddress }: CircleCardProps) {
                     : 'border-sky-500/40 bg-sky-500/10 text-sky-400'
                 }`}
               >
-                <span className="h-1 w-1 bg-current" />
+                <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
                 {CIRCLE_STATUS_META[circle.status]?.label || circle.status}
               </span>
             </HoverHint>
@@ -95,7 +98,7 @@ export function CircleCard({ circle, currentUserAddress }: CircleCardProps) {
                 circle.allocationMode
               }
             >
-              <span className="inline-flex items-center gap-1 rounded-none border border-zinc-700 bg-zinc-900 px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-zinc-300">
+              <span className="inline-flex items-center gap-1 rounded-full border border-zinc-700/80 bg-zinc-900 px-2.5 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-zinc-300">
                 {circle.allocationMode === AllocationMode.BIDDING ? (
                   <>
                     <Gavel className="h-3 w-3 text-avalanche-red" />
@@ -118,7 +121,7 @@ export function CircleCard({ circle, currentUserAddress }: CircleCardProps) {
                 : 'Chưa triển khai hợp đồng'
             }
           >
-            <span className="font-mono text-[11px] text-zinc-500">
+            <span className="font-mono text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors">
               {shortenAddress(circle.contractAddress)}
             </span>
           </HoverHint>
@@ -131,14 +134,14 @@ export function CircleCard({ circle, currentUserAddress }: CircleCardProps) {
           className="mt-3 w-full"
         >
           <Link href={`/circles/${circle.id}`} className="block w-full">
-            <h3 className="truncate font-mono text-base font-bold text-white transition group-hover:text-avalanche-red">
+            <h3 className="truncate font-mono text-base font-bold text-white transition-colors group-hover:text-avalanche-red">
               {circle.name}
             </h3>
           </Link>
         </HoverHint>
 
         {/* Financial Metrics Grid */}
-        <div className="mt-4 grid grid-cols-3 gap-2 rounded-none border border-zinc-800 bg-zinc-900/60 p-3 font-mono text-xs">
+        <div className="mt-4 grid grid-cols-3 gap-2 rounded-lg border border-zinc-800/80 bg-zinc-900/60 p-3 font-mono text-xs">
           <HoverHint hint="Số tiền mỗi thành viên đóng góp trong 1 vòng">
             <div className="w-full">
               <div className="text-[10px] uppercase tracking-wider text-zinc-500">Kỳ đóng</div>
@@ -191,14 +194,14 @@ export function CircleCard({ circle, currentUserAddress }: CircleCardProps) {
             </span>
           </div>
 
-          <div className="h-1.5 w-full rounded-none bg-zinc-800">
+          <div className="h-1.5 w-full rounded-full bg-zinc-800/80 overflow-hidden">
             <div
-              className={`h-full rounded-none transition-all ${
+              className={`h-full rounded-full transition-all duration-500 ${
                 circle.status === CircleStatus.Recruiting
                   ? 'bg-amber-400'
                   : circle.status === CircleStatus.Completed
                   ? 'bg-sky-400'
-                  : 'bg-avalanche-red'
+                  : 'bg-gradient-to-r from-avalanche-red to-red-500'
               }`}
               style={{
                 width:
@@ -218,12 +221,12 @@ export function CircleCard({ circle, currentUserAddress }: CircleCardProps) {
         <div className="font-mono text-xs">
           {myMemberRecord ? (
             <div className="flex items-center gap-1.5">
-              <span className="rounded-none border border-zinc-700 bg-zinc-800 px-2 py-0.5 text-[11px] font-bold text-zinc-200">
+              <span className="rounded-md border border-zinc-700 bg-zinc-800 px-2 py-0.5 text-[11px] font-bold text-zinc-200">
                 #{myMemberRecord.slotIndex}
               </span>
               {circle.status === CircleStatus.Active && (
                 <span
-                  className={`inline-flex items-center gap-1 rounded-none border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                  className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                     hasPaidCurrentRound
                       ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-400'
                       : 'border-amber-500/40 bg-amber-500/15 text-amber-300'
@@ -243,7 +246,7 @@ export function CircleCard({ circle, currentUserAddress }: CircleCardProps) {
                 </span>
               )}
               {circle.status === CircleStatus.Completed && (
-                <span className="inline-flex items-center gap-1 rounded-none border border-sky-500/40 bg-sky-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-sky-300">
+                <span className="inline-flex items-center gap-1 rounded-full border border-sky-500/40 bg-sky-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-sky-300">
                   <Lock className="h-3 w-3" />
                   <span>
                     {myMemberRecord.status === MemberStatus.Withdrawn
@@ -266,7 +269,7 @@ export function CircleCard({ circle, currentUserAddress }: CircleCardProps) {
 
         <Link
           href={`/circles/${circle.id}`}
-          className="inline-flex items-center gap-1 rounded-none border border-zinc-700 bg-zinc-900 px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider text-white transition hover:border-avalanche-red hover:bg-avalanche-red"
+          className="inline-flex items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider text-white transition hover:border-avalanche-red hover:bg-avalanche-red shadow-sm active:scale-95"
         >
           <span>
             {circle.status === CircleStatus.Recruiting && !myMemberRecord

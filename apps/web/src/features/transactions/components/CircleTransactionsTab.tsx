@@ -16,16 +16,16 @@ export function CircleTransactionsTab({
 }: CircleTransactionsTabProps) {
   if (transactions.length === 0) {
     return (
-      <div className="rounded-none border border-zinc-800 bg-zinc-900/40 p-8 text-center font-mono text-xs uppercase tracking-wider text-zinc-500">
+      <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/40 p-8 text-center font-mono text-xs uppercase tracking-wider text-zinc-500">
         Chưa có giao dịch nào.
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto rounded-none border border-zinc-800 bg-zinc-900/50">
+    <div className="overflow-x-auto rounded-xl border border-zinc-800/80 bg-zinc-900/50 shadow-inner">
       <table className="w-full text-left font-mono text-xs">
-        <thead className="border-b border-zinc-800 bg-zinc-900/90 text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+        <thead className="border-b border-zinc-800/80 bg-zinc-900/90 text-[11px] font-bold uppercase tracking-wider text-zinc-400">
           <tr>
             <th className="px-3.5 py-3">Sự kiện</th>
             <th className="px-3.5 py-3">Từ Ví</th>
@@ -38,7 +38,7 @@ export function CircleTransactionsTab({
           {transactions.map((tx) => (
             <tr key={tx.id} className="hover:bg-zinc-900/40">
               <td className="px-3.5 py-3">
-                <span className="inline-flex items-center gap-1 rounded-none border border-zinc-700 bg-zinc-900 px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-white">
+                <span className="inline-flex items-center gap-1 rounded-md border border-zinc-700/80 bg-zinc-900 px-2 py-0.5 font-mono text-[10px] font-bold uppercase text-white">
                   <CheckCircle2 className="h-3 w-3 text-emerald-400" />
                   {tx.txType}
                 </span>

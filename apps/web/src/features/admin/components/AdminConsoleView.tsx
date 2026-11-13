@@ -234,7 +234,7 @@ export function AdminConsoleView() {
 
   if (!isVerifier) {
     return (
-      <div className="mx-auto max-w-xl rounded-none border border-rose-500/40 bg-surface-card p-8 text-center font-mono space-y-3">
+      <div className="mx-auto max-w-xl rounded-xl border border-rose-500/40 bg-zinc-950/70 backdrop-blur-xl p-8 text-center font-mono space-y-3 shadow-xl">
         <AlertTriangle className="mx-auto h-8 w-8 text-rose-400" />
         <h1 className="text-lg font-extrabold uppercase text-white">
           Không có quyền truy cập Admin / Verifier
@@ -252,7 +252,7 @@ export function AdminConsoleView() {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 pb-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800/80 pb-4">
         <div>
           <div className="inline-flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-wider text-emerald-400">
             <Shield className="h-4 w-4" />
@@ -262,7 +262,7 @@ export function AdminConsoleView() {
             AvaHui Admin Console
           </h1>
         </div>
-        <span className="rounded-none border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 font-mono text-xs font-bold uppercase text-emerald-300">
+        <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 font-mono text-xs font-bold uppercase text-emerald-300">
           Role: {currentUser?.role}
         </span>
       </div>
@@ -270,7 +270,8 @@ export function AdminConsoleView() {
       {/* Overview Stats (Admin) */}
       {isAdmin && overviewQuery.data && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 font-mono">
-          <div className="rounded-none border border-zinc-800 bg-surface-card p-4">
+          <div className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl p-4 shadow-xl">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent" />
             <div className="text-[11px] uppercase text-zinc-400">Tổng Users / Team1</div>
             <div className="mt-1 text-2xl font-extrabold text-white">
               {overviewQuery.data.users.total}{' '}
@@ -279,20 +280,23 @@ export function AdminConsoleView() {
               </span>
             </div>
           </div>
-          <div className="rounded-none border border-zinc-800 bg-surface-card p-4">
+          <div className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl p-4 shadow-xl">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-amber-400/50 to-transparent" />
             <div className="text-[11px] uppercase text-zinc-400">Dây Hụi Active / Recruiting</div>
             <div className="mt-1 text-2xl font-extrabold text-white">
               {overviewQuery.data.circles.active} / {overviewQuery.data.circles.recruiting}
             </div>
           </div>
-          <div className="rounded-none border border-zinc-800 bg-surface-card p-4">
+          <div className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl p-4 shadow-xl">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-sky-400/50 to-transparent" />
             <div className="text-[11px] uppercase text-zinc-400">Tx &amp; Events Indexed</div>
             <div className="mt-1 text-2xl font-extrabold text-white">
               {overviewQuery.data.blockchain.totalTransactions} /{' '}
               {overviewQuery.data.blockchain.totalIndexedEvents}
             </div>
           </div>
-          <div className="rounded-none border border-zinc-800 bg-surface-card p-4 space-y-1 text-xs">
+          <div className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl p-4 space-y-1 text-xs shadow-xl">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-avalanche-red/50 to-transparent" />
             <div className="text-[11px] uppercase text-zinc-400">Trạng thái Hạ tầng</div>
             <div className="flex items-center justify-between">
               <span>Keeper Key:</span>
@@ -323,20 +327,21 @@ export function AdminConsoleView() {
       )}
 
       {/* Team1 Anti-Sybil Attestation Issuer Panel (VERIFIER & ADMIN) */}
-      <section className="rounded-none border border-emerald-500/30 bg-surface-card p-5 space-y-4">
+      <section className="relative overflow-hidden rounded-xl border border-emerald-500/30 bg-zinc-950/70 backdrop-blur-xl p-5 space-y-4 shadow-xl">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
         <div className="flex items-center gap-2 font-mono text-sm font-bold uppercase text-emerald-300">
           <ShieldCheck className="h-4 w-4 text-emerald-400" />
           <span>Cấp / Thu hồi Chứng nhận Team1 Anti-Sybil</span>
         </div>
 
         {attestMessage && (
-          <div className="flex items-center gap-2 rounded-none border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 font-mono text-xs text-emerald-300">
+          <div className="flex items-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 font-mono text-xs text-emerald-300">
             <CheckCircle2 className="h-4 w-4 shrink-0" />
             <span>{attestMessage}</span>
           </div>
         )}
         {attestError && (
-          <div className="flex items-center gap-2 rounded-none border border-rose-500/40 bg-rose-500/10 px-3 py-2 font-mono text-xs text-rose-300">
+          <div className="flex items-center gap-2 rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 font-mono text-xs text-rose-300">
             <AlertTriangle className="h-4 w-4 shrink-0" />
             <span>{attestError}</span>
           </div>
@@ -348,12 +353,12 @@ export function AdminConsoleView() {
             value={attestWallet}
             onChange={(e) => setAttestWallet(e.target.value)}
             placeholder="Địa chỉ ví thành viên (0x...)"
-            className="sm:col-span-4 rounded-none border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-emerald-400 focus:outline-none"
+            className="sm:col-span-4 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-emerald-400 focus:outline-none"
           />
           <select
             value={attestTier}
             onChange={(e) => setAttestTier(Number(e.target.value))}
-            className="sm:col-span-2 rounded-none border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-emerald-400 focus:outline-none"
+            className="sm:col-span-2 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-white focus:border-emerald-400 focus:outline-none"
           >
             <option value={1}>Cấp 1 (Cơ bản)</option>
             <option value={2}>Cấp 2 (Team1)</option>
@@ -368,7 +373,7 @@ export function AdminConsoleView() {
                 trustTier: attestTier,
               })
             }
-            className="sm:col-span-2 flex items-center justify-center gap-1 rounded-none bg-emerald-500 px-3 py-2 font-bold uppercase text-zinc-950 transition hover:bg-emerald-400 disabled:opacity-50"
+            className="sm:col-span-2 flex items-center justify-center gap-1 rounded-lg bg-emerald-500 px-3 py-2 font-bold uppercase text-zinc-950 transition hover:bg-emerald-400 active:scale-95 disabled:opacity-50"
           >
             {issueAttestationMutation.isPending ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -385,7 +390,7 @@ export function AdminConsoleView() {
                 trustTier: attestTier,
               })
             }
-            className="sm:col-span-2 flex items-center justify-center gap-1 rounded-none border border-sky-500/40 bg-sky-500/15 px-3 py-2 font-bold uppercase text-sky-300 transition hover:bg-sky-500 hover:text-zinc-950 disabled:opacity-50"
+            className="sm:col-span-2 flex items-center justify-center gap-1 rounded-lg border border-sky-500/40 bg-sky-500/15 px-3 py-2 font-bold uppercase text-sky-300 transition hover:bg-sky-500 hover:text-zinc-950 active:scale-95 disabled:opacity-50"
           >
             <KeyRound className="h-3.5 w-3.5" />
             <span>Ký Voucher</span>
@@ -394,14 +399,14 @@ export function AdminConsoleView() {
             type="button"
             disabled={revokeAttestationMutation.isPending || !/^0x[a-fA-F0-9]{40}$/.test(attestWallet.trim())}
             onClick={() => revokeAttestationMutation.mutate(attestWallet.trim())}
-            className="sm:col-span-2 flex items-center justify-center gap-1 rounded-none border border-rose-500/40 bg-rose-500/10 px-3 py-2 font-bold uppercase text-rose-300 transition hover:bg-rose-500 hover:text-white disabled:opacity-50"
+            className="sm:col-span-2 flex items-center justify-center gap-1 rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 font-bold uppercase text-rose-300 transition hover:bg-rose-500 hover:text-white active:scale-95 disabled:opacity-50"
           >
             <span>Thu hồi</span>
           </button>
         </div>
 
         {signedVoucher && (
-          <div className="rounded-none border border-sky-500/30 bg-zinc-950 p-3 font-mono text-[11px] space-y-2">
+          <div className="rounded-lg border border-sky-500/30 bg-zinc-950 p-3 font-mono text-[11px] space-y-2">
             <div className="flex items-center justify-between text-sky-300">
               <span className="font-bold uppercase">EIP-712 Voucher JSON (User tự Claim)</span>
               <button
@@ -411,7 +416,7 @@ export function AdminConsoleView() {
                   setCopiedVoucher(true);
                   setTimeout(() => setCopiedVoucher(false), 1800);
                 }}
-                className="inline-flex items-center gap-1 rounded-none border border-zinc-700 bg-zinc-900 px-2 py-1 text-[10px] font-bold uppercase text-zinc-200 hover:border-sky-400"
+                className="inline-flex items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1 text-[10px] font-bold uppercase text-zinc-200 hover:border-sky-400"
               >
                 {copiedVoucher ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
                 <span>{copiedVoucher ? 'Đã chép' : 'Copy JSON'}</span>
@@ -426,7 +431,7 @@ export function AdminConsoleView() {
 
       {/* Admin Users Management */}
       {isAdmin && (
-        <section className="rounded-none border border-zinc-800 bg-surface-card p-5 space-y-4">
+        <section className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl p-5 space-y-4 shadow-xl">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2 font-mono text-sm font-bold uppercase text-white">
               <Users className="h-4 w-4 text-avalanche-red" />
@@ -437,30 +442,30 @@ export function AdminConsoleView() {
               value={userSearch}
               onChange={(e) => setUserSearch(e.target.value)}
               placeholder="Tìm email, tên, ví..."
-              className="w-64 rounded-none border border-zinc-700 bg-zinc-900 px-3 py-1.5 font-mono text-xs text-white focus:border-avalanche-red focus:outline-none"
+              className="w-64 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 font-mono text-xs text-white focus:border-avalanche-red focus:outline-none"
             />
           </div>
 
           {usersQuery.isError ? (
-            <div className="rounded-none border border-amber-500/30 bg-amber-500/10 p-3 font-mono text-xs text-amber-300">
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 font-mono text-xs text-amber-300">
               Không tải được danh sách từ API (`/admin/users`). Hãy đảm bảo Backend đang chạy và bạn đã đăng nhập bằng JWT hợp lệ có role ADMIN.
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-xl border border-zinc-800/80 bg-zinc-900/40 shadow-inner">
               <table className="w-full text-left font-mono text-xs">
-                <thead className="border-b border-zinc-800 text-[11px] uppercase text-zinc-400">
+                <thead className="border-b border-zinc-800 bg-zinc-900/90 text-[11px] uppercase text-zinc-400">
                   <tr>
-                    <th className="py-2 pr-3">User</th>
-                    <th className="py-2 pr-3">Ví chính</th>
-                    <th className="py-2 pr-3">Team1</th>
-                    <th className="py-2 pr-3">Role</th>
-                    <th className="py-2">Trạng thái</th>
+                    <th className="py-2.5 px-3">User</th>
+                    <th className="py-2.5 px-3">Ví chính</th>
+                    <th className="py-2.5 px-3">Team1</th>
+                    <th className="py-2.5 px-3">Role</th>
+                    <th className="py-2.5 px-3">Trạng thái</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800/70">
                   {(usersQuery.data?.items || []).map((u) => (
                     <tr key={u.id} className="hover:bg-zinc-900/50">
-                      <td className="py-2.5 pr-3">
+                      <td className="py-2.5 px-3">
                         <div className="font-bold text-white">
                           {u.displayName || 'Unnamed'}
                         </div>
@@ -468,12 +473,12 @@ export function AdminConsoleView() {
                           {u.email || u.privyDid}
                         </div>
                       </td>
-                      <td className="py-2.5 pr-3 text-zinc-300">
+                      <td className="py-2.5 px-3 text-zinc-300">
                         {u.wallets[0]?.address
                           ? shortenAddress(u.wallets[0].address, 6)
                           : '—'}
                       </td>
-                      <td className="py-2.5 pr-3">
+                      <td className="py-2.5 px-3">
                         {u.team1Verified ? (
                           <span className="text-emerald-400 font-bold">
                             Verified (T{u.trustTier})
@@ -482,7 +487,7 @@ export function AdminConsoleView() {
                           <span className="text-zinc-500">Unverified</span>
                         )}
                       </td>
-                      <td className="py-2.5 pr-3">
+                      <td className="py-2.5 px-3">
                         <select
                           value={u.role}
                           disabled={updateRoleMutation.isPending}
@@ -492,14 +497,14 @@ export function AdminConsoleView() {
                               role: e.target.value as UserRole,
                             })
                           }
-                          className="rounded-none border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs font-bold text-white"
+                          className="rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs font-bold text-white"
                         >
                           <option value={UserRole.MEMBER}>MEMBER</option>
                           <option value={UserRole.VERIFIER}>VERIFIER</option>
                           <option value={UserRole.ADMIN}>ADMIN</option>
                         </select>
                       </td>
-                      <td className="py-2.5">
+                      <td className="py-2.5 px-3">
                         <button
                           type="button"
                           onClick={() =>
@@ -508,7 +513,7 @@ export function AdminConsoleView() {
                               isActive: !u.isActive,
                             })
                           }
-                          className={`inline-flex items-center gap-1 rounded-none border px-2 py-1 text-[10px] font-bold uppercase ${
+                          className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase transition-all ${
                             u.isActive
                               ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-rose-500/20 hover:text-rose-300'
                               : 'border-rose-500/40 bg-rose-500/10 text-rose-300 hover:bg-emerald-500/20 hover:text-emerald-300'
@@ -529,31 +534,31 @@ export function AdminConsoleView() {
 
       {/* Admin Circles Moderation */}
       {isAdmin && (
-        <section className="rounded-none border border-zinc-800 bg-surface-card p-5 space-y-4">
+        <section className="relative overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl p-5 space-y-4 shadow-xl">
           <div className="font-mono text-sm font-bold uppercase text-white">
             Kiểm duyệt Dây Hụi (Circles Moderation)
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-xl border border-zinc-800/80 bg-zinc-900/40 shadow-inner">
             <table className="w-full text-left font-mono text-xs">
-              <thead className="border-b border-zinc-800 text-[11px] uppercase text-zinc-400">
+              <thead className="border-b border-zinc-800 bg-zinc-900/90 text-[11px] uppercase text-zinc-400">
                 <tr>
-                  <th className="py-2 pr-3">Dây hụi</th>
-                  <th className="py-2 pr-3">Trạng thái</th>
-                  <th className="py-2 pr-3">Quyền riêng tư</th>
-                  <th className="py-2 pr-3">Hiển thị</th>
-                  <th className="py-2">Guardian (On-Chain)</th>
+                  <th className="py-2.5 px-3">Dây hụi</th>
+                  <th className="py-2.5 px-3">Trạng thái</th>
+                  <th className="py-2.5 px-3">Quyền riêng tư</th>
+                  <th className="py-2.5 px-3">Hiển thị</th>
+                  <th className="py-2.5 px-3">Guardian (On-Chain)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/70">
                 {(circlesQuery.data?.items || []).map((c) => (
                   <tr key={c.id} className="hover:bg-zinc-900/50">
-                    <td className="py-2.5 pr-3">
+                    <td className="py-2.5 px-3">
                       <div className="font-bold text-white">{c.name}</div>
                       <div className="text-[11px] text-zinc-400">
                         {c.contractAddress ? shortenAddress(c.contractAddress, 6) : c.metadataId}
                       </div>
                     </td>
-                    <td className="py-2.5 pr-3 text-zinc-300">
+                    <td className="py-2.5 px-3 text-zinc-300">
                       <div>{c.status} ({c.currentMemberCount}/{c.maxMembers})</div>
                       {c.isPaused && (
                         <span className="text-[10px] font-bold uppercase text-rose-400">
@@ -561,14 +566,14 @@ export function AdminConsoleView() {
                         </span>
                       )}
                     </td>
-                    <td className="py-2.5 pr-3">
+                    <td className="py-2.5 px-3">
                       {c.isPrivateInvite ? (
                         <span className="text-sky-400">Private Invite</span>
                       ) : (
                         <span className="text-zinc-400">Public</span>
                       )}
                     </td>
-                    <td className="py-2.5 pr-3">
+                    <td className="py-2.5 px-3">
                       <button
                         type="button"
                         onClick={() =>
@@ -580,7 +585,7 @@ export function AdminConsoleView() {
                               : undefined,
                           })
                         }
-                        className={`inline-flex items-center gap-1 rounded-none border px-2.5 py-1 text-[10px] font-bold uppercase ${
+                        className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase transition-all ${
                           c.isHiddenByAdmin
                             ? 'border-rose-500/40 bg-rose-500/10 text-rose-300'
                             : 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
@@ -599,7 +604,7 @@ export function AdminConsoleView() {
                         )}
                       </button>
                     </td>
-                    <td className="py-2.5">
+                    <td className="py-2.5 px-3">
                       {c.contractAddress ? (
                         <div className="flex flex-wrap items-center gap-1.5">
                           <button
@@ -611,7 +616,7 @@ export function AdminConsoleView() {
                                 c.isPaused ? 'unpause' : 'pause',
                               )
                             }
-                            className={`inline-flex items-center gap-1 rounded-none border px-2 py-1 text-[10px] font-bold uppercase ${
+                            className={`inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[10px] font-bold uppercase transition-all ${
                               c.isPaused
                                 ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500 hover:text-zinc-950'
                                 : 'border-amber-500/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500 hover:text-zinc-950'
@@ -639,7 +644,7 @@ export function AdminConsoleView() {
                                   'emergencyCancel',
                                 )
                               }
-                              className="inline-flex items-center gap-1 rounded-none border border-rose-500/40 bg-rose-500/10 px-2 py-1 text-[10px] font-bold uppercase text-rose-300 hover:bg-rose-500 hover:text-white"
+                              className="inline-flex items-center gap-1 rounded-lg border border-rose-500/40 bg-rose-500/10 px-2 py-1 text-[10px] font-bold uppercase text-rose-300 hover:bg-rose-500 hover:text-white transition-all"
                             >
                               <XCircle className="h-3 w-3" />
                               <span>Cancel</span>

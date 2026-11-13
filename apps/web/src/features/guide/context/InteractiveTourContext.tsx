@@ -233,16 +233,16 @@ export function useInteractiveTour() {
       sandboxCircle: createInitialSandboxCircle(),
       sandboxSavedSealedBid: null,
       sandboxActions: DEFAULT_ACTIONS,
-      startTour: () => {},
-      exitTour: () => {},
-      performSandboxFaucet: () => {},
-      performSandboxJoin: () => {},
-      performSandboxContribute: () => {},
-      performSandboxCommitBid: () => {},
-      performSandboxRevealBid: () => {},
-      performSandboxSettleRound: () => {},
-      performSandboxWithdraw: () => {},
-      fastForwardToCompletedCircle: () => {},
+      startTour: () => { },
+      exitTour: () => { },
+      performSandboxFaucet: () => { },
+      performSandboxJoin: () => { },
+      performSandboxContribute: () => { },
+      performSandboxCommitBid: () => { },
+      performSandboxRevealBid: () => { },
+      performSandboxSettleRound: () => { },
+      performSandboxWithdraw: () => { },
+      fastForwardToCompletedCircle: () => { },
     } as InteractiveTourContextValue;
   }
   return ctx;
@@ -417,25 +417,25 @@ export function InteractiveTourProvider({
         const members = already
           ? prev.members
           : [
-              ...prev.members,
-              {
-                slotIndex: 5,
-                userId: session?.userId || 'you',
-                displayName: displayName || 'Bạn (Tài khoản tập)',
-                walletAddress: addr,
-                lockedCollateral: '100000000',
-                lockedCollateralFormatted: '100.00',
-                initialLockedAmountFormatted: '100.00',
-                slashedCollateralFormatted: '0.00',
-                hasReceivedPayout: false,
-                wonRoundNumber: null,
-                defaultCount: 0,
-                status: MemberStatus.Active,
-                team1Verified: true,
-                trustTier: 1,
-                joinedAt: nowIso,
-              },
-            ];
+            ...prev.members,
+            {
+              slotIndex: 5,
+              userId: session?.userId || 'you',
+              displayName: displayName || 'Bạn (Tài khoản tập)',
+              walletAddress: addr,
+              lockedCollateral: '100000000',
+              lockedCollateralFormatted: '100.00',
+              initialLockedAmountFormatted: '100.00',
+              slashedCollateralFormatted: '0.00',
+              hasReceivedPayout: false,
+              wonRoundNumber: null,
+              defaultCount: 0,
+              status: MemberStatus.Active,
+              team1Verified: true,
+              trustTier: 1,
+              joinedAt: nowIso,
+            },
+          ];
 
         // Open Round #1 with the 4 sample peers already paid so learner only pays their own share
         const peerContribs = members.slice(0, 4).map((m, idx) => ({
@@ -674,11 +674,11 @@ export function InteractiveTourProvider({
       members: prev.members.map((m) =>
         m.walletAddress.toLowerCase() === addr.toLowerCase()
           ? {
-              ...m,
-              status: MemberStatus.Withdrawn,
-              lockedCollateral: '0',
-              lockedCollateralFormatted: '0.00',
-            }
+            ...m,
+            status: MemberStatus.Withdrawn,
+            lockedCollateral: '0',
+            lockedCollateralFormatted: '0.00',
+          }
           : m,
       ),
     }));
@@ -787,7 +787,7 @@ export function InteractiveTourProvider({
     <InteractiveTourContext.Provider value={value}>
       {/* Persistent Top Ribbon when Interactive UI Tour Mode is running */}
       {isTourActive && (
-        <div className="sticky top-0 z-[65] border-b border-amber-500/50 bg-zinc-950/95 px-3 sm:px-6 py-2 backdrop-blur-md">
+        <div className="sticky top-0 z-[65] border-b border-amber-500/50 bg-zinc-950/95 px-3 sm:px-6 py-2.5 backdrop-blur-md shadow-lg">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 font-mono text-xs">
             <div className="flex items-center gap-2 text-amber-200">
               <Compass className="h-4 w-4 text-amber-400 animate-spin" style={{ animationDuration: '8s' }} />
@@ -801,7 +801,7 @@ export function InteractiveTourProvider({
             <button
               type="button"
               onClick={exitTour}
-              className="inline-flex items-center gap-1 rounded-none border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-[11px] font-bold uppercase text-zinc-200 hover:border-rose-500/60 hover:text-rose-300"
+              className="inline-flex items-center gap-1 rounded-lg border border-zinc-700/80 bg-zinc-900 px-2.5 py-1 text-[11px] font-bold uppercase text-zinc-200 hover:border-rose-500/60 hover:text-rose-300 transition-colors"
             >
               <X className="h-3.5 w-3.5" />
               <span>Thoát hướng dẫn</span>
@@ -818,11 +818,13 @@ export function InteractiveTourProvider({
           role="dialog"
           aria-modal="true"
           aria-label="Hỏi người mới sử dụng AvaHui"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md animate-fade-in"
         >
-          <div className="w-full max-w-md rounded-none border border-zinc-700 bg-surface-card p-6 shadow-2xl space-y-4 animate-scale-in">
+          <div className="relative overflow-hidden w-full max-w-md rounded-2xl border border-zinc-800/90 bg-zinc-950/90 backdrop-blur-2xl p-6 shadow-2xl space-y-4 animate-scale-in">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-avalanche-red/70 to-transparent" />
+
             <div className="flex items-start justify-between gap-3">
-              <div className="inline-flex items-center gap-1.5 rounded-none border border-avalanche-red/40 bg-avalanche-red/10 px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wider text-avalanche-red">
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-avalanche-red/40 bg-avalanche-red/10 px-3 py-1 font-mono text-[11px] font-bold uppercase tracking-wider text-avalanche-red shadow-sm">
                 <Sparkles className="h-3.5 w-3.5" />
                 <span>Chào mừng tới AvaHui</span>
               </div>
@@ -830,7 +832,7 @@ export function InteractiveTourProvider({
                 type="button"
                 onClick={handleSkipWelcome}
                 aria-label="Đóng"
-                className="rounded-none p-1 text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-800/80 hover:text-white transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -850,14 +852,14 @@ export function InteractiveTourProvider({
               <button
                 type="button"
                 onClick={handleSkipWelcome}
-                className="flex-1 rounded-none border border-zinc-700 bg-zinc-900 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+                className="flex-1 rounded-xl border border-zinc-700/80 bg-zinc-900/80 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-zinc-300 transition hover:border-zinc-500 hover:text-white active:scale-95 shadow-sm"
               >
                 Bỏ qua
               </button>
               <button
                 type="button"
                 onClick={startTour}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-none border border-avalanche-red bg-avalanche-red px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-avalanche-red/25 transition hover:bg-avalanche-darkRed"
+                className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-avalanche-red/50 bg-gradient-to-r from-avalanche-red to-red-600 px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-avalanche-red/25 transition hover:brightness-110 active:scale-95"
               >
                 <span>Bắt đầu hướng dẫn</span>
                 <ArrowRight className="h-4 w-4" />
@@ -904,7 +906,7 @@ export function InteractiveTourProvider({
               />
               {/* Glowing target ring (pointer-events-none so real UI clicks pass through!) */}
               <div
-                className="pointer-events-none fixed z-[60] border-2 border-avalanche-red shadow-[0_0_24px_rgba(232,65,66,0.75)] transition-all duration-200"
+                className="pointer-events-none fixed z-[60] rounded-xl border-2 border-avalanche-red shadow-[0_0_24px_rgba(232,65,66,0.75)] transition-all duration-200"
                 style={{
                   top: spotlightRect.top,
                   left: spotlightRect.left,
@@ -922,9 +924,9 @@ export function InteractiveTourProvider({
             role="dialog"
             aria-label={activeStep.title}
             style={popoverStyle}
-            className="rounded-none border-2 border-avalanche-red bg-zinc-950 p-4 shadow-2xl space-y-3 font-sans"
+            className="rounded-xl border border-avalanche-red/60 bg-zinc-950/95 backdrop-blur-xl p-4 shadow-2xl space-y-3 font-sans"
           >
-            <div className="flex items-center justify-between gap-2 border-b border-zinc-800 pb-2">
+            <div className="flex items-center justify-between gap-2 border-b border-zinc-800/80 pb-2">
               <span className="font-mono text-[11px] font-extrabold uppercase tracking-wider text-avalanche-red">
                 Bước {tourStepIndex + 1} / {TOUR_STEPS.length}
               </span>
@@ -932,7 +934,7 @@ export function InteractiveTourProvider({
                 type="button"
                 onClick={exitTour}
                 aria-label="Thoát hướng dẫn"
-                className="rounded-none p-1 text-zinc-400 hover:bg-zinc-900 hover:text-white"
+                className="rounded-lg p-1 text-zinc-400 hover:bg-zinc-900 hover:text-white transition-colors"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -947,7 +949,7 @@ export function InteractiveTourProvider({
             </p>
 
             {activeStep.actionHint && (
-              <div className="rounded-none border border-amber-500/40 bg-amber-500/10 px-2.5 py-2 text-[11px] font-medium text-amber-200">
+              <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-2.5 py-2 text-[11px] font-medium text-amber-200">
                 {activeStep.actionHint}
               </div>
             )}
@@ -993,7 +995,7 @@ export function InteractiveTourProvider({
               <button
                 type="button"
                 onClick={() => fastForwardToCompletedCircle(myDemoWallet, myDemoName)}
-                className="w-full rounded-none border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 font-mono text-[11px] font-bold text-amber-200 hover:bg-amber-500/20"
+                className="w-full rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 font-mono text-[11px] font-bold text-amber-200 hover:bg-amber-500/20"
               >
                 Mở trạng thái Đã tất toán để thử Rút tiền
               </button>
@@ -1006,12 +1008,12 @@ export function InteractiveTourProvider({
               </div>
             )}
 
-            <div className="flex items-center justify-between gap-2 border-t border-zinc-800 pt-2.5 font-mono text-xs">
+            <div className="flex items-center justify-between gap-2 border-t border-zinc-800/80 pt-2.5 font-mono text-xs">
               <button
                 type="button"
                 disabled={tourStepIndex === 0}
                 onClick={() => setTourStepIndex((i) => Math.max(0, i - 1))}
-                className="inline-flex items-center gap-1 rounded-none border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-[11px] font-bold uppercase text-zinc-300 hover:text-white disabled:opacity-40"
+                className="inline-flex items-center gap-1 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-[11px] font-bold uppercase text-zinc-300 hover:text-white active:scale-95 disabled:opacity-40 transition-all"
               >
                 <ArrowLeft className="h-3 w-3" />
                 <span>Trước</span>
@@ -1027,7 +1029,7 @@ export function InteractiveTourProvider({
                     }
                     setTourStepIndex(nextIdx);
                   }}
-                  className="inline-flex items-center gap-1 rounded-none border border-avalanche-red bg-avalanche-red px-3.5 py-1.5 text-[11px] font-bold uppercase text-white hover:bg-avalanche-darkRed"
+                  className="inline-flex items-center gap-1 rounded-lg border border-avalanche-red/50 bg-gradient-to-r from-avalanche-red to-red-600 px-3.5 py-1.5 text-[11px] font-bold uppercase text-white hover:brightness-110 active:scale-95 shadow-sm shadow-avalanche-red/20 transition-all"
                 >
                   <span>Tiếp theo</span>
                   <ArrowRight className="h-3 w-3" />
@@ -1039,7 +1041,7 @@ export function InteractiveTourProvider({
                     exitTour();
                     router.push('/dashboard');
                   }}
-                  className="inline-flex items-center gap-1 rounded-none border border-emerald-500 bg-emerald-500 px-3.5 py-1.5 text-[11px] font-bold uppercase text-zinc-950 hover:bg-emerald-400"
+                  className="inline-flex items-center gap-1 rounded-lg border border-emerald-500 bg-emerald-500 px-3.5 py-1.5 text-[11px] font-bold uppercase text-zinc-950 hover:bg-emerald-400 active:scale-95 shadow-sm shadow-emerald-500/20 transition-all"
                 >
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   <span>Hoàn thành</span>
