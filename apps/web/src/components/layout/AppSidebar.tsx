@@ -19,7 +19,6 @@ import {
   PanelLeftOpen,
   PlusCircle,
   Shield,
-  Sparkles,
   UserCircle,
   X,
 } from 'lucide-react';
@@ -36,7 +35,7 @@ export function AppSidebar() {
   const pathname = usePathname() || '/';
   const { isExpanded, toggleSidebar, isMobileOpen, closeMobile } = useSidebar();
   const { data: state } = useAvaHuiState();
-  const { startTour, isTourActive } = useInteractiveTour();
+  const { isTourActive } = useInteractiveTour();
 
   const currentUser =
     state?.users.find((u) => u.id === state.currentUserId) || state?.users[0];
@@ -150,44 +149,13 @@ export function AppSidebar() {
           })}
         </div>
 
-        {/* Bottom Utility Card & Network Status */}
-        <div className="border-t border-zinc-800/80 p-2.5 space-y-2">
-          {isExpanded ? (
-            <div className="rounded-xl border border-zinc-800/80 bg-zinc-900/60 p-3 space-y-2">
-              <div className="flex items-center justify-between text-[11px] font-mono">
-                <span className="text-zinc-400">Mạng Blockchain</span>
-                <span className="inline-flex items-center gap-1 font-bold text-emerald-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  Fuji (43113)
-                </span>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => startTour()}
-                className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider text-amber-300 hover:bg-amber-500/20 transition-colors"
-              >
-                <Sparkles className="h-3 w-3 text-amber-400" />
-                <span>Hướng dẫn UI</span>
-              </button>
-            </div>
-          ) : (
-            <HoverHint position="right" hint="Mạng Avalanche Fuji (43113) • Hướng dẫn UI">
-              <button
-                type="button"
-                onClick={() => startTour()}
-                className="flex h-10 w-full items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/60 text-amber-400 hover:border-amber-500/40 hover:bg-amber-500/10 transition-colors"
-              >
-                <Sparkles className="h-4 w-4" />
-              </button>
-            </HoverHint>
-          )}
-
-          {/* Expand/Collapse Footer Strip */}
+        {/* Bottom Collapse / Expand Toggle Strip */}
+        <div className="border-t border-zinc-800/80 p-2.5">
           <button
             type="button"
             onClick={toggleSidebar}
-            className={`flex w-full items-center rounded-lg border border-zinc-800/60 bg-zinc-900/40 py-1.5 font-mono text-[10px] font-semibold text-zinc-500 hover:text-zinc-300 hover:border-zinc-700 transition-colors ${
+            aria-label={isExpanded ? 'Thu gọn tiện ích' : 'Mở rộng tiện ích'}
+            className={`flex w-full items-center rounded-lg border border-zinc-800/60 bg-zinc-900/40 py-2 font-mono text-[10px] font-semibold text-zinc-500 hover:text-zinc-300 hover:border-zinc-700 transition-colors ${
               isExpanded ? 'justify-between px-2.5' : 'justify-center'
             }`}
           >
@@ -269,21 +237,6 @@ export function AppSidebar() {
                   </Link>
                 );
               })}
-            </div>
-
-            {/* Mobile Tour Trigger */}
-            <div className="border-t border-zinc-800 pt-3">
-              <button
-                type="button"
-                onClick={() => {
-                  closeMobile();
-                  startTour();
-                }}
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 py-2.5 font-mono text-xs font-bold uppercase tracking-wider text-amber-300 hover:bg-amber-500/20"
-              >
-                <Sparkles className="h-4 w-4" />
-                <span>Bắt đầu hướng dẫn UI</span>
-              </button>
             </div>
           </div>
         </div>
