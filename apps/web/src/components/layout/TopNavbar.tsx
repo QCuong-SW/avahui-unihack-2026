@@ -11,28 +11,11 @@ import {
   useActiveLandingSection,
 } from '@/components/ui/ScrollFocusSection';
 import {
-  BookOpen,
-  Compass,
-  LayoutDashboard,
   LogIn,
   Menu,
   PanelLeft,
-  PlusCircle,
-  Shield,
-  UserCircle,
-  Zap,
 } from 'lucide-react';
-import { UserRole } from '@avahui/shared';
-import { useAvaHuiState } from '@/hooks/useAvaHuiMockQuery';
 import { useSidebar } from './SidebarContext';
-
-const NAV_ITEMS = [
-  { href: '/dashboard', label: 'Tổng quan', icon: LayoutDashboard },
-  { href: '/circles', label: 'Dây hụi', icon: Compass },
-  { href: '/circles/create', label: 'Mở dây', icon: PlusCircle },
-  { href: '/profile', label: 'Hồ sơ', icon: UserCircle },
-  { href: '/guide', label: 'Hướng dẫn', icon: BookOpen },
-];
 
 const LANDING_NAV_ITEMS = [
   { id: 'giao-dien', label: 'Giao diện' },
@@ -45,12 +28,6 @@ export function TopNavbar() {
   const pathname = usePathname() || '/';
   const activeLandingSection = useActiveLandingSection('hero');
   const { isExpanded, toggleSidebar, toggleMobile } = useSidebar();
-  const { data: state } = useAvaHuiState();
-  const currentUser =
-    state?.users.find((u) => u.id === state.currentUserId) || state?.users[0];
-  const isStaff =
-    currentUser?.role === UserRole.ADMIN ||
-    currentUser?.role === UserRole.VERIFIER;
 
   // Dedicated Marketing/Product Navbar for the public Landing Page (`/`)
   if (pathname === '/') {

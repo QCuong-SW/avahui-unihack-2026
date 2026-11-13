@@ -37,45 +37,45 @@ function AppShellContent({ children }: { children: React.ReactNode }) {
       {/* Left Collapsible Utility Sidebar for App Views */}
       {isAppView && <AppSidebar />}
 
-      <main
-        className={`flex-1 transition-[padding] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-          isLanding
-            ? 'w-full'
-            : isStandaloneAuthScreen
-            ? 'mx-auto w-full max-w-7xl px-3 sm:px-4 py-4 sm:py-6'
-            : isExpanded
-            ? 'md:pl-64 mx-auto w-full max-w-7xl px-3 sm:px-4 py-4 sm:py-6 pb-24 md:pb-8'
-            : 'md:pl-[72px] mx-auto w-full max-w-7xl px-3 sm:px-4 py-4 sm:py-6 pb-24 md:pb-8'
-        }`}
-      >
-        <RouteGuard>
-          <PageTransition>{children}</PageTransition>
-        </RouteGuard>
-      </main>
-
-      <footer
-        className={`border-t border-zinc-800/80 bg-zinc-950/90 py-4 text-xs text-zinc-500 backdrop-blur-md transition-[padding] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-          isAppView && isExpanded
-            ? 'md:pl-64'
-            : isAppView
-            ? 'md:pl-[72px]'
+      {/* Content Area smoothly offset by Sidebar width */}
+      <div
+        className={`flex-1 flex flex-col transition-[margin-left] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isAppView
+            ? isExpanded
+              ? 'md:ml-64'
+              : 'md:ml-[72px]'
             : ''
         }`}
       >
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md border border-zinc-700 bg-zinc-900">
-              <AvahuiLogo size={20} roundedClass="rounded-sm" />
+        <main
+          className={
+            isLanding
+              ? 'w-full flex-1'
+              : 'mx-auto w-full max-w-7xl flex-1 px-3 sm:px-4 py-4 sm:py-6 pb-24 md:pb-8'
+          }
+        >
+          <RouteGuard>
+            <PageTransition>{children}</PageTransition>
+          </RouteGuard>
+        </main>
+
+        <footer className="border-t border-zinc-800/80 bg-zinc-950/90 py-4 text-xs text-zinc-500 backdrop-blur-md">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md border border-zinc-700 bg-zinc-900">
+                <AvahuiLogo size={20} roundedClass="rounded-sm" />
+              </div>
+              <span className="font-mono font-bold uppercase tracking-wider text-zinc-300">
+                Avahui On-Chain ROSCA
+              </span>
+              <span className="hidden sm:inline-block font-mono text-[10px] text-zinc-500">
+                • Avalanche Fuji (43113)
+              </span>
             </div>
-            <span className="font-mono font-bold uppercase tracking-wider text-zinc-300">
-              Avahui On-Chain ROSCA
-            </span>
-            <span className="hidden sm:inline-block font-mono text-[10px] text-zinc-500">
-              • Avalanche Fuji (43113)
-            </span>
           </div>
-        </div>
-      </footer>
+        </footer>
+      </div>
+
       <MobileBottomNav />
       <TransactionLifecycleModal />
     </div>

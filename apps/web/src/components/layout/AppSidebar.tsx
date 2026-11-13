@@ -36,7 +36,7 @@ export function AppSidebar() {
   const pathname = usePathname() || '/';
   const { isExpanded, toggleSidebar, isMobileOpen, closeMobile } = useSidebar();
   const { data: state } = useAvaHuiState();
-  const { startTour } = useInteractiveTour();
+  const { startTour, isTourActive } = useInteractiveTour();
 
   const currentUser =
     state?.users.find((u) => u.id === state.currentUserId) || state?.users[0];
@@ -58,19 +58,16 @@ export function AppSidebar() {
       {/* ================================================================= */}
       <aside
         aria-label="Thanh tiện ích điều hướng"
-        className={`fixed left-0 top-[57px] sm:top-[61px] bottom-0 z-30 hidden md:flex flex-col border-r border-zinc-800/80 bg-zinc-950/95 backdrop-blur-xl shadow-xl transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-          isExpanded ? 'w-64' : 'w-[72px]'
-        }`}
+        className={`fixed left-0 bottom-0 z-30 hidden md:flex flex-col border-r border-zinc-800/80 bg-zinc-950/95 backdrop-blur-xl shadow-xl transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          isTourActive ? 'top-[98px] sm:top-[102px]' : 'top-[57px] sm:top-[61px]'
+        } ${isExpanded ? 'w-64' : 'w-[72px]'}`}
       >
         {/* Sidebar Header & Toggle */}
         <div className="flex items-center justify-between border-b border-zinc-800/80 px-3.5 py-3">
           {isExpanded ? (
             <div className="flex items-center gap-2 overflow-hidden">
-              <span className="font-mono text-xs font-bold uppercase tracking-wider text-zinc-400">
+              <span className="font-mono text-xs font-bold uppercase tracking-wider text-zinc-300">
                 Menu Tiện Ích
-              </span>
-              <span className="rounded-full border border-avalanche-red/30 bg-avalanche-red/10 px-1.5 py-0.2 font-mono text-[9px] font-bold text-avalanche-red">
-                V2
               </span>
             </div>
           ) : (
