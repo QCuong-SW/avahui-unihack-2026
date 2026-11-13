@@ -40,7 +40,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </RouteGuard>
         </main>
         <footer className="border-t border-zinc-800/80 bg-zinc-950/90 py-4 text-xs text-zinc-500 backdrop-blur-md">
-          <div className="mx-auto flex max-w-7xl flex-col sm:flex-row items-center justify-between gap-3 px-4">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4">
             <div className="flex items-center gap-2.5">
               <div className="flex h-7 w-7 items-center justify-center rounded-md border border-zinc-700 bg-zinc-900">
                 <AvahuiLogo size={20} roundedClass="rounded-sm" />
@@ -51,15 +51,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <span className="hidden sm:inline-block font-mono text-[10px] text-zinc-500">
                 • Avalanche Fuji (43113)
               </span>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-4 font-mono text-[11px] text-zinc-400">
-              <span className="flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Nghị định 19/2019/NĐ-CP</span>
-              </span>
-              <span>•</span>
-              <span>Smart Contract Verified</span>
             </div>
           </div>
         </footer>
