@@ -62,17 +62,15 @@ export function AppSidebar() {
         } ${isExpanded ? 'w-64' : 'w-[72px]'}`}
       >
         {/* Sidebar Header & Toggle */}
-        <div className="flex items-center justify-between border-b border-zinc-800/80 px-3.5 py-3">
-          {isExpanded ? (
-            <div className="flex items-center gap-2 overflow-hidden">
-              <span className="font-mono text-xs font-bold uppercase tracking-wider text-zinc-300">
-                Menu Tiện Ích
-              </span>
-            </div>
-          ) : (
-            <div className="mx-auto">
-              <AvahuiLogo size={22} roundedClass="rounded-sm" />
-            </div>
+        <div
+          className={`flex items-center border-b border-zinc-800/80 py-3 ${
+            isExpanded ? 'justify-between px-3.5' : 'justify-center px-0'
+          }`}
+        >
+          {isExpanded && (
+            <span className="font-mono text-xs font-bold uppercase tracking-wider text-zinc-300">
+              Menu Tiện Ích
+            </span>
           )}
 
           <HoverHint
