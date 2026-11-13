@@ -201,7 +201,7 @@ export function CreateCircleView() {
         onSubmit={handleSubmit(onSubmit)}
         className="grid items-start gap-5 sm:gap-6 lg:grid-cols-12 animate-fade-up"
       >
-        <div className="relative overflow-hidden space-y-5 rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl p-4 sm:p-6 lg:col-span-7 shadow-xl">
+        <div className="relative overflow-hidden space-y-5 rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl p-4 sm:p-6 lg:col-span-7 shadow-xl transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)]">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-avalanche-red/60 to-transparent" />
 
           <h1 className="border-b border-zinc-800/80 pb-3.5 font-mono text-xl font-extrabold uppercase tracking-wider text-white">
@@ -254,15 +254,24 @@ export function CreateCircleView() {
                 className="w-full"
               >
                 <div
-                  onClick={() =>
+                  onClick={() => {
                     setValue('allocationMode', AllocationMode.BIDDING, {
                       shouldValidate: true,
-                    })
-                  }
-                  className={`flex w-full cursor-pointer items-center gap-2 rounded-xl border p-3.5 font-mono text-sm font-bold uppercase tracking-wider transition-all ${
+                    });
+                    if (!watchedValues.minBidUsdc || watchedValues.minBidUsdc < 1) {
+                      setValue('minBidUsdc', 2);
+                    }
+                    if (!watchedValues.maxBidUsdc || watchedValues.maxBidUsdc <= (watchedValues.minBidUsdc || 2)) {
+                      setValue('maxBidUsdc', Math.min(35, Math.floor(basePotUsdc * 0.2)));
+                    }
+                    if (!watchedValues.biddingDurationSeconds || watchedValues.biddingDurationSeconds < 30) {
+                      setValue('biddingDurationSeconds', 120);
+                    }
+                  }}
+                  className={`flex w-full cursor-pointer items-center gap-2 rounded-xl border p-3.5 font-mono text-sm font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 ${
                     watchedValues.allocationMode === AllocationMode.BIDDING
                       ? 'border-avalanche-red/60 bg-avalanche-red/10 text-white shadow-md shadow-avalanche-red/15'
-                      : 'border-zinc-800/80 bg-zinc-900/60 text-zinc-400 hover:border-zinc-700'
+                      : 'border-zinc-800/80 bg-zinc-900/60 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
                   }`}
                 >
                   <Gavel className="h-4 w-4 text-avalanche-red" />
@@ -275,15 +284,18 @@ export function CreateCircleView() {
                 className="w-full"
               >
                 <div
-                  onClick={() =>
+                  onClick={() => {
                     setValue('allocationMode', AllocationMode.FIXED, {
                       shouldValidate: true,
-                    })
-                  }
-                  className={`flex w-full cursor-pointer items-center gap-2 rounded-xl border p-3.5 font-mono text-sm font-bold uppercase tracking-wider transition-all ${
+                    });
+                    setValue('minBidUsdc', 0);
+                    setValue('maxBidUsdc', 0);
+                    setValue('biddingDurationSeconds', 0);
+                  }}
+                  className={`flex w-full cursor-pointer items-center gap-2 rounded-xl border p-3.5 font-mono text-sm font-bold uppercase tracking-wider transition-all duration-200 active:scale-95 ${
                     watchedValues.allocationMode === AllocationMode.FIXED
                       ? 'border-emerald-500/60 bg-emerald-500/10 text-white shadow-md shadow-emerald-500/15'
-                      : 'border-zinc-800/80 bg-zinc-900/60 text-zinc-400 hover:border-zinc-700'
+                      : 'border-zinc-800/80 bg-zinc-900/60 text-zinc-400 hover:border-zinc-700 hover:text-zinc-200'
                   }`}
                 >
                   <Repeat className="h-4 w-4 text-emerald-400" />
@@ -348,45 +360,86 @@ export function CreateCircleView() {
             </div>
           </div>
 
-          {/* Bid Bounds */}
-          {watchedValues.allocationMode === AllocationMode.BIDDING && (
-            <div className="grid gap-4 rounded-xl border border-avalanche-red/30 bg-avalanche-red/5 p-4 sm:grid-cols-2">
-              <div>
-                <label className="block font-mono text-xs font-bold uppercase tracking-wider text-zinc-300">
-                  Min Bid (mUSDC)
-                </label>
-                <input
-                  type="number"
-                  {...register('minBidUsdc', { valueAsNumber: true })}
-                  className="mt-1.5 w-full rounded-lg border border-zinc-700/80 bg-zinc-900 px-3 py-1.5 font-mono text-sm text-white"
-                />
-                {errors.minBidUsdc && (
-                  <p className="mt-1 font-mono text-xs text-rose-400">
-                    {errors.minBidUsdc.message}
-                  </p>
-                )}
-              </div>
+          {/* Smooth Auto-Height Morphing Section for Mode Configuration */}
+          <div className="space-y-3">
+            {/* 1. Bid Bounds (Expands smoothly in BIDDING mode, collapses to 0 height in FIXED mode) */}
+            <div
+              className={`grid transition-[grid-template-rows,opacity,margin] duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                watchedValues.allocationMode === AllocationMode.BIDDING
+                  ? 'grid-rows-[1fr] opacity-100 my-0'
+                  : 'grid-rows-[0fr] opacity-0 -my-1.5 pointer-events-none'
+              }`}
+            >
+              <div className="overflow-hidden">
+                <div className="grid gap-4 rounded-xl border border-avalanche-red/30 bg-avalanche-red/5 p-4 sm:grid-cols-2 shadow-inner">
+                  <div>
+                    <label className="block font-mono text-xs font-bold uppercase tracking-wider text-zinc-300">
+                      Min Bid (mUSDC)
+                    </label>
+                    <input
+                      type="number"
+                      {...register('minBidUsdc', { valueAsNumber: true })}
+                      className="mt-1.5 w-full rounded-lg border border-zinc-700/80 bg-zinc-900 px-3 py-1.5 font-mono text-sm text-white focus:border-avalanche-red focus:outline-none transition-colors"
+                    />
+                    {errors.minBidUsdc && (
+                      <p className="mt-1 font-mono text-xs text-rose-400">
+                        {errors.minBidUsdc.message}
+                      </p>
+                    )}
+                  </div>
 
-              <div>
-                <label className="block font-mono text-xs font-bold uppercase tracking-wider text-zinc-300">
-                  Max Bid (&le; {formatUsdc(basePotUsdc * 0.5)} mUSDC)
-                </label>
-                <input
-                  type="number"
-                  {...register('maxBidUsdc', { valueAsNumber: true })}
-                  className="mt-1.5 w-full rounded-lg border border-zinc-700/80 bg-zinc-900 px-3 py-1.5 font-mono text-sm text-white"
-                />
-                {errors.maxBidUsdc && (
-                  <p className="mt-1 font-mono text-xs text-rose-400">
-                    {errors.maxBidUsdc.message}
-                  </p>
-                )}
+                  <div>
+                    <label className="block font-mono text-xs font-bold uppercase tracking-wider text-zinc-300">
+                      Max Bid (&le; {formatUsdc(basePotUsdc * 0.5)} mUSDC)
+                    </label>
+                    <input
+                      type="number"
+                      {...register('maxBidUsdc', { valueAsNumber: true })}
+                      className="mt-1.5 w-full rounded-lg border border-zinc-700/80 bg-zinc-900 px-3 py-1.5 font-mono text-sm text-white focus:border-avalanche-red focus:outline-none transition-colors"
+                    />
+                    {errors.maxBidUsdc && (
+                      <p className="mt-1 font-mono text-xs text-rose-400">
+                        {errors.maxBidUsdc.message}
+                      </p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-          )}
+
+            {/* 2. Fixed Order Notice (Expands smoothly in FIXED mode, collapses to 0 height in BIDDING mode) */}
+            <div
+              className={`grid transition-[grid-template-rows,opacity,margin] duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                watchedValues.allocationMode === AllocationMode.FIXED
+                  ? 'grid-rows-[1fr] opacity-100 my-0'
+                  : 'grid-rows-[0fr] opacity-0 -my-1.5 pointer-events-none'
+              }`}
+            >
+              <div className="overflow-hidden">
+                <div className="flex items-start gap-3 rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-3.5 text-xs font-mono text-emerald-300 shadow-sm">
+                  <Repeat className="h-4 w-4 mt-0.5 text-emerald-400 shrink-0" />
+                  <div className="space-y-1">
+                    <div className="font-bold uppercase tracking-wider text-emerald-200">
+                      Đã kích hoạt chế độ Thứ Tự Cố Định
+                    </div>
+                    <p className="text-[11px] text-zinc-300 leading-relaxed font-sans">
+                      Các thành viên nhận toàn bộ 100% quỹ lần lượt theo thứ tự gia nhập (Slot #1 &rarr; Slot #{watchedValues.maxMembers || 5}).
+                      Không tổ chức vòng đấu giá chiết khấu, quỹ được giải ngân trực tiếp mỗi kỳ.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Timing */}
-          <div className="grid gap-3 rounded-xl border border-zinc-800/80 bg-zinc-900/50 p-4 sm:grid-cols-3">
+          <div
+            className={`grid gap-3 rounded-xl border border-zinc-800/80 bg-zinc-900/50 p-4 transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              watchedValues.allocationMode === AllocationMode.BIDDING
+                ? 'sm:grid-cols-3'
+                : 'sm:grid-cols-2'
+            }`}
+          >
             <div>
               <label className="flex items-center gap-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
                 <Clock className="h-3 w-3 text-emerald-400" />
@@ -395,12 +448,12 @@ export function CreateCircleView() {
               <input
                 type="number"
                 {...register('roundDurationSeconds', { valueAsNumber: true })}
-                className="mt-1.5 w-full rounded-lg border border-zinc-700/80 bg-zinc-900 px-3 py-1.5 font-mono text-xs text-white"
+                className="mt-1.5 w-full rounded-lg border border-zinc-700/80 bg-zinc-900 px-3 py-1.5 font-mono text-xs text-white focus:border-avalanche-red focus:outline-none transition-colors"
               />
             </div>
 
             {watchedValues.allocationMode === AllocationMode.BIDDING && (
-              <div>
+              <div className="animate-fade-in">
                 <label className="block font-mono text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
                   Bidding (giây)
                 </label>
@@ -409,7 +462,7 @@ export function CreateCircleView() {
                   {...register('biddingDurationSeconds', {
                     valueAsNumber: true,
                   })}
-                  className="mt-1.5 w-full rounded-lg border border-zinc-700/80 bg-zinc-900 px-3 py-1.5 font-mono text-xs text-white"
+                  className="mt-1.5 w-full rounded-lg border border-zinc-700/80 bg-zinc-900 px-3 py-1.5 font-mono text-xs text-white focus:border-avalanche-red focus:outline-none transition-colors"
                 />
                 {errors.biddingDurationSeconds && (
                   <p className="mt-1 font-mono text-[11px] text-rose-400">
@@ -426,7 +479,7 @@ export function CreateCircleView() {
               <input
                 type="number"
                 {...register('gracePeriodSeconds', { valueAsNumber: true })}
-                className="mt-1.5 w-full rounded-lg border border-zinc-700/80 bg-zinc-900 px-3 py-1.5 font-mono text-xs text-white"
+                className="mt-1.5 w-full rounded-lg border border-zinc-700/80 bg-zinc-900 px-3 py-1.5 font-mono text-xs text-white focus:border-avalanche-red focus:outline-none transition-colors"
               />
             </div>
           </div>
@@ -437,10 +490,17 @@ export function CreateCircleView() {
               Cơ chế Bảo mật &amp; Kho Sinh Lời V2
             </div>
             <div className="grid gap-2.5 sm:grid-cols-2 text-xs">
-              <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-zinc-800/80 bg-zinc-900/80 px-3 py-2.5 text-zinc-200 hover:border-zinc-700 transition-colors">
+              <label
+                className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 text-zinc-200 transition-all ${
+                  watchedValues.allocationMode === AllocationMode.FIXED
+                    ? 'border-zinc-800/40 bg-zinc-900/30 opacity-40 cursor-not-allowed'
+                    : 'border-zinc-800/80 bg-zinc-900/80 hover:border-zinc-700'
+                }`}
+              >
                 <input
                   type="checkbox"
                   {...register('isSealedBid')}
+                  disabled={watchedValues.allocationMode === AllocationMode.FIXED}
                   className="h-3.5 w-3.5 accent-avalanche-red"
                 />
                 <span>Đấu giá kín 2 pha (Chống lộ giá)</span>
@@ -508,7 +568,7 @@ export function CreateCircleView() {
         </div>
 
         {/* Right Live Summary Box */}
-        <div className="sticky top-24 space-y-4 rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl p-6 shadow-2xl lg:col-span-5 relative overflow-hidden">
+        <div className="sticky top-24 space-y-4 rounded-xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl p-6 shadow-2xl lg:col-span-5 relative overflow-hidden transition-all duration-350 ease-[cubic-bezier(0.16,1,0.3,1)]">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent" />
 
           <div className="flex items-center justify-between border-b border-zinc-800/80 pb-3.5">

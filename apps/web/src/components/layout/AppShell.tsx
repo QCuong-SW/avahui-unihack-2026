@@ -16,7 +16,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <InteractiveTourProvider>
-      <div className="relative flex min-h-screen flex-col bg-surface-bg bg-unihack-grid bg-[size:32px_32px] overflow-x-hidden">
+      <div className="relative flex min-h-screen flex-col bg-surface-bg bg-unihack-grid bg-[size:32px_32px] overflow-x-clip">
         {/* Ambient Subtle Glow Orbs */}
         <div
           aria-hidden="true"

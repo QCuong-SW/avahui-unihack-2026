@@ -50,85 +50,88 @@ export function TopNavbar() {
   // Dedicated Marketing/Product Navbar for the public Landing Page (`/`)
   if (pathname === '/') {
     return (
-      <header className="sticky top-0 z-40 border-b border-zinc-800/80 bg-zinc-950/85 backdrop-blur-xl animate-fade-down">
-        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-6">
-            <Link
-              href="/"
-              onClick={() => scrollToLandingSection('hero')}
-              className="flex items-center gap-2.5 transition-transform hover:scale-[1.02] active:scale-95"
-            >
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-avalanche-red/40 bg-avalanche-red/10 shadow-[0_0_12px_rgba(232,65,66,0.2)]">
-                <AvahuiLogo size={28} roundedClass="rounded-sm" />
-              </div>
-              <div>
-                <span className="text-base sm:text-lg font-black uppercase tracking-wider text-white">
-                  Avahui
-                </span>
-                <span className="ml-2 hidden sm:inline-block rounded-md border border-avalanche-red/30 bg-avalanche-red/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-avalanche-red">
-                  V2 ON-CHAIN
-                </span>
-              </div>
-            </Link>
+      <>
+        <header className="fixed top-0 left-0 right-0 z-40 w-full border-b border-zinc-800/80 bg-zinc-950/90 backdrop-blur-xl animate-fade-down shadow-lg">
+          <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+            <div className="flex items-center gap-6">
+              <Link
+                href="/"
+                onClick={() => scrollToLandingSection('hero')}
+                className="flex items-center gap-2.5 transition-transform hover:scale-[1.02] active:scale-95"
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-avalanche-red/40 bg-avalanche-red/10 shadow-[0_0_12px_rgba(232,65,66,0.2)]">
+                  <AvahuiLogo size={28} roundedClass="rounded-sm" />
+                </div>
+                <div>
+                  <span className="text-base sm:text-lg font-black uppercase tracking-wider text-white">
+                    Avahui
+                  </span>
+                  <span className="ml-2 hidden sm:inline-block rounded-md border border-avalanche-red/30 bg-avalanche-red/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-avalanche-red">
+                    V2 ON-CHAIN
+                  </span>
+                </div>
+              </Link>
 
-            <nav className="hidden items-center gap-5 font-mono text-xs font-bold uppercase tracking-wider md:flex">
-              {LANDING_NAV_ITEMS.map((item) => {
-                const isActive = activeLandingSection === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => scrollToLandingSection(item.id)}
-                    className={`relative py-1 transition-all duration-300 ${
-                      isActive
-                        ? 'text-white'
-                        : 'text-zinc-400 hover:text-zinc-200'
-                    }`}
-                  >
-                    <span>{item.label}</span>
-                    <span
-                      className={`absolute bottom-0 left-0 right-0 h-[2px] bg-avalanche-red shadow-[0_0_8px_rgba(232,65,66,0.9)] transition-all duration-300 ${
-                        isActive ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0'
+              <nav className="hidden items-center gap-5 font-mono text-xs font-bold uppercase tracking-wider md:flex">
+                {LANDING_NAV_ITEMS.map((item) => {
+                  const isActive = activeLandingSection === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => scrollToLandingSection(item.id)}
+                      className={`relative py-1 transition-all duration-300 ${
+                        isActive
+                          ? 'text-white'
+                          : 'text-zinc-400 hover:text-zinc-200'
                       }`}
-                    />
-                  </button>
-                );
-              })}
+                    >
+                      <span>{item.label}</span>
+                      <span
+                        className={`absolute bottom-0 left-0 right-0 h-[2px] bg-avalanche-red shadow-[0_0_8px_rgba(232,65,66,0.9)] transition-all duration-300 ${
+                          isActive ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0'
+                        }`}
+                      />
+                    </button>
+                  );
+                })}
+
+                <Link
+                  href="/circles"
+                  className="relative py-1 text-zinc-400 transition-colors hover:text-emerald-400"
+                >
+                  Dây hụi Live
+                </Link>
+                <Link
+                  href="/guide"
+                  className="relative py-1 text-zinc-400 transition-colors hover:text-white"
+                >
+                  Hướng dẫn
+                </Link>
+              </nav>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2 font-mono text-xs font-bold uppercase tracking-wider text-zinc-200 transition hover:border-zinc-500 hover:text-white"
+              >
+                <LogIn className="h-3.5 w-3.5" />
+                <span>Đăng nhập</span>
+              </Link>
 
               <Link
-                href="/circles"
-                className="relative py-1 text-zinc-400 transition-colors hover:text-emerald-400"
+                href="/dashboard"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-avalanche-red bg-gradient-to-r from-avalanche-red to-red-600 px-3.5 py-2 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-avalanche-red/25 transition hover:brightness-110 active:scale-95"
               >
-                Dây hụi Live
+                <Zap className="h-3.5 w-3.5" />
+                <span>Mở App</span>
               </Link>
-              <Link
-                href="/guide"
-                className="relative py-1 text-zinc-400 transition-colors hover:text-white"
-              >
-                Hướng dẫn
-              </Link>
-            </nav>
+            </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-700 bg-zinc-900 px-3.5 py-2 font-mono text-xs font-bold uppercase tracking-wider text-zinc-200 transition hover:border-zinc-500 hover:text-white"
-            >
-              <LogIn className="h-3.5 w-3.5" />
-              <span>Đăng nhập</span>
-            </Link>
-
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-avalanche-red bg-gradient-to-r from-avalanche-red to-red-600 px-3.5 py-2 font-mono text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-avalanche-red/25 transition hover:brightness-110 active:scale-95"
-            >
-              <Zap className="h-3.5 w-3.5" />
-              <span>Mở App</span>
-            </Link>
-          </div>
-        </div>
-      </header>
+        </header>
+        <div className="h-[61px] shrink-0 pointer-events-none" aria-hidden="true" />
+      </>
     );
   }
 
@@ -138,79 +141,85 @@ export function TopNavbar() {
 
   if (isStandaloneAuthScreen) {
     return (
-      <header className="sticky top-0 z-40 border-b border-zinc-800/80 bg-zinc-950/85 backdrop-blur-xl animate-fade-down">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-3 sm:px-4 py-3">
-          <Link
-            href="/"
-            className="flex items-center gap-2.5 transition-transform hover:scale-[1.02] active:scale-95"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-avalanche-red/40 bg-avalanche-red/10 shadow-[0_0_12px_rgba(232,65,66,0.2)]">
-              <AvahuiLogo size={28} roundedClass="rounded-sm" />
-            </div>
-            <span className="text-base sm:text-lg font-black uppercase tracking-wider text-white">
-              Avahui
+      <>
+        <header className="fixed top-0 left-0 right-0 z-40 w-full border-b border-zinc-800/80 bg-zinc-950/90 backdrop-blur-xl animate-fade-down shadow-lg">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-3 sm:px-4 py-3">
+            <Link
+              href="/"
+              className="flex items-center gap-2.5 transition-transform hover:scale-[1.02] active:scale-95"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-avalanche-red/40 bg-avalanche-red/10 shadow-[0_0_12px_rgba(232,65,66,0.2)]">
+                <AvahuiLogo size={28} roundedClass="rounded-sm" />
+              </div>
+              <span className="text-base sm:text-lg font-black uppercase tracking-wider text-white">
+                Avahui
+              </span>
+            </Link>
+            <span className="rounded-full border border-zinc-800 bg-zinc-900 px-3 py-1 font-mono text-[11px] font-medium text-zinc-400">
+              Fuji Testnet (43113)
             </span>
-          </Link>
-          <span className="rounded-full border border-zinc-800 bg-zinc-900 px-3 py-1 font-mono text-[11px] font-medium text-zinc-400">
-            Fuji Testnet (43113)
-          </span>
-        </div>
-      </header>
+          </div>
+        </header>
+        <div className="h-[61px] shrink-0 pointer-events-none" aria-hidden="true" />
+      </>
     );
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-zinc-800/80 bg-zinc-950/85 backdrop-blur-xl animate-fade-down">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3">
-        {/* Brand & Desktop Navigation */}
-        <div className="flex items-center gap-4 sm:gap-6">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 sm:gap-2.5 transition-transform hover:scale-[1.02] active:scale-95"
-          >
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-avalanche-red/40 bg-avalanche-red/10 shadow-[0_0_12px_rgba(232,65,66,0.2)]">
-              <AvahuiLogo size={28} roundedClass="rounded-sm" />
-            </div>
-            <span className="text-base sm:text-lg font-black uppercase tracking-wider text-white">
-              Avahui
-            </span>
-          </Link>
+    <>
+      <header className="fixed top-0 left-0 right-0 z-40 w-full border-b border-zinc-800/80 bg-zinc-950/90 backdrop-blur-xl animate-fade-down shadow-lg">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-2.5 sm:py-3">
+          {/* Brand & Desktop Navigation */}
+          <div className="flex items-center gap-4 sm:gap-6">
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2 sm:gap-2.5 transition-transform hover:scale-[1.02] active:scale-95"
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-avalanche-red/40 bg-avalanche-red/10 shadow-[0_0_12px_rgba(232,65,66,0.2)]">
+                <AvahuiLogo size={28} roundedClass="rounded-sm" />
+              </div>
+              <span className="text-base sm:text-lg font-black uppercase tracking-wider text-white">
+                Avahui
+              </span>
+            </Link>
 
-          <nav className="hidden items-center gap-1 md:flex">
-            {[
-              ...NAV_ITEMS,
-              ...(isStaff
-                ? [{ href: '/admin', label: 'Quản trị', icon: Shield }]
-                : []),
-            ].map((item) => {
-              const Icon = item.icon;
-              const isActive =
-                pathname === item.href ||
-                (item.href !== '/circles' && pathname?.startsWith(item.href));
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider transition-all duration-150 ${
-                    isActive
-                      ? 'border-avalanche-red bg-avalanche-red text-white shadow-md shadow-avalanche-red/25'
-                      : 'border-transparent text-zinc-400 hover:border-zinc-800 hover:bg-zinc-900 hover:text-white'
-                  }`}
-                >
-                  <Icon className="h-3.5 w-3.5" />
-                  <span>{item.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
+            <nav className="hidden items-center gap-1 md:flex">
+              {[
+                ...NAV_ITEMS,
+                ...(isStaff
+                  ? [{ href: '/admin', label: 'Quản trị', icon: Shield }]
+                  : []),
+              ].map((item) => {
+                const Icon = item.icon;
+                const isActive =
+                  pathname === item.href ||
+                  (item.href !== '/circles' && pathname?.startsWith(item.href));
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-mono font-bold uppercase tracking-wider transition-all duration-150 ${
+                      isActive
+                        ? 'border-avalanche-red bg-avalanche-red text-white shadow-md shadow-avalanche-red/25'
+                        : 'border-transparent text-zinc-400 hover:border-zinc-800 hover:bg-zinc-900 hover:text-white'
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    <span>{item.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
 
-        {/* Right Tools: Embedded Wallet & Notifications */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <EmbeddedWalletBar />
-          <NotificationPopover />
+          {/* Right Tools: Embedded Wallet & Notifications */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <EmbeddedWalletBar />
+            <NotificationPopover />
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+      <div className="h-[57px] sm:h-[61px] shrink-0 pointer-events-none" aria-hidden="true" />
+    </>
   );
 }

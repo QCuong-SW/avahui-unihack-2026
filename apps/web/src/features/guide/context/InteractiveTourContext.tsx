@@ -787,27 +787,30 @@ export function InteractiveTourProvider({
     <InteractiveTourContext.Provider value={value}>
       {/* Persistent Top Ribbon when Interactive UI Tour Mode is running */}
       {isTourActive && (
-        <div className="sticky top-0 z-[65] border-b border-amber-500/50 bg-zinc-950/95 px-3 sm:px-6 py-2.5 backdrop-blur-md shadow-lg">
-          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 font-mono text-xs">
-            <div className="flex items-center gap-2 text-amber-200">
-              <Compass className="h-4 w-4 text-amber-400 animate-spin" style={{ animationDuration: '8s' }} />
-              <span className="font-extrabold uppercase tracking-wider text-amber-300">
-                HƯỚNG DẪN TƯƠNG TÁC TRÊN UI
-              </span>
-              <span className="hidden sm:inline text-zinc-400">
-                • Dữ liệu mô phỏng an toàn, bấm trực tiếp vào vùng phát sáng (không tốn tiền thật)
-              </span>
+        <>
+          <div className="fixed top-[57px] sm:top-[61px] left-0 right-0 z-[39] border-b border-amber-500/50 bg-zinc-950/95 px-3 sm:px-6 py-2.5 backdrop-blur-md shadow-lg animate-fade-down">
+            <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 font-mono text-xs">
+              <div className="flex items-center gap-2 text-amber-200">
+                <Compass className="h-4 w-4 text-amber-400 animate-spin" style={{ animationDuration: '8s' }} />
+                <span className="font-extrabold uppercase tracking-wider text-amber-300">
+                  HƯỚNG DẪN TƯƠNG TÁC TRÊN UI
+                </span>
+                <span className="hidden sm:inline text-zinc-400">
+                  • Dữ liệu mô phỏng an toàn, bấm trực tiếp vào vùng phát sáng (không tốn tiền thật)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={exitTour}
+                className="inline-flex items-center gap-1 rounded-lg border border-zinc-700/80 bg-zinc-900 px-2.5 py-1 text-[11px] font-bold uppercase text-zinc-200 hover:border-rose-500/60 hover:text-rose-300 transition-colors"
+              >
+                <X className="h-3.5 w-3.5" />
+                <span>Thoát hướng dẫn</span>
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={exitTour}
-              className="inline-flex items-center gap-1 rounded-lg border border-zinc-700/80 bg-zinc-900 px-2.5 py-1 text-[11px] font-bold uppercase text-zinc-200 hover:border-rose-500/60 hover:text-rose-300 transition-colors"
-            >
-              <X className="h-3.5 w-3.5" />
-              <span>Thoát hướng dẫn</span>
-            </button>
           </div>
-        </div>
+          <div className="h-[41px] shrink-0 pointer-events-none" aria-hidden="true" />
+        </>
       )}
 
       {children}
