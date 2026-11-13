@@ -13,7 +13,6 @@ import {
 import {
   LogIn,
   Menu,
-  PanelLeft,
 } from 'lucide-react';
 import { useSidebar } from './SidebarContext';
 
@@ -27,7 +26,7 @@ const LANDING_NAV_ITEMS = [
 export function TopNavbar() {
   const pathname = usePathname() || '/';
   const activeLandingSection = useActiveLandingSection('hero');
-  const { isExpanded, toggleSidebar, toggleMobile } = useSidebar();
+  const { toggleMobile } = useSidebar();
 
   // Dedicated Marketing/Product Navbar for the public Landing Page (`/`)
   if (pathname === '/') {
@@ -135,20 +134,6 @@ export function TopNavbar() {
               className="inline-flex md:hidden items-center justify-center h-8 w-8 rounded-lg border border-zinc-800 bg-zinc-900/80 text-zinc-300 hover:text-white hover:bg-zinc-800 active:scale-95 transition-colors"
             >
               <Menu className="h-4 w-4" />
-            </button>
-
-            {/* Desktop Sidebar Toggle Button */}
-            <button
-              type="button"
-              onClick={toggleSidebar}
-              aria-label={isExpanded ? 'Thu gọn menu tiện ích' : 'Mở rộng menu tiện ích'}
-              className="hidden md:inline-flex items-center gap-1.5 rounded-lg border border-zinc-800 bg-zinc-900/80 px-2.5 py-1.5 font-mono text-xs font-semibold text-zinc-300 transition-colors hover:border-zinc-700 hover:bg-zinc-800 hover:text-white active:scale-95 shadow-sm"
-              title={isExpanded ? 'Thu gọn thanh tiện ích' : 'Mở rộng thanh tiện ích'}
-            >
-              <PanelLeft className="h-3.5 w-3.5 text-avalanche-red" />
-              <span className="hidden lg:inline text-[11px] text-zinc-400">
-                {isExpanded ? 'Thu gọn' : 'Mở rộng'}
-              </span>
             </button>
 
             <Link
