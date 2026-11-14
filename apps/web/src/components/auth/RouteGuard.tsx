@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuthSession } from '@/lib/auth/useAuthSession';
+import { CyberLoading } from '@/components/ui/CyberLoading';
 
 const AUTH_PUBLIC_ROUTES = ['/login', '/login/verify'];
 const ALWAYS_PUBLIC_ROUTES = ['/', '/guide'];
@@ -41,9 +42,11 @@ export function RouteGuard({ children }: { children: React.ReactNode }) {
 
   if (isLoading || !session) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center text-xs text-zinc-400">
-        Đang kiểm tra phiên đăng nhập...
-      </div>
+      <CyberLoading
+        title="Đang xác thực phiên đăng nhập..."
+        subtitle="Kiểm tra chữ ký số bảo mật & trạng thái kết nối máy chủ"
+        minHeight="min-h-[60vh]"
+      />
     );
   }
 

@@ -20,6 +20,7 @@ import { useTokenOperations } from '@/hooks/useTokenOperations';
 import { useTxLifecycle } from '@/features/transactions/hooks/useTxLifecycle';
 import { formatUsdc } from '@/lib/utils';
 import { HoverHint } from '@/components/ui/HoverHint';
+import { CyberLoading } from '@/components/ui/CyberLoading';
 import {
   AlertTriangle,
   ArrowLeft,
@@ -75,7 +76,15 @@ export function CreateCircleView() {
 
   const watchedValues = watch();
 
-  if (!state) return null;
+  if (!state) {
+    return (
+      <CyberLoading
+        title="Đang nạp cấu hình mở dây hụi..."
+        subtitle="Đọc thông số smart contract & tài sản thế chấp mUSDC"
+        minHeight="min-h-[55vh]"
+      />
+    );
+  }
 
   const currentUser =
     state.users.find((u) => u.id === state.currentUserId) || state.users[0];

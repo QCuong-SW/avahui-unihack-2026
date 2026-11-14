@@ -17,6 +17,7 @@ import { useTxLifecycle } from '@/features/transactions/hooks/useTxLifecycle';
 import { formatUsdc, shortenAddress } from '@/lib/utils';
 import { frontendEnv } from '@/config/env';
 import { HoverHint } from '@/components/ui/HoverHint';
+import { CyberLoading } from '@/components/ui/CyberLoading';
 import {
   ArrowLeftRight,
   Check,
@@ -107,9 +108,11 @@ export function ProfileView() {
 
   if (isLoading || !state || !currentUser) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center text-zinc-400">
-        Đang tải...
-      </div>
+      <CyberLoading
+        title="Đang tải hồ sơ & danh tiếng..."
+        subtitle="Tổng hợp địa chỉ ví, số dư tài sản và chứng nhận xác thực Team1"
+        minHeight="min-h-[55vh]"
+      />
     );
   }
 

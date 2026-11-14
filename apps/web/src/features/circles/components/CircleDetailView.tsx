@@ -15,6 +15,7 @@ import { MembersCollateralTab } from '@/features/members/components/MembersColla
 import { RoundsHistoryTab } from '@/features/payouts/components/RoundsHistoryTab';
 import { CircleTransactionsTab } from '@/features/transactions/components/CircleTransactionsTab';
 import { HoverHint } from '@/components/ui/HoverHint';
+import { CyberLoading } from '@/components/ui/CyberLoading';
 import {
   TOUR_SANDBOX_CIRCLE_ID,
   useInteractiveTour,
@@ -81,9 +82,11 @@ export function CircleDetailView({ circleId }: CircleDetailViewProps) {
     }
 
     return (
-      <div className="flex min-h-[50vh] items-center justify-center font-mono text-zinc-400">
-        Đang tải dữ liệu Dây hụi...
-      </div>
+      <CyberLoading
+        title="Đang tải dữ liệu Dây hụi..."
+        subtitle="Truy vấn hợp đồng thông minh Avalanche Fuji & danh sách thành viên"
+        minHeight="min-h-[55vh]"
+      />
     );
   }
 

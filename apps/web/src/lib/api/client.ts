@@ -123,7 +123,8 @@ export async function apiFetch<T>(
     headers['x-wallet-address'] = activeWallet;
   }
 
-  const timeoutMs = options.timeoutMs ?? 20_000;
+  // Generous 50s timeout to allow Render/Cloud free-tier cold starts (server wake-up) to complete
+  const timeoutMs = options.timeoutMs ?? 50_000;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
     controller.abort();

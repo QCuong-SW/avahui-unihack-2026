@@ -12,15 +12,25 @@ import { PrivyRuntimeSync } from '@/lib/privy/privyBridge';
 function BackendKeepAliveWarmup() {
   React.useEffect(() => {
     const ping = () => {
-      fetch('https://avahui-api.onrender.com/api/v1/health', {
+      const targetUrl = `${frontendEnv.apiUrl}/health`;
+      fetch(targetUrl, {
         method: 'GET',
         mode: 'cors',
         cache: 'no-store',
-      }).catch(() => {});
+      }).catch(() => {
+        // Also ping production Render backend in parallel so cloud instance stays awake
+        if (!targetUrl.includes('avahui-api.onrender.com')) {
+          fetch('https://avahui-api.onrender.com/api/v1/health', {
+            method: 'GET',
+            mode: 'cors',
+            cache: 'no-store',
+          }).catch(() => {});
+        }
+      });
     };
 
     ping();
-    const timer = setInterval(ping, 240_000);
+    const timer = setInterval(ping, 180_000);
     return () => clearInterval(timer);
   }, []);
 

@@ -18,6 +18,7 @@ import {
   resolveSignerClient,
 } from '@/lib/wagmi/client';
 import { shortenAddress } from '@/lib/utils';
+import { CyberLoading } from '@/components/ui/CyberLoading';
 import {
   AlertTriangle,
   Ban,
@@ -38,7 +39,7 @@ import {
 
 export function AdminConsoleView() {
   const queryClient = useQueryClient();
-  const { data: state } = useAvaHuiState();
+  const { data: state, isLoading } = useAvaHuiState();
   const { runTransaction } = useTxLifecycle();
 
   const currentUser =
@@ -231,6 +232,16 @@ export function AdminConsoleView() {
       },
     });
   };
+
+  if (isLoading || !state) {
+    return (
+      <CyberLoading
+        title="Đang kiểm tra quyền quản trị..."
+        subtitle="Xác minh vai trò Admin & Verifier trên Avalanche Fuji"
+        minHeight="min-h-[55vh]"
+      />
+    );
+  }
 
   if (!isVerifier) {
     return (

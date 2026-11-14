@@ -6,6 +6,7 @@ import { useAvaHuiState } from '@/hooks/useAvaHuiMockQuery';
 import { AllocationMode, CircleStatus } from '@avahui/shared';
 import { CircleCard } from './CircleCard';
 import { useInteractiveTour } from '@/features/guide/context/InteractiveTourContext';
+import { CyberLoading } from '@/components/ui/CyberLoading';
 import { Filter, PlusCircle, Search } from 'lucide-react';
 
 export function ExploreCirclesView() {
@@ -18,9 +19,11 @@ export function ExploreCirclesView() {
 
   if (isLoading || !state) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center font-mono text-xs text-zinc-400">
-        Đang tải danh sách dây hụi...
-      </div>
+      <CyberLoading
+        title="Đang tải danh sách dây hụi..."
+        subtitle="Truy vấn hợp đồng thông minh & dây hụi đang tuyển thành viên"
+        minHeight="min-h-[55vh]"
+      />
     );
   }
 

@@ -16,6 +16,7 @@ import { EmailLoginForm } from './EmailLoginForm';
 import { shortenAddress } from '@/lib/utils';
 import { HoverHint } from '@/components/ui/HoverHint';
 import { AvahuiLogo } from '@/components/ui/AvahuiLogo';
+import { CyberLoading } from '@/components/ui/CyberLoading';
 import {
   AlertCircle,
   CheckCircle2,
@@ -60,7 +61,17 @@ export function LoginForm() {
     }).catch(() => {});
   }, []);
 
-  if (!state) return null;
+  if (!state) {
+    return (
+      <div className="rounded-2xl border border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl p-4 sm:p-6 shadow-2xl">
+        <CyberLoading
+          title="Đang kết nối hệ thống đăng nhập..."
+          subtitle="Sẵn sàng đăng nhập Google / Email / Ví Web3"
+          minHeight="min-h-[380px]"
+        />
+      </div>
+    );
+  }
 
   const isBusy =
     uiState === 'LOADING_GOOGLE' ||

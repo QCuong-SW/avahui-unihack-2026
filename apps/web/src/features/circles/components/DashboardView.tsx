@@ -12,6 +12,7 @@ import { computeWithdrawBreakdown, formatUsdc } from '@/lib/utils';
 import { CircleCard } from './CircleCard';
 import { HoverHint } from '@/components/ui/HoverHint';
 import { useInteractiveTour } from '@/features/guide/context/InteractiveTourContext';
+import { CyberLoading } from '@/components/ui/CyberLoading';
 import {
   AlertCircle,
   ArrowRight,
@@ -49,9 +50,11 @@ export function DashboardView() {
 
   if (isLoading || !state) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center font-mono text-xs text-zinc-400">
-        Đang tải tổng quan tài chính...
-      </div>
+      <CyberLoading
+        title="Đang tải tổng quan tài chính..."
+        subtitle="Tổng hợp số dư ví, tài sản thế chấp và dây hụi đang tham gia"
+        minHeight="min-h-[55vh]"
+      />
     );
   }
 
