@@ -54,16 +54,52 @@ function getInitialState(): AvaHuiMockState {
     })
   );
   const circles: CircleItem[] = (JSON.parse(JSON.stringify(MOCK_CIRCLES)) as CircleItem[]).map(
-    (c, idx) => ({
-      ...c,
-      isSealedBid: c.allocationMode === AllocationMode.BIDDING,
-      enableYieldVault: true,
-      yieldApyBps: 650,
-      accruedYieldFormatted: ((idx + 1) * 3.25).toFixed(2),
-      isPrivateInvite: false,
-      inviteCode: `AVAHUI-${c.id.slice(-4).toUpperCase()}`,
-      requireTeam1Attestation: true,
-    })
+    (c, idx) => {
+      const enrichedMembers = c.members.map((m, mIdx) => ({
+        ...m,
+        team1Verified: true,
+        trustTier: mIdx === 0 ? 2 : 1,
+      }));
+
+      // Prepare cir_bidding_active_01 specifically for Scene 3 & Scene 4 Video Demo:
+      // 4/5 members paid in Round #2 (Slots 1, 2, 3, 4), only Slot #5 (Bảo Đặng) is late -> ready for Auto-Slash!
+      if (c.id === 'cir_bidding_active_01') {
+        const round2 = c.rounds.find((r) => r.roundNumber === 2);
+        const slot1 = enrichedMembers[0];
+        if (
+          round2 &&
+          slot1 &&
+          !round2.contributions.some(
+            (contrib) =>
+              contrib.memberAddress.toLowerCase() ===
+              slot1.walletAddress.toLowerCase()
+          )
+        ) {
+          round2.contributions.unshift({
+            memberAddress: slot1.walletAddress,
+            memberName: slot1.displayName,
+            amountFormatted: '100.00',
+            isFromCollateralSlash: false,
+            paidAt: '2026-11-05T00:08:30Z',
+            txHash:
+              '0x4000a2b3c4d5e6f70123456789abcdef0123456789abcdef0123456789000001',
+          });
+          round2.contributionsCount = round2.contributions.length;
+        }
+      }
+
+      return {
+        ...c,
+        members: enrichedMembers,
+        isSealedBid: c.allocationMode === AllocationMode.BIDDING,
+        enableYieldVault: true,
+        yieldApyBps: 650,
+        accruedYieldFormatted: idx === 0 ? '4.85' : ((idx + 1) * 3.25).toFixed(2),
+        isPrivateInvite: false,
+        inviteCode: `AVAHUI-${c.id.slice(-4).toUpperCase()}`,
+        requireTeam1Attestation: true,
+      };
+    }
   );
   return {
     currentUserId: MOCK_DEMO_USERS[0].id,
@@ -72,6 +108,107 @@ function getInitialState(): AvaHuiMockState {
     transactions: JSON.parse(JSON.stringify(MOCK_TRANSACTIONS)),
     notifications: JSON.parse(JSON.stringify(MOCK_NOTIFICATIONS)),
   };
+}
+
+export function syncMockStateWithActiveUser(
+  walletAddress?: string,
+  displayName?: string
+): AvaHuiMockState {
+  const state = loadMockState();
+  if (!walletAddress) return state;
+
+  const cleanWallet = walletAddress.trim();
+  if (!cleanWallet) return state;
+
+  const primaryUser = state.users[0];
+  const oldWallet = primaryUser?.walletAddress || '';
+
+  if (primaryUser) {
+    primaryUser.walletAddress = cleanWallet;
+    if (displayName && displayName !== 'Guest') {
+      primaryUser.displayName = displayName;
+    }
+  }
+
+  // Bind Slot #1 in Demo Circles to the active user's wallet so they are always a member ("BẠN")
+  state.circles.forEach((circle) => {
+    if (!circle.id.startsWith('cir_')) return;
+    const slot1 = circle.members.find((m) => m.slotIndex === 1);
+    if (!slot1) return;
+
+    const prevMemberWallet = slot1.walletAddress;
+    slot1.walletAddress = cleanWallet;
+    if (displayName && displayName !== 'Guest') {
+      slot1.displayName = displayName;
+    }
+
+    if (
+      circle.creatorAddress.toLowerCase() === prevMemberWallet.toLowerCase() ||
+      (oldWallet && circle.creatorAddress.toLowerCase() === oldWallet.toLowerCase())
+    ) {
+      circle.creatorAddress = cleanWallet;
+    }
+
+    circle.rounds.forEach((round) => {
+      round.contributions.forEach((c) => {
+        if (
+          c.memberAddress.toLowerCase() === prevMemberWallet.toLowerCase() ||
+          (oldWallet && c.memberAddress.toLowerCase() === oldWallet.toLowerCase())
+        ) {
+          c.memberAddress = cleanWallet;
+          if (displayName && displayName !== 'Guest') {
+            c.memberName = displayName;
+          }
+        }
+      });
+      round.bids.forEach((b) => {
+        if (
+          b.bidderAddress.toLowerCase() === prevMemberWallet.toLowerCase() ||
+          (oldWallet && b.bidderAddress.toLowerCase() === oldWallet.toLowerCase())
+        ) {
+          b.bidderAddress = cleanWallet;
+          if (displayName && displayName !== 'Guest') {
+            b.bidderName = displayName;
+          }
+        }
+      });
+      if (
+        round.winnerAddress &&
+        (round.winnerAddress.toLowerCase() === prevMemberWallet.toLowerCase() ||
+          (oldWallet && round.winnerAddress.toLowerCase() === oldWallet.toLowerCase()))
+      ) {
+        round.winnerAddress = cleanWallet;
+        if (displayName && displayName !== 'Guest') {
+          round.winnerName = displayName;
+        }
+      }
+    });
+  });
+
+  return saveMockState(state);
+}
+
+export function resetScene4DemoCircle(
+  walletAddress?: string,
+  displayName?: string
+): AvaHuiMockState {
+  const fresh = getInitialState();
+  const current = loadMockState();
+  const freshDemoCircle = fresh.circles.find(
+    (c) => c.id === 'cir_bidding_active_01'
+  );
+  if (freshDemoCircle) {
+    const idx = current.circles.findIndex(
+      (c) => c.id === 'cir_bidding_active_01'
+    );
+    if (idx >= 0) {
+      current.circles[idx] = freshDemoCircle;
+    } else {
+      current.circles.unshift(freshDemoCircle);
+    }
+  }
+  saveMockState(current);
+  return syncMockStateWithActiveUser(walletAddress, displayName);
 }
 
 export function loadMockState(): AvaHuiMockState {
@@ -603,10 +740,25 @@ export function mockSettleRound(
 
   let slashedMembersCount = 0;
   for (const member of circle.members) {
-    const hasPaid = round.contributions.some(
+    let hasPaid = round.contributions.some(
       (c) =>
         c.memberAddress.toLowerCase() === member.walletAddress.toLowerCase()
     );
+
+    // Ensure Slot #1 (the active user filming the demo) is always recorded as paid on time
+    // so only the designated late member (Slot #5 — Bảo Đặng) gets Auto-Slashed
+    if (!hasPaid && circle.id === 'cir_bidding_active_01' && member.slotIndex === 1) {
+      round.contributions.unshift({
+        memberAddress: member.walletAddress,
+        memberName: member.displayName,
+        amountFormatted: contributionUsdc.toFixed(2),
+        isFromCollateralSlash: false,
+        paidAt: nowIso,
+        txHash: generateMockTxHash(),
+      });
+      hasPaid = true;
+    }
+
     if (!hasPaid) {
       slashedMembersCount += 1;
       const currentLocked = parseFloat(member.lockedCollateralFormatted);
@@ -644,6 +796,11 @@ export function mockSettleRound(
     }
   }
   round.contributionsCount = round.contributions.length;
+
+  // Accrue DeFi Yield Vault (+6.5% APY) interest for the settled period
+  circle.accruedYieldFormatted = (
+    (parseFloat(circle.accruedYieldFormatted || '4.85') || 4.85) + 3.6
+  ).toFixed(2);
 
   let winnerMember = circle.members[0];
   let winningBidUsdc = 0;

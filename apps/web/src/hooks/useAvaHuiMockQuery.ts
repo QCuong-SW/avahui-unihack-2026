@@ -20,7 +20,9 @@ import {
   mockVerifyTeam1Attestation,
   mockWithdrawCollateral,
   resetMockState,
+  resetScene4DemoCircle,
   switchMockUser,
+  syncMockStateWithActiveUser,
 } from '@/stores/avahuiMockEngine';
 import {
   CreateCircleFormInput,
@@ -196,6 +198,11 @@ async function fetchRealOrMockState(): Promise<AvaHuiMockState> {
         ]
       : [mappedActiveUser];
 
+    const syncedMock = syncMockStateWithActiveUser(
+      resolvedWallet,
+      mappedActiveUser.displayName,
+    );
+
     const liveCircles = Array.isArray(circlesRes?.items)
       ? circlesRes.items.map((c) => ({
           ...c,
@@ -210,23 +217,28 @@ async function fetchRealOrMockState(): Promise<AvaHuiMockState> {
         }))
       : [];
 
+    const existingIds = new Set(liveCircles.map((c) => c.id));
+    const demoCircles = syncedMock.circles.filter((c) => !existingIds.has(c.id));
+    const combinedCircles = [...liveCircles, ...demoCircles];
+
+    const liveTxs = Array.isArray(transactions) ? transactions : [];
+    const liveTxHashes = new Set(liveTxs.map((t) => t.txHash));
+    const demoTxs = syncedMock.transactions.filter(
+      (t) => !liveTxHashes.has(t.txHash),
+    );
+
     return {
       currentUserId: mappedActiveUser.id,
       users: mergedUsers,
-      circles: liveCircles,
-      transactions: Array.isArray(transactions) ? transactions : [],
-      notifications: Array.isArray(notifications) ? notifications : [],
+      circles: combinedCircles,
+      transactions: [...liveTxs, ...demoTxs],
+      notifications: Array.isArray(notifications)
+        ? [...notifications, ...syncedMock.notifications]
+        : syncedMock.notifications,
     };
   } catch (err) {
     console.warn('[AvaHui] Failed to fetch live backend state:', err);
-    const guest = createGuestUserProfile();
-    return {
-      currentUserId: guest.id,
-      users: [guest],
-      circles: [],
-      transactions: [],
-      notifications: [],
-    };
+    return loadMockState();
   }
 }
 
@@ -868,6 +880,20 @@ export function useConnectBrowserWalletMutation() {
       return { state: newState, address };
     },
     onSuccess: ({ state }) => {
+      queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, state);
+      invalidateAllCircleQueries(queryClient);
+    },
+  });
+}
+
+export function useResetScene4DemoMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (arg?: { walletAddress?: string; displayName?: string }) => {
+      await new Promise((r) => setTimeout(r, 250));
+      return resetScene4DemoCircle(arg?.walletAddress, arg?.displayName);
+    },
+    onSuccess: (state) => {
       queryClient.setQueryData(AVAHUI_QUERY_KEYS.mockState, state);
       invalidateAllCircleQueries(queryClient);
     },

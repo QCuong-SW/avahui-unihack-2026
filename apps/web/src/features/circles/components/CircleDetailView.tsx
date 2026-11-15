@@ -2,7 +2,10 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useAvaHuiState } from '@/hooks/useAvaHuiMockQuery';
+import {
+  useAvaHuiState,
+  useResetScene4DemoMutation,
+} from '@/hooks/useAvaHuiMockQuery';
 import {
   useCircleDetailQuery,
   useMyTransactionsQuery,
@@ -20,7 +23,14 @@ import {
   TOUR_SANDBOX_CIRCLE_ID,
   useInteractiveTour,
 } from '@/features/guide/context/InteractiveTourContext';
-import { Activity, History, Layers, Users } from 'lucide-react';
+import {
+  Activity,
+  Clapperboard,
+  History,
+  Layers,
+  RotateCcw,
+  Users,
+} from 'lucide-react';
 
 interface CircleDetailViewProps {
   circleId: string;
@@ -35,6 +45,7 @@ export function CircleDetailView({ circleId }: CircleDetailViewProps) {
     isTourSandbox ? '' : circleId,
   );
   const { data: state, isLoading: isLoadingState } = useAvaHuiState();
+  const resetScene4Mutation = useResetScene4DemoMutation();
   const [activeTab, setActiveTab] = useState<DetailTabKey>('CURRENT_ROUND');
 
   const circle = isTourSandbox
@@ -103,6 +114,38 @@ export function CircleDetailView({ circleId }: CircleDetailViewProps) {
 
   return (
     <div className="space-y-5 animate-fade-in">
+      {circle.id === 'cir_bidding_active_01' && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-500/40 bg-gradient-to-r from-amber-500/10 via-zinc-950/90 to-emerald-500/10 px-4 py-2.5 font-mono text-xs shadow-lg">
+          <div className="flex items-center gap-2 text-amber-200">
+            <Clapperboard className="h-4 w-4 text-amber-400 shrink-0" />
+            <span>
+              <strong className="text-white uppercase">
+                Phân Cảnh 4 Demo (02:00 – 02:40):
+              </strong>{' '}
+              (1) Bấm <span className="text-amber-300 font-bold">TẤT TOÁN VÒNG</span>{' '}
+              → (2) Chỉ vào <span className="text-emerald-300 font-bold">Thông báo giải ngân</span>{' '}
+              → (3) Mở tab <span className="text-sky-300 font-bold">Thành viên &amp; Thế chấp</span>{' '}
+              → (4) Bấm <span className="text-emerald-300 font-bold">Yield Vault (+6.5% APY)</span>
+            </span>
+          </div>
+          <button
+            type="button"
+            disabled={resetScene4Mutation.isPending}
+            onClick={() => {
+              resetScene4Mutation.mutate({
+                walletAddress: currentUser.walletAddress,
+                displayName: currentUser.displayName,
+              });
+              setActiveTab('CURRENT_ROUND');
+            }}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-amber-400/50 bg-amber-500/15 px-3 py-1.5 font-mono text-[11px] font-bold uppercase tracking-wider text-amber-200 transition hover:bg-amber-500 hover:text-zinc-950 active:scale-95 disabled:opacity-50"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>Đặt lại Kỳ #2 (Quay lại)</span>
+          </button>
+        </div>
+      )}
+
       <div className="animate-fade-down">
         <CircleHeader circle={circle} />
       </div>
@@ -123,13 +166,13 @@ export function CircleDetailView({ circleId }: CircleDetailViewProps) {
                 },
                 {
                   key: 'MEMBERS',
-                  label: `Thành viên (${circle.currentMemberCount}/${circle.maxMembers})`,
-                  hint: 'Danh sách các vị trí (Slots) và số dư thế chấp đang khóa',
+                  label: `Thành viên & Thế chấp (${circle.currentMemberCount}/${circle.maxMembers})`,
+                  hint: 'Danh sách các vị trí (Slots), Cọc bảo đảm và trạng thái Auto-Slash',
                   icon: Users,
                 },
                 {
                   key: 'ROUNDS_HISTORY',
-                  label: `Lịch sử (${circle.rounds.length}/${circle.totalRounds})`,
+                  label: `Lịch sử vòng (${circle.rounds.length}/${circle.totalRounds})`,
                   hint: 'Timeline kết toán và người nhận tiền qua từng vòng hụi',
                   icon: History,
                 },
