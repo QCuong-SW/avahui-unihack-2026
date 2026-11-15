@@ -164,14 +164,6 @@ export function DashboardView() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-          <Link
-            href="/circles/cir_bidding_active_01"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/50 bg-emerald-500/15 px-3.5 py-2 font-mono text-xs font-bold uppercase tracking-wider text-emerald-300 shadow-sm transition hover:bg-emerald-500 hover:text-zinc-950 active:scale-95"
-          >
-            <Sparkles className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-400" />
-            <span>Demo Phân Cảnh 4</span>
-          </Link>
-
           <button
             type="button"
             onClick={() => tour.startTour()}

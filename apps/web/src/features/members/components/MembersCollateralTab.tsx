@@ -25,76 +25,38 @@ export function MembersCollateralTab({
   currentUserAddress,
 }: MembersCollateralTabProps) {
   const slots = Array.from({ length: circle.maxMembers }, (_, i) => i + 1);
-  const totalLocked = circle.members.reduce(
-    (sum, m) => sum + (parseFloat(m.lockedCollateralFormatted || '0') || 0),
-    0,
-  );
-  const totalSlashed = circle.members.reduce(
-    (sum, m) => sum + (parseFloat(m.slashedCollateralFormatted || '0') || 0),
-    0,
-  );
 
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 font-mono text-xs">
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 px-3.5 py-2.5">
-          <div className="text-[10px] uppercase text-zinc-400">
-            Cọc bảo đảm đang khóa
-          </div>
-          <div className="mt-0.5 text-sm font-extrabold text-amber-300">
-            {formatUsdc(totalLocked)} mUSDC
-          </div>
-        </div>
-        <div className="rounded-xl border border-rose-500/30 bg-rose-500/5 px-3.5 py-2.5">
-          <div className="text-[10px] uppercase text-zinc-400">
-            Auto-Slash đã bù quỹ
-          </div>
-          <div className="mt-0.5 text-sm font-extrabold text-rose-400">
-            {totalSlashed > 0
-              ? `-${formatUsdc(totalSlashed)} mUSDC (Đắp 100%)`
-              : '0.00 mUSDC (0 trễ hạn)'}
-          </div>
-        </div>
-        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-3.5 py-2.5">
-          <div className="text-[10px] uppercase text-zinc-400">
-            Lãi kép Yield Vault (6.5% APY)
-          </div>
-          <div className="mt-0.5 text-sm font-extrabold text-emerald-400">
-            +{formatUsdc(circle.accruedYieldFormatted || '4.85')} mUSDC
-          </div>
-        </div>
-      </div>
-
-      <div className="overflow-x-auto rounded-xl border border-zinc-800/80 bg-zinc-900/50 shadow-inner">
-        <table className="w-full text-left font-mono text-xs">
-          <thead className="border-b border-zinc-800/80 bg-zinc-900/90 text-[11px] font-bold uppercase tracking-wider text-zinc-400">
-            <tr>
-              <th className="px-3.5 py-3">Vị trí</th>
-              <th className="px-3.5 py-3">Thành viên</th>
-              <th className="px-3.5 py-3">Nhận quỹ</th>
-              <th className="px-3.5 py-3">
-                <HoverHint
-                  hint={`Mỗi thành viên khóa ${formatUsdc(circle.collateralAmountFormatted)} mUSDC thế chấp khi gia nhập`}
-                  side="top"
-                >
-                  <span className="cursor-help underline decoration-dotted text-amber-300">
-                    Cọc bảo đảm
-                  </span>
-                </HoverHint>
-              </th>
-              <th className="px-3.5 py-3">
-                <HoverHint
-                  hint="Số tiền bị trích tự động từ Cọc bảo đảm do đóng trễ hạn để bù đủ 100% quỹ"
-                  side="top"
-                >
-                  <span className="cursor-help underline decoration-dotted">
-                    Auto-Slash
-                  </span>
-                </HoverHint>
-              </th>
-              <th className="px-3.5 py-3">Tình trạng</th>
-            </tr>
-          </thead>
+    <div className="overflow-x-auto rounded-xl border border-zinc-800/80 bg-zinc-900/50 shadow-inner">
+      <table className="w-full text-left font-mono text-xs">
+        <thead className="border-b border-zinc-800/80 bg-zinc-900/90 text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+          <tr>
+            <th className="px-3.5 py-3">Vị trí</th>
+            <th className="px-3.5 py-3">Thành viên</th>
+            <th className="px-3.5 py-3">Nhận quỹ</th>
+            <th className="px-3.5 py-3">
+              <HoverHint
+                hint={`Mỗi thành viên khóa ${formatUsdc(circle.collateralAmountFormatted)} mUSDC thế chấp khi gia nhập`}
+                side="top"
+              >
+                <span className="cursor-help underline decoration-dotted">
+                  Thế chấp
+                </span>
+              </HoverHint>
+            </th>
+            <th className="px-3.5 py-3">
+              <HoverHint
+                hint="Số tiền bị trích từ thế chấp do không đóng tiền đúng hạn"
+                side="top"
+              >
+                <span className="cursor-help underline decoration-dotted">
+                  Trích thế chấp
+                </span>
+              </HoverHint>
+            </th>
+            <th className="px-3.5 py-3">Trạng thái</th>
+          </tr>
+        </thead>
         <tbody className="divide-y divide-zinc-800/70">
           {slots.map((slotNum) => {
             const member = circle.members.find((m) => m.slotIndex === slotNum);
@@ -219,7 +181,6 @@ export function MembersCollateralTab({
           })}
         </tbody>
       </table>
-      </div>
     </div>
   );
 }

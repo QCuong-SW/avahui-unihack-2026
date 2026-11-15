@@ -9,7 +9,6 @@ import {
   notificationApi,
 } from '@/lib/api';
 import { useAvaHuiState } from './useAvaHuiMockQuery';
-import { loadMockState } from '@/stores/avahuiMockEngine';
 import { getSavedCreatorInviteCode } from '@/lib/utils';
 import type { CircleDetailDto, TransactionRecordDto, NotificationItemDto } from '@avahui/shared';
 
@@ -32,21 +31,15 @@ export function useCircleDetailQuery(idOrAddress: string) {
   return useQuery<CircleDetailDto | null>({
     queryKey: CIRCLE_QUERY_KEYS.detail(idOrAddress),
     queryFn: async () => {
-      const localMockCircles = mockState?.circles || loadMockState().circles;
-      const localDemoMatch = localMockCircles.find(
-        (c) =>
-          c.id === idOrAddress ||
-          c.metadataId === idOrAddress ||
-          (Boolean(c.contractAddress) &&
-            c.contractAddress?.toLowerCase() === idOrAddress.toLowerCase()),
-      );
-
-      if (
-        isMockMode ||
-        idOrAddress.startsWith('cir_') ||
-        idOrAddress.startsWith('meta_unihack_')
-      ) {
-        return localDemoMatch || null;
+      if (isMockMode) {
+        const found = mockState?.circles.find(
+          (c) =>
+            c.id === idOrAddress ||
+            c.metadataId === idOrAddress ||
+            (Boolean(c.contractAddress) &&
+              c.contractAddress?.toLowerCase() === idOrAddress.toLowerCase()),
+        );
+        return found || null;
       }
 
       try {
@@ -71,10 +64,10 @@ export function useCircleDetailQuery(idOrAddress: string) {
         console.warn(`[AvaHui] Failed to fetch circle ${idOrAddress} from API:`, err);
       }
 
-      return localDemoMatch || null;
+      return null;
     },
     refetchInterval: (query) => {
-      if (isMockMode || idOrAddress.startsWith('cir_')) return false;
+      if (isMockMode) return false;
       const data = query.state.data;
       if (!data) return 2000;
       // If recruiting or active, refresh every 2.5 seconds to sync round & member status quickly
@@ -98,10 +91,8 @@ export function useExploreCirclesQuery(query?: ListCirclesQuery) {
   return useQuery({
     queryKey: CIRCLE_QUERY_KEYS.list(query),
     queryFn: async () => {
-      const demoCircles = mockState?.circles || loadMockState().circles;
-
       if (isMockMode) {
-        let circles = demoCircles;
+        let circles = mockState?.circles || [];
         if (query?.status) {
           circles = circles.filter((c) => c.status === query.status);
         }
@@ -119,32 +110,17 @@ export function useExploreCirclesQuery(query?: ListCirclesQuery) {
         };
       }
 
-      let liveItems: CircleDetailDto[] = [];
       try {
         const res = await circleApi.listCircles(query);
-        if (res && Array.isArray(res.items)) {
-          liveItems = res.items;
-        }
+        if (res && res.items) return res;
       } catch (err) {
         console.warn('[AvaHui] Failed to list circles from API:', err);
       }
 
-      const existingIds = new Set(liveItems.map((c) => c.id));
-      let merged = [
-        ...liveItems,
-        ...demoCircles.filter((c) => !existingIds.has(c.id)),
-      ];
-      if (query?.status) {
-        merged = merged.filter((c) => c.status === query.status);
-      }
-      if (query?.mode) {
-        merged = merged.filter((c) => c.allocationMode === query.mode);
-      }
-
       return {
-        items: merged,
+        items: [],
         meta: {
-          total: merged.length,
+          total: 0,
           page: query?.page || 1,
           limit: query?.limit || 20,
           totalPages: 1,

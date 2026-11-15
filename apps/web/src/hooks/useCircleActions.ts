@@ -41,14 +41,6 @@ import {
 } from '@/lib/wagmi/client';
 
 const isMockMode = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
-const isSimulatedCircle = (circle?: CircleItem | null) =>
-  isMockMode ||
-  Boolean(
-    circle &&
-      (circle.id.startsWith('cir_') ||
-        circle.id === 'tour-sandbox' ||
-        circle.metadataId?.startsWith('meta_unihack_'))
-  );
 const ZERO_ADDRESS =
   '0x0000000000000000000000000000000000000000' as `0x${string}`;
 const ZERO_BYTES32 =
@@ -136,9 +128,8 @@ export function useCircleActions() {
 
       let txHash: string | null = null;
       let liveConfirmed = false;
-      const simulated = isSimulatedCircle(circle);
 
-      if (!simulated) {
+      if (!isMockMode) {
         if (!circle.contractAddress) {
           throw new Error('Dây hụi chưa được triển khai địa chỉ Smart Contract.');
         }
@@ -183,7 +174,7 @@ export function useCircleActions() {
         txHash = generateMockTxHash();
       }
 
-      if (!simulated && txHash) {
+      if (!isMockMode && txHash) {
         try {
           await transactionApi.trackTransaction({
             txHash,
@@ -219,9 +210,8 @@ export function useCircleActions() {
 
       let txHash: string | null = null;
       let liveConfirmed = false;
-      const simulated = isSimulatedCircle(circle);
 
-      if (!simulated) {
+      if (!isMockMode) {
         if (!circle.contractAddress) {
           throw new Error('Dây hụi chưa có địa chỉ Smart Contract.');
         }
@@ -249,7 +239,7 @@ export function useCircleActions() {
         txHash = generateMockTxHash();
       }
 
-      if (!simulated && txHash) {
+      if (!isMockMode && txHash) {
         try {
           await transactionApi.trackTransaction({
             txHash,
@@ -292,9 +282,8 @@ export function useCircleActions() {
 
       let txHash: string | null = null;
       let liveConfirmed = false;
-      const simulated = isSimulatedCircle(circle);
 
-      if (!simulated) {
+      if (!isMockMode) {
         if (!circle.contractAddress) {
           throw new Error('Dây hụi chưa có địa chỉ Smart Contract.');
         }
@@ -315,7 +304,7 @@ export function useCircleActions() {
         txHash = generateMockTxHash();
       }
 
-      if (!simulated && txHash) {
+      if (!isMockMode && txHash) {
         try {
           await transactionApi.trackTransaction({
             txHash,
@@ -349,9 +338,8 @@ export function useCircleActions() {
 
       let txHash: string | null = null;
       let liveConfirmed = false;
-      const simulated = isSimulatedCircle(circle);
 
-      if (!simulated) {
+      if (!isMockMode) {
         if (!circle.contractAddress) {
           throw new Error('Dây hụi chưa có địa chỉ Smart Contract.');
         }
@@ -407,7 +395,7 @@ export function useCircleActions() {
         txHash = generateMockTxHash();
       }
 
-      if (!simulated && txHash) {
+      if (!isMockMode && txHash) {
         try {
           await transactionApi.trackTransaction({
             txHash,
@@ -440,9 +428,8 @@ export function useCircleActions() {
 
       let txHash: string | null = null;
       let liveConfirmed = false;
-      const simulated = isSimulatedCircle(circle);
 
-      if (!simulated) {
+      if (!isMockMode) {
         if (!circle.contractAddress) {
           throw new Error('Dây hụi chưa có địa chỉ Smart Contract.');
         }
@@ -463,7 +450,7 @@ export function useCircleActions() {
         txHash = generateMockTxHash();
       }
 
-      if (!simulated && txHash) {
+      if (!isMockMode && txHash) {
         try {
           await transactionApi.trackTransaction({
             txHash,
@@ -495,9 +482,8 @@ export function useCircleActions() {
 
       let txHash: string | null = null;
       let liveConfirmed = false;
-      const simulated = isSimulatedCircle(circle);
 
-      if (!simulated) {
+      if (!isMockMode) {
         if (!circle.contractAddress) {
           throw new Error('Dây hụi chưa có địa chỉ Smart Contract.');
         }
@@ -518,7 +504,7 @@ export function useCircleActions() {
         txHash = generateMockTxHash();
       }
 
-      if (!simulated && txHash) {
+      if (!isMockMode && txHash) {
         try {
           await transactionApi.trackTransaction({
             txHash,
@@ -786,8 +772,7 @@ export function useCircleActions() {
       bidAmountUsdc: number,
     ): Promise<{ txHash: string; commitment: string; salt: string }> => {
       const circleAddress = (circle.contractAddress || frontendEnv.factoryAddress) as `0x${string}`;
-      const simulated = isSimulatedCircle(circle);
-      const signer = !simulated ? await requireLiveSigner() : null;
+      const signer = !isMockMode ? await requireLiveSigner() : null;
       const bidderAddress = (signer?.account ||
         currentUser?.walletAddress ||
         '0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1') as `0x${string}`;
@@ -819,7 +804,7 @@ export function useCircleActions() {
       let txHash: string | null = null;
       let liveConfirmed = false;
 
-      if (!simulated && signer) {
+      if (!isMockMode && signer) {
         if (!circle.contractAddress) {
           throw new Error('Dây hụi chưa có địa chỉ Smart Contract.');
         }
@@ -846,7 +831,7 @@ export function useCircleActions() {
         );
       }
 
-      if (!simulated && txHash) {
+      if (!isMockMode && txHash) {
         try {
           await transactionApi.trackTransaction({
             txHash,
@@ -883,8 +868,7 @@ export function useCircleActions() {
       override?: number | { bidAmountUsdc?: number; salt?: string },
     ): Promise<{ txHash: string; bidAmountUsdc: number }> => {
       const circleAddress = (circle.contractAddress || frontendEnv.factoryAddress) as `0x${string}`;
-      const simulated = isSimulatedCircle(circle);
-      const signer = !simulated ? await requireLiveSigner() : null;
+      const signer = !isMockMode ? await requireLiveSigner() : null;
       const bidderAddress = (signer?.account ||
         currentUser?.walletAddress ||
         '0x90f8bf6a479f320ead074411a4b0e7944ea8c9c1') as `0x${string}`;
@@ -924,7 +908,7 @@ export function useCircleActions() {
       let txHash: string | null = null;
       let liveConfirmed = false;
 
-      if (!simulated && signer) {
+      if (!isMockMode && signer) {
         if (!circle.contractAddress) {
           throw new Error('Dây hụi chưa có địa chỉ Smart Contract.');
         }
@@ -966,7 +950,7 @@ export function useCircleActions() {
         window.localStorage.setItem(storageKey, JSON.stringify(updatedRecord));
       }
 
-      if (!simulated && txHash) {
+      if (!isMockMode && txHash) {
         try {
           await transactionApi.trackTransaction({
             txHash,
