@@ -2,8 +2,8 @@ name: Render Backend Keep-Alive Heartbeat
 
 on:
   schedule:
-    # Run every 10 minutes to prevent Render free-tier spin-down (inactivity timeout is 15 min)
-    - cron: '*/10 * * * *'
+    # Run every 5 minutes (shortest GitHub Actions cron interval) to prevent Render 15-min spin-down
+    - cron: '*/5 * * * *'
   workflow_dispatch:
     inputs:
       reason:
@@ -13,7 +13,7 @@ on:
 
 concurrency:
   group: backend-keepalive
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   keep-alive:
@@ -22,28 +22,35 @@ jobs:
     timeout-minutes: 5
 
     steps:
-      - name: Ping Render Backend Health Endpoint
+      - name: Ping Render Backend Health Endpoint (Burst 1 & 2)
         run: |
           echo "=========================================="
           echo "Triggering Keep-Alive Heartbeat for AvaHui"
           echo "Target: https://avahui-api.onrender.com/api/v1/health"
           echo "Timestamp: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
           echo "=========================================="
-          
-          # Retry up to 3 times with 5s delay and 45s max request timeout for cold starts
+
+          # Retry up to 4 times with 5s delay and 70s max request timeout for cold starts
           RESPONSE=$(curl -sS --fail-with-body \
-            --retry 3 \
+            --retry 4 \
             --retry-delay 5 \
             --retry-all-errors \
-            --max-time 45 \
+            --max-time 70 \
             https://avahui-api.onrender.com/api/v1/health)
-          
-          echo "Response from API:"
+
+          echo "Response from API (Pulse 1):"
           echo "$RESPONSE"
-          echo "Backend is active and awake!"
+
+          sleep 20
+
+          RESPONSE2=$(curl -sS --fail-with-body \
+            --max-time 30 \
+            https://avahui-api.onrender.com/api/v1/health)
+          echo "Response from API (Pulse 2):"
+          echo "$RESPONSE2"
+          echo "Backend & Neon DB are active and awake!"
 
       - name: Ping Vercel Frontend Edge Cache
         run: |
           echo "Pinging Vercel Web App: https://avahui-unihack-2026-web.vercel.app"
           curl -sS -I --max-time 15 https://avahui-unihack-2026-web.vercel.app | head -n 5
-

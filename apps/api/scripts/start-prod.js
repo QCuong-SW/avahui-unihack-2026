@@ -3,9 +3,11 @@
  * Production bootstrapper for @avahui/api.
  * Ensures PostgreSQL readiness, ensures `uuid-ossp`, baselines existing
  * SQL-initialized databases when `_prisma_migrations` is absent, runs
- * `prisma migrate deploy`, and then boots the compiled NestJS server.
+ * `prisma migrate deploy` ONLY when unapplied migrations exist (saving ~40s on cold start),
+ * and then boots the compiled NestJS server.
  */
 const { execSync } = require('child_process');
+const fs = require('fs');
 const path = require('path');
 const { PrismaClient } = require('@prisma/client');
 
@@ -37,7 +39,16 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function waitForDatabase(prisma, maxAttempts = 10, delayMs = 2000) {
+function getLocalMigrationNames() {
+  const migrationsDir = path.join(API_ROOT, 'prisma', 'migrations');
+  if (!fs.existsSync(migrationsDir)) return [];
+  return fs
+    .readdirSync(migrationsDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => entry.name);
+}
+
+async function waitForDatabase(prisma, maxAttempts = 10, delayMs = 1500) {
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
       await prisma.$queryRaw`SELECT 1`;
@@ -56,6 +67,8 @@ async function waitForDatabase(prisma, maxAttempts = 10, delayMs = 2000) {
 
 async function ensureMigrationsReady() {
   const prisma = new PrismaClient();
+  let allAlreadyApplied = false;
+
   try {
     await waitForDatabase(prisma);
 
@@ -86,9 +99,31 @@ async function ensureMigrationsReady() {
         stdio: 'inherit',
         env: getMigrationEnv(),
       });
+    } else if (state?.has_migrations) {
+      const localMigrations = getLocalMigrationNames();
+      const appliedRows = await prisma.$queryRaw`
+        SELECT migration_name
+        FROM public._prisma_migrations
+        WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL
+      `;
+      const appliedSet = new Set(
+        Array.isArray(appliedRows)
+          ? appliedRows.map((r) => r.migration_name)
+          : [],
+      );
+      allAlreadyApplied =
+        localMigrations.length > 0 &&
+        localMigrations.every((name) => appliedSet.has(name));
     }
   } finally {
     await prisma.$disconnect();
+  }
+
+  if (allAlreadyApplied) {
+    console.log(
+      '[start-prod] All Prisma migrations already applied — skipping npx prisma migrate deploy for fast wakeup!',
+    );
+    return;
   }
 
   console.log('[start-prod] Running prisma migrate deploy...');
@@ -109,4 +144,3 @@ main().catch((err) => {
   console.error('[start-prod] Fatal startup error:', err);
   process.exit(1);
 });
-

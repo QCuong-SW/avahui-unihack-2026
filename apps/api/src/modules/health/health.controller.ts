@@ -9,13 +9,31 @@ import { createFujiPublicClient } from '../../common/utils/rpc.util';
 @Controller('health')
 export class HealthController {
   private readonly rpcUrl =
-    process.env.AVALANCHE_RPC_URL || 'https://avalanche-fuji-c-chain-rpc.publicnode.com';
+    process.env.AVALANCHE_RPC_URL ||
+    'https://avalanche-fuji-c-chain-rpc.publicnode.com';
   private readonly publicClient = createFujiPublicClient(this.rpcUrl, 2500);
+
+  private cachedBlock: string | null = null;
+  private cachedRpcStatus: 'up' | 'degraded' = 'up';
+  private lastRpcCheckAt = 0;
 
   constructor(private readonly prisma: PrismaService) {}
 
+  @Get('ping')
+  @ApiOperation({ summary: 'Ultra-fast keep-alive wakeup probe (<5ms)' })
+  ping() {
+    return {
+      status: 'ok',
+      awake: true,
+      timestamp: new Date().toISOString(),
+      uptimeSeconds: Math.floor(process.uptime()),
+    };
+  }
+
   @Get()
-  @ApiOperation({ summary: 'Kiểm tra tình trạng API, PostgreSQL và kết nối Fuji RPC' })
+  @ApiOperation({
+    summary: 'Kiểm tra tình trạng API, PostgreSQL và kết nối Fuji RPC',
+  })
   async checkHealth() {
     let database: 'up' | 'down' = 'down';
     try {
@@ -25,14 +43,16 @@ export class HealthController {
       database = 'down';
     }
 
-    let rpc: 'up' | 'degraded' = 'degraded';
-    let latestBlock: string | null = null;
-    try {
-      const block = await this.publicClient.getBlockNumber();
-      latestBlock = block.toString();
-      rpc = 'up';
-    } catch {
-      rpc = 'degraded';
+    const now = Date.now();
+    if (now - this.lastRpcCheckAt > 20_000 || !this.cachedBlock) {
+      this.lastRpcCheckAt = now;
+      try {
+        const block = await this.publicClient.getBlockNumber();
+        this.cachedBlock = block.toString();
+        this.cachedRpcStatus = 'up';
+      } catch {
+        this.cachedRpcStatus = 'degraded';
+      }
     }
 
     return {
@@ -42,8 +62,8 @@ export class HealthController {
       chainId: Number(process.env.CHAIN_ID || 43113),
       services: {
         database,
-        rpc,
-        latestBlock,
+        rpc: this.cachedRpcStatus,
+        latestBlock: this.cachedBlock,
         indexerEnabled:
           String(process.env.INDEXER_ENABLED ?? 'true').toLowerCase() === 'true',
         keeperEnabled:
@@ -52,4 +72,3 @@ export class HealthController {
     };
   }
 }
-

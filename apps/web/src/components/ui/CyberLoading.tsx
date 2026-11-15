@@ -3,14 +3,16 @@
 import React, { useEffect, useState } from 'react';
 import { AvahuiLogo } from './AvahuiLogo';
 import {
+  BACKEND_AWAKE_EVENT,
+  wakeUpBackendServer,
+} from '@/lib/api/client';
+import {
   Activity,
   CheckCircle2,
   Clock,
   CloudLightning,
   RefreshCw,
   Server,
-  ShieldCheck,
-  Sparkles,
 } from 'lucide-react';
 
 export interface CyberLoadingProps {
@@ -29,6 +31,7 @@ export function CyberLoading({
   onRetry,
 }: CyberLoadingProps) {
   const [elapsed, setElapsed] = useState(0);
+  const [pingCount, setPingCount] = useState(1);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -37,8 +40,35 @@ export function CyberLoading({
     return () => clearInterval(timer);
   }, []);
 
+  // Actively wake up backend every 2.5s while user is on loading screen
+  useEffect(() => {
+    let active = true;
+    const handleAwake = () => {
+      if (active && onRetry) {
+        onRetry();
+      }
+    };
+
+    window.addEventListener(BACKEND_AWAKE_EVENT, handleAwake);
+
+    const wakeTimer = setInterval(async () => {
+      if (!active) return;
+      setPingCount((c) => c + 1);
+      const isUp = await wakeUpBackendServer(6_000);
+      if (active && isUp && onRetry) {
+        onRetry();
+      }
+    }, 2_500);
+
+    return () => {
+      active = false;
+      window.removeEventListener(BACKEND_AWAKE_EVENT, handleAwake);
+      clearInterval(wakeTimer);
+    };
+  }, [onRetry]);
+
   const isWakingUp = elapsed >= 3;
-  const isTakingLonger = elapsed >= 18;
+  const isTakingLonger = elapsed >= 15;
 
   const content = (
     <div className="relative mx-auto flex w-full max-w-lg flex-col items-center justify-center p-6 text-center">
@@ -87,7 +117,7 @@ export function CyberLoading({
                 <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-amber-500" />
               </span>
               <span className="font-mono text-[11px] sm:text-xs font-black uppercase tracking-wider text-amber-300">
-                Đang đánh thức máy chủ (Server Wake Up)
+                Đang đánh thức máy chủ (Auto Wake-Up #{pingCount})
               </span>
             </div>
             <div className="flex items-center gap-1 font-mono text-[11px] text-zinc-400">
@@ -97,8 +127,8 @@ export function CyberLoading({
           </div>
 
           <p className="mt-2.5 text-xs text-zinc-300 leading-relaxed font-sans">
-            Máy chủ đám mây đang khởi động lại sau thời gian chờ (Cold Start). Vui lòng
-            chờ phản hồi trong giây lát (<span className="text-amber-400 font-semibold font-mono">khoảng 10-30s</span>) để nạp đầy đủ dữ liệu Smart Contract & Avalanche Fuji.
+            Hệ thống đang tự động gửi xung đánh thức liên tục tới máy chủ đám mây (Cold Start). Vui lòng
+            chờ trong giây lát (<span className="text-amber-400 font-semibold font-mono">khoảng 10-30s</span>) để nạp dữ liệu Smart Contract & Avalanche Fuji.
           </p>
 
           {/* Micro Telemetry Steps */}
@@ -117,7 +147,7 @@ export function CyberLoading({
                 <span>Backend Render API</span>
               </span>
               <span className="text-amber-400 font-semibold animate-pulse">
-                Đang khởi động ({elapsed}s)...
+                Đang kích hoạt ({elapsed}s)...
               </span>
             </div>
 
@@ -126,7 +156,7 @@ export function CyberLoading({
                 <Activity className="h-3.5 w-3.5 text-zinc-500 shrink-0" />
                 <span>Dữ liệu Dây hụi & Vault</span>
               </span>
-              <span className="text-zinc-500">Đang đồng bộ</span>
+              <span className="text-zinc-500">Tự động nạp ngay khi thức</span>
             </div>
           </div>
 
@@ -134,21 +164,23 @@ export function CyberLoading({
           {isTakingLonger && (
             <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-zinc-800/60">
               <span className="text-[11px] text-zinc-400 font-mono">
-                Gói tin đang được hoàn tất...
+                Đang kết nối lại lần #{pingCount}...
               </span>
               <button
                 type="button"
                 onClick={() => {
-                  if (onRetry) {
-                    onRetry();
-                  } else if (typeof window !== 'undefined') {
-                    window.location.reload();
-                  }
+                  wakeUpBackendServer(10_000).then(() => {
+                    if (onRetry) {
+                      onRetry();
+                    } else if (typeof window !== 'undefined') {
+                      window.location.reload();
+                    }
+                  });
                 }}
                 className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-1 font-mono text-xs font-bold uppercase tracking-wider text-amber-300 hover:bg-amber-500/20 active:scale-95 transition-all"
               >
                 <RefreshCw className="h-3 w-3" />
-                <span>Tải lại kết nối</span>
+                <span>Kích hoạt ngay</span>
               </button>
             </div>
           )}
