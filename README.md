@@ -1,28 +1,28 @@
-# 🔺 AvaHui — Trustless On-Chain ROSCA (Hụi) Platform on Avalanche
+# AvaHui — Trustless On-Chain ROSCA (Hụi) Platform on Avalanche
 
 [![Avalanche Fuji](https://img.shields.io/badge/Avalanche-Fuji_Testnet_(43113)-E84142?logo=avalanche&logoColor=white)](https://testnet.snowtrace.io)
 [![License: MIT](https://img.shields.io/badge/License-MIT-emerald.svg)](LICENSE)
 [![Next.js 14](https://img.shields.io/badge/Next.js-14.2.18-black?logo=next.js)](https://nextjs.org)
 [![NestJS](https://img.shields.io/badge/NestJS-10.x-E0234E?logo=nestjs&logoColor=white)](https://nestjs.com)
 [![Solidity](https://img.shields.io/badge/Solidity-0.8.38-363636?logo=solidity)](https://soliditylang.org/)
-[![Status: Live](https://img.shields.io/badge/Status-Live_Production-10B981)](#-smart-contracts-đã-triển-khai-trên-avalanche-fuji)
+[![Status: Live](https://img.shields.io/badge/Status-Live_Production-10B981)](#smart-contracts-đã-triển-khai-trên-avalanche-fuji)
 
 > **AvaHui** là nền tảng Hụi On-Chain (ROSCA) phi lưu ký đầu tiên trên mạng Avalanche C-Chain, kết hợp bảo vệ **100% bằng tài sản thế chấp**, cơ chế **Đấu giá kín Sealed-Bid (Commit-Reveal)**, **Kho sinh lời tự động ERC-4626 Yield Vault** và **Xác thực danh tính chống gian lận đa ví Team1 Attestation**.  
 > Được xây dựng và phát triển cho cuộc thi **AVALANCHE UNIHACK 2026** — *Topic 1: Social Finance (Hụi On-Chain).*
 
 ---
 
-## 🌐 Liên Kết Trực Tuyến (Live Deployments)
+## Liên Kết Trực Tuyến (Live Deployments)
 
-* 🚀 **Web App (Vercel Live)**: [https://avahui-unihack-2026-web.vercel.app](https://avahui-unihack-2026-web.vercel.app)
-* ⚡ **Backend API (Render Live)**: [https://avahui-api.onrender.com/api/v1/health](https://avahui-api.onrender.com/api/v1/health)
-* 📚 **API Swagger Documentation**: [https://avahui-api.onrender.com/api/docs](https://avahui-api.onrender.com/api/docs)
-* 🎬 **Kịch bản Video Demo 3 Phút**: [docs/VIDEO_DEMO_PLAN.md](./docs/VIDEO_DEMO_PLAN.md)
-* 📖 **Tài liệu Kiến trúc Master Spec**: [docs/architecture/AVAHUI_MASTER_SPEC_AND_MOCK.md](./docs/architecture/AVAHUI_MASTER_SPEC_AND_MOCK.md)
+* **Web App (Vercel Live)**: [https://avahui-unihack-2026-web.vercel.app](https://avahui-unihack-2026-web.vercel.app)
+* **Backend API (Render Live)**: [https://avahui-api.onrender.com/api/v1/health](https://avahui-api.onrender.com/api/v1/health)
+* **API Swagger Documentation**: [https://avahui-api.onrender.com/api/docs](https://avahui-api.onrender.com/api/docs)
+* **Kịch bản Video Demo 3 Phút**: [docs/VIDEO_DEMO_PLAN.md](./docs/VIDEO_DEMO_PLAN.md)
+* **Tài liệu Kiến trúc Master Spec**: [docs/architecture/AVAHUI_MASTER_SPEC_AND_MOCK.md](./docs/architecture/AVAHUI_MASTER_SPEC_AND_MOCK.md)
 
 ---
 
-## 💡 Bối Cảnh & Vấn Đề Thực Tiễn
+## Bối Cảnh & Vấn Đề Thực Tiễn
 
 Hụi (Họ, Biêu, Phường / ROSCA - Rotating Savings and Credit Association) là mô hình tài chính tương trợ cộng đồng quen thuộc của người Việt suốt hàng trăm năm, phục vụ hàng chục triệu người dân tích lũy và huy động vốn nhanh. Tuy nhiên, hụi truyền thống tồn tại **3 nỗi đau nhức nhối**:
 
@@ -32,7 +32,7 @@ Hụi (Họ, Biêu, Phường / ROSCA - Rotating Savings and Credit Association)
 
 ---
 
-## 🛡️ Giải Pháp Của AvaHui
+## Giải Pháp Của AvaHui
 
 AvaHui giải quyết triệt để các vấn đề trên bằng công nghệ Blockchain và Hợp đồng thông minh trên Avalanche:
 
@@ -49,7 +49,7 @@ AvaHui giải quyết triệt để các vấn đề trên bằng công nghệ B
 
 ---
 
-## ⚡ Tại Sao Lại Là Avalanche?
+## Tại Sao Lại Là Avalanche?
 
 | Ưu thế của Avalanche | Giá trị mang lại cho AvaHui |
 | :--- | :--- |
@@ -60,7 +60,7 @@ AvaHui giải quyết triệt để các vấn đề trên bằng công nghệ B
 
 ---
 
-## 🏗️ Kiến Trúc Hệ Thống (System Architecture)
+## Kiến Trúc Hệ Thống (System Architecture)
 
 ```mermaid
 flowchart TD
@@ -99,7 +99,7 @@ flowchart TD
 
 ---
 
-## 📜 Smart Contracts Đã Triển Khai Trên Avalanche Fuji
+## Smart Contracts Đã Triển Khai Trên Avalanche Fuji
 
 Mạng thử nghiệm: **Avalanche Fuji Testnet** (`Chain ID: 43113`, `RPC: https://avalanche-fuji-c-chain-rpc.publicnode.com`)
 
@@ -113,7 +113,7 @@ Mạng thử nghiệm: **Avalanche Fuji Testnet** (`Chain ID: 43113`, `RPC: http
 
 ---
 
-## 📂 Cấu Trúc Monorepo (Package-by-Feature)
+## Cấu Trúc Monorepo (Package-by-Feature)
 
 Dự án sử dụng mô hình Monorepo tiêu chuẩn cao với `pnpm workspace`:
 
@@ -156,7 +156,7 @@ avahui-unihack-2026/
 
 ---
 
-## 🚀 Hướng Dẫn Cài Đặt & Khởi Chạy Local (Getting Started)
+## Hướng Dẫn Cài Đặt & Khởi Chạy Local (Getting Started)
 
 ### 1. Yêu cầu môi trường
 * **Node.js**: Phiên bản `>= 20.0.0`
@@ -215,7 +215,7 @@ Mở 2 cửa sổ terminal riêng biệt:
 
 ---
 
-## 🐳 Khởi Chạy Toàn Bộ Hệ Thống Bằng Docker
+## Khởi Chạy Toàn Bộ Hệ Thống Bằng Docker
 
 Bạn có thể đóng gói và khởi chạy toàn bộ hệ thống (PostgreSQL + NestJS API + Next.js Web) chỉ với một lệnh duy nhất:
 ```bash
@@ -228,7 +228,7 @@ pnpm docker:down
 
 ---
 
-## 🧪 Kiểm Thử Hệ Thống (Testing & Verification)
+## Kiểm Thử Hệ Thống (Testing & Verification)
 
 AvaHui được kiểm thử nghiêm ngặt ở tất cả các tầng công nghệ:
 
@@ -251,7 +251,7 @@ pnpm build:web
 
 ---
 
-## ⚖️ Tuyên Bố Miễn Trừ Pháp Lý (Legal Disclaimer)
+## Tuyên Bố Miễn Trừ Pháp Lý (Legal Disclaimer)
 
 1. **Mục đích Thử nghiệm Công nghệ**: Nền tảng AvaHui được phát triển trong khuôn khổ cuộc thi học thuật **Avalanche UniHack 2026** nhằm chứng minh tính khả thi của hợp đồng thông minh trong việc giải quyết rủi ro tài chính cộng đồng.
 2. **Môi trường Testnet**: Mọi giao dịch hiện tại sử dụng token thử nghiệm `mUSDC` và `AVAX` trên mạng **Avalanche Fuji Testnet** (`Chain ID: 43113`), không có giá trị quy đổi thành tiền pháp định và không cấu thành dịch vụ tài chính hay cho vay thương mại.
@@ -259,7 +259,7 @@ pnpm build:web
 
 ---
 
-## 👥 Đội Ngũ Phát Triển (Team)
+## Đội Ngũ Phát Triển (Team)
 
 Dự án được xây dựng bởi đội ngũ sinh viên đam mê công nghệ Web3 tham gia **Avalanche UniHack 2026**:
 * **Smart Contracts & Security**: Thiết kế kiến trúc Factory, Vault ERC-4626, Logic Commit-Reveal & Auto-Slash.
